@@ -5,7 +5,7 @@ import scala.tools.nsc.plugins.PluginComponent
 
 /** Dummy phase outputs "Hello, World!" */
 class HelloComponent(val global: Global) extends PluginComponent {
-  val phaseName: String = "hello"
+  val phaseName: String = "scalan-hi"
 
   val runsAfter = List[String]("refchecks")
 

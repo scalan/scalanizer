@@ -8,7 +8,7 @@ class ScalanPlugin(val global: Global) extends Plugin {
   val name: String = "scalan"
 
   /** The compiler components that will be applied when running this plugin */
-  val components: List[PluginComponent] = List(new HelloComponent(global))
+  val components: List[PluginComponent] = ScalanPlugin.components(global)
 
   /** The description is printed with the option: -Xplugin-list */
   val description: String = "Optimization through staging"
@@ -24,4 +24,14 @@ class ScalanPlugin(val global: Global) extends Plugin {
   /** A description of the plugin's options */
   override val optionsHelp = Some(
     "  -P:"+ name +":debug     output debug information")
+}
+
+object ScalanPlugin {
+  /** Yields the list of Components to be executed in this plugin */
+  def components(global: Global) = {
+    List(
+      new HelloComponent(global),
+      new TraverseComponent(global)
+    )
+  }
 }
