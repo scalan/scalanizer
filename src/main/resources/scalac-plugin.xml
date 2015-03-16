@@ -1,0 +1,4 @@
+<plugin>
+    <name>scalan</name>
+    <classname>scalan.plugin.ScalanPlugin</classname>
+</plugin>
