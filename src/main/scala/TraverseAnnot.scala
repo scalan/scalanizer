@@ -3,11 +3,11 @@ package scalan.plugin
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
 
-/** The component finds functions. */
-class TraverseComponent(val global: Global) extends PluginComponent {
+/** The component finds annotations. */
+class TraverseAnnot(val global: Global) extends PluginComponent {
   import global._
 
-  val phaseName: String = "scalan-fun"
+  val phaseName: String = "scalan-annot"
   val runsAfter = List[String]("parser")
   override val runsRightAfter: Option[String] = Some("parser")
 
