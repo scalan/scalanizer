@@ -30,7 +30,7 @@ object ScalanPlugin {
   /** Yields the list of Components to be executed in this plugin */
   def components(global: Global) = {
     List(
-      new HelloComponent(global),
+      //new HelloComponent(global),
       new TraverseComponent(global)
     )
   }
