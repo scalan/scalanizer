@@ -23,10 +23,10 @@ class AddAnnot(val global: Global) extends PluginComponent with Transform  {
           name: TermName,
           impl: Template
         ) =>
-          print ("Bingo")
-          val annotName1: Name = newTypeName ("hello")
-          val annotContr1: Name = newTermName ("<init>")
-          val helloAnnot = Apply(Select(New(Ident(annotName1)), annotContr1), List[Tree]())
+          print ("Adding of the annotation: hello to " + name)
+          val annotName: Name = newTypeName ("hello")
+          val annotContr: Name = newTermName ("<init>")
+          val helloAnnot = Apply(Select(New(Ident(annotName)), annotContr), List[Tree]())
 
           val res = PackageDef (
             pid,
