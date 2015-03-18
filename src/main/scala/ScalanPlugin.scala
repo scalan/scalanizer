@@ -31,7 +31,8 @@ object ScalanPlugin {
   def components(global: Global) = {
     List(
       //new HelloComponent(global),
-      new TraverseAnnot(global)
+      //new TraverseAnnot(global)
+      new AddAnnot(global)
     )
   }
 }
