@@ -32,8 +32,9 @@ object ScalanPlugin {
     List(
       //new HelloComponent(global),
       //new TraverseAnnot(global)
-      //new AddAnnot(global)
-      new ScalanImport(global)
+      new ScalanImport(global),
+      new AddAnnot(global),
+      new Printer(global)
     )
   }
 }

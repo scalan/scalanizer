@@ -30,7 +30,7 @@ class ScalanImport(val global: Global) extends PluginComponent with Transform  {
             q"trait SegsDslExp extends impl.SegsExp"
           )
           val newstats = imports ++ stats ++ traits
-          print(newstats)
+
           PackageDef(segs, newstats)
         case _ => tree
       }

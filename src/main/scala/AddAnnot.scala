@@ -8,41 +8,80 @@ import scala.tools.nsc.transform.Transform
 class AddAnnot(val global: Global) extends PluginComponent with Transform  {
   import global._
 
-  val phaseName: String = "scalan-add-annot"
+  val phaseName: String = "scalan-annotation"
 
-  val runsAfter = List[String]("parser")
-  override val runsRightAfter: Option[String] = Some("parser")
+  val runsAfter = List[String]("scalan-import")
+  override val runsRightAfter: Option[String] = Some("scalan-import")
 
   def newTransformer(unit: CompilationUnit) = new AnnotTransformer
 
   class AnnotTransformer extends Transformer {
-    override def transform(tree: Tree): Tree = tree match {
-      case PackageDef(pid: RefTree, stats: List[Tree]) => stats.head match {
-        case ModuleDef(
-          Modifiers(flags: Long, privateWithin: Name, annotations: List[Tree]),
-          name: TermName,
-          impl: Template
-        ) =>
-          print ("Adding of the annotation: hello to " + name)
-          val annotName: Name = newTypeName ("hello")
-          val annotContr: Name = newTermName ("<init>")
-          val helloAnnot = Apply(Select(New(Ident(annotName)), annotContr), List[Tree]())
+    def addAnnotation(mods: Modifiers, name: String): Modifiers = {
+      val annotName: Name = newTypeName(name)
+      val annotContr: Name = newTermName ("<init>")
+      val annot = Apply(Select(New(Ident(annotName)), annotContr), List[Tree]())
 
-          val res = PackageDef (
-            pid,
-            List[Tree] (
-              ModuleDef (
-                Modifiers (
-                  flags, privateWithin,
-                  annotations ++ List[Tree] (helloAnnot)
-                ),
-                name, impl
-              )
-            )
-          )
-          res
-        case _ => tree
-      }
+      Modifiers(mods.flags, mods.privateWithin, mods.annotations ++ List[Tree](annot))
+    }
+
+    def addAbstract(mods: Modifiers): Modifiers = {
+      Modifiers(mods.flags | scala.reflect.internal.ModifierFlags.ABSTRACT, mods.privateWithin, mods.annotations)
+    }
+
+    def annotateCakeSlice(stats: List[Tree]): List[Tree] = {
+      stats.map{(stat: Tree) => stat match {
+        case q"""$mods trait Segment[..$tparams]
+                    extends { ..$earlydefns } with ..$parents
+                    { $self => ..$stats }
+                 """ =>
+          val newmods = addAnnotation(mods, "CommonUDT")
+          //print("Adding of @CommonUDT to Segment")
+          q"""$newmods trait Segment[..$tparams]
+                 extends { ..$earlydefns } with ..$parents
+                 { $self => ..$stats }
+             """
+        case q"""$mods class Interval[..$tparams] $ctorMods(...$paramss)
+                    extends { ..$earlydefns } with ..$parents
+                    { $self => ..$stats }
+                 """ =>
+          val newmods = addAnnotation(addAbstract(mods), "DefaultUDT")
+          //print("Adding of @DefaultUDT to Interval")
+          q"""$newmods class Interval[..$tparams] $ctorMods(...$paramss)
+                extends { ..$earlydefns } with ..$parents
+                { $self => ..$stats }
+             """
+        case q"""$mods class $tpname[..$tparams] $ctorMods(...$paramss)
+                    extends { ..$earlydefns } with ..$parents
+                    { $self => ..$stats }
+                 """ =>
+          //print("Adding of @UDT to " + tpname)
+          val newmods = addAnnotation(addAbstract(mods), "UDT")
+          q"""$newmods class $tpname[..$tparams] $ctorMods(...$paramss)
+                extends { ..$earlydefns } with ..$parents
+                { $self => ..$stats }
+             """
+        case _ => stat
+      }}
+    }
+
+    override def transform(tree: Tree): Tree = tree match {
+      case PackageDef(segs @ Ident(TermName("segs")), pkgstats: List[Tree]) =>
+        val newstats = pkgstats.map(stat => stat match {
+          case q"""$mods trait Segments[..$tparams]
+                    extends { ..$earlydefns } with ..$parents
+                    { $self => ..$stats }
+                 """ =>
+            val newmods = addAnnotation(mods, "CakeSlice")
+            val newstats = annotateCakeSlice(stats)
+            //print("Adding of @CakeSlice to Segments")
+            q"""$newmods trait Segments[..$tparams]
+                 extends { ..$earlydefns } with ..$parents
+                 { $self => ..$newstats }
+             """
+          case _ => stat
+        })
+
+        PackageDef(segs, newstats)
       case _ => tree
     }
   }
