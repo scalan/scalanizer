@@ -13,7 +13,8 @@ class Printer(val global: Global) extends PluginComponent {
 
   def newPhase(prev: Phase) = new StdPhase(prev) {
     def apply(unit: CompilationUnit) {
-      print(unit.body)
+      if (unit.source.file.name == "Segs.scala")
+        print(unit.body)
     }
   }
 }
