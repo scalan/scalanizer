@@ -5,7 +5,7 @@ import AssemblyKeys._
 
 object ScalanBuild extends Build {
   lazy val sharedSettings = Defaults.coreDefaultSettings ++ Seq(
-    scalaVersion := "2.10.4",
+    scalaVersion := "2.11.6",
     crossVersion := CrossVersion.full,
     version := "0.0.1",
     organization := "com.huawei"
