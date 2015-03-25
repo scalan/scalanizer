@@ -30,13 +30,13 @@ class AddAnnot(val global: Global) extends PluginComponent with Transform  {
 
     def annotateCakeSlice(stats: List[Tree]): List[Tree] = {
       stats.map{(stat: Tree) => stat match {
-        case q"""$mods trait Segment[..$tparams]
+        case q"""$mods trait Segm[..$tparams]
                     extends { ..$earlydefns } with ..$parents
                     { $self => ..$stats }
                  """ =>
           val newmods = addAnnotation(mods, "CommonUDT")
-          //print("Adding of @CommonUDT to Segment")
-          q"""$newmods trait Segment[..$tparams]
+          //print("Adding of @CommonUDT to Segm")
+          q"""$newmods trait Segm[..$tparams]
                  extends { ..$earlydefns } with ..$parents
                  { $self => ..$stats }
              """
@@ -65,16 +65,16 @@ class AddAnnot(val global: Global) extends PluginComponent with Transform  {
     }
 
     override def transform(tree: Tree): Tree = tree match {
-      case PackageDef(segs @ Ident(TermName("segs")), pkgstats: List[Tree]) =>
+      case PackageDef(segs @ Ident(TermName("segms")), pkgstats: List[Tree]) =>
         val newstats = pkgstats.map(stat => stat match {
-          case q"""$mods trait Segments[..$tparams]
+          case q"""$mods trait Segms[..$tparams]
                     extends { ..$earlydefns } with ..$parents
                     { $self => ..$stats }
                  """ =>
             val newmods = addAnnotation(mods, "CakeSlice")
             val newstats = annotateCakeSlice(stats)
-            //print("Adding of @CakeSlice to Segments")
-            q"""$newmods trait Segments[..$tparams]
+            //print("Adding of @CakeSlice to Segms")
+            q"""$newmods trait Segms[..$tparams]
                  extends { ..$earlydefns } with ..$parents
                  { $self => ..$newstats }
              """

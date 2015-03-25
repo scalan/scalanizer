@@ -19,15 +19,15 @@ class ScalanImport(val global: Global) extends PluginComponent with Transform  {
   class ScalanImporter extends Transformer {
     override def transform(tree: Tree): Tree = {
       tree match {
-        case PackageDef(segs @ Ident(TermName("segs")), stats: List[Tree]) =>
+        case PackageDef(segs @ Ident(TermName("segms")), stats: List[Tree]) =>
           val imports = List[Tree](
             q"import scalan._",
             q"import scalan.paradise._"
           )
           val traits = List[Tree](
-            q"trait SegsDsl extends impl.SegsAbs",
-            q"trait SegsDslSeq extends impl.SegsSeq",
-            q"trait SegsDslExp extends impl.SegsExp"
+            q"trait SegmsDsl extends impl.SegmsAbs",
+            q"trait SegmsDslSeq extends impl.SegmsSeq",
+            q"trait SegmsDslExp extends impl.SegmsExp"
           )
           val newstats = imports ++ stats ++ traits
 
