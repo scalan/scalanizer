@@ -14,9 +14,13 @@ class ScalanImport(val global: Global) extends PluginComponent with Transform  {
   val runsAfter = List[String]("parser")
   override val runsRightAfter: Option[String] = Some("parser")
 
-  def newTransformer(unit: CompilationUnit) = new ScalanImporter
+  def newTransformer(unit: CompilationUnit) = {
+    if (unit.source.file.name == "Segms.scala")
+      new ScalanImporter(unit.source.file.name)
+    else noopTransformer
+  }
 
-  class ScalanImporter extends Transformer {
+  class ScalanImporter(unitName: String) extends Transformer {
     override def transform(tree: Tree): Tree = {
       tree match {
         case PackageDef(segs @ Ident(TermName("segms")), stats: List[Tree]) =>
