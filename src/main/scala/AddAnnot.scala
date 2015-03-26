@@ -8,7 +8,7 @@ import scala.tools.nsc.transform.Transform
 class AddAnnot(val global: Global) extends PluginComponent with Transform  {
   import global._
 
-  val phaseName: String = "scalan-annotation"
+  val phaseName: String = "scalan-annot"
   override def description: String = "Adding of annotations according to configuration"
 
   val runsAfter = List[String]("scalan-import")

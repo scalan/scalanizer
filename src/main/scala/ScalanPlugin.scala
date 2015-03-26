@@ -16,7 +16,8 @@ class ScalanPlugin(val global: Global) extends Plugin {
   /** Pluging-specific options without -P:scalan:  */
   override def processOptions(options: List[String], error: String => Unit) {
     options foreach {
-      case "debug" => println("Debug is enabled.")
+      case "save-boilerplate" => println("Save META boilerplate as source files.")
+      case "read-boilerplate" => println("Read META boilerplate from source files.")
       case option => error("Option not understood: " + option)
     }
   }
