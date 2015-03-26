@@ -10,6 +10,7 @@ class ScalanImport(val global: Global) extends PluginComponent with Transform  {
   import global._
 
   val phaseName: String = "scalan-import"
+  override def description: String = "Importing of packages needed by Scalan"
 
   val runsAfter = List[String]("parser")
   override val runsRightAfter: Option[String] = Some("parser")

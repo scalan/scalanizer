@@ -3,11 +3,13 @@ package scalan.plugin
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
 
-/** The component finds annotations. */
+/** The component finds specific syntactic constructions. */
 class TraverseAnnot(val global: Global) extends PluginComponent {
   import global._
 
-  val phaseName: String = "scalan-annot"
+  val phaseName: String = "scalan-finder"
+  override def description: String = "Find specific sub-tree in AST"
+
   val runsAfter = List[String]("parser")
   override val runsRightAfter: Option[String] = Some("parser")
 

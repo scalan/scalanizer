@@ -9,6 +9,7 @@ class AddAnnot(val global: Global) extends PluginComponent with Transform  {
   import global._
 
   val phaseName: String = "scalan-annotation"
+  override def description: String = "Adding of annotations according to configuration"
 
   val runsAfter = List[String]("scalan-import")
   override val runsRightAfter: Option[String] = Some("scalan-import")
