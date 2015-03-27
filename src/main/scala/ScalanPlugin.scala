@@ -28,14 +28,16 @@ class ScalanPlugin(val global: Global) extends Plugin {
 }
 
 object ScalanPlugin {
+  /** Mapping of CakeSlice to user's extension traits */
+  val emap = scala.collection.mutable.Map[String, Set[String]]()
+
   /** Yields the list of Components to be executed in this plugin */
   def components(global: Global) = {
     List(
-      //new HelloComponent(global),
-      //new TraverseAnnot(global)
+      //new Printer(global),
       new ScalanImport(global),
-      new AddAnnot(global)
-      //new Printer(global)
+      new AddAnnot(global, emap),
+      new DslExtension(global, emap)
     )
   }
 }

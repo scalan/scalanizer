@@ -29,12 +29,7 @@ class ScalanImport(val global: Global) extends PluginComponent with Transform  {
             q"import scalan._",
             q"import scalan.paradise._"
           )
-          val traits = List[Tree](
-            q"trait SegmsDsl extends impl.SegmsAbs",
-            q"trait SegmsDslSeq extends impl.SegmsSeq",
-            q"trait SegmsDslExp extends impl.SegmsExp"
-          )
-          val newstats = imports ++ stats ++ traits
+          val newstats = imports ++ stats// ++ traits
 
           PackageDef(segs, newstats)
         case _ => tree

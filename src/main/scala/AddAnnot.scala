@@ -3,9 +3,11 @@ package scalan.plugin
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
 import scala.tools.nsc.transform.Transform
+import scala.collection.mutable.Map
 
 /** The class adds annotations to objects. */
-class AddAnnot(val global: Global) extends PluginComponent with Transform  {
+class AddAnnot(val global: Global, emap: Map[String, Set[String]])
+  extends PluginComponent with Transform  {
   import global._
 
   val phaseName: String = "scalan-annot"
@@ -73,6 +75,8 @@ class AddAnnot(val global: Global) extends PluginComponent with Transform  {
                     { $self => ..$stats }
                  """ =>
             val newmods = addAnnotation(mods, "CakeSlice")
+            //print("Adding of SegmsDsl, SegmsDslSeq and SegmsDslExp to Map")
+            emap("Segms") = Set("SegmsDsl", "SegmsDslSeq", "SegmsDslExp")
             val newstats = annotateCakeSlice(stats)
             //print("Adding of @CakeSlice to Segms")
             q"""$newmods trait Segms[..$tparams]
