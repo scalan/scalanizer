@@ -13,8 +13,8 @@ class DslExtension(val global: Global, emap: Map[String, Set[String]])
   val phaseName: String = "scalan-ext"
   override def description: String = "Adding of DSL extensions"
 
-  val runsAfter = List[String]("scalan-annot")
-  override val runsRightAfter: Option[String] = Some("scalan-annot")
+  val runsAfter = List[String]("scalan-check")
+  override val runsRightAfter: Option[String] = Some("scalan-check")
 
   def newTransformer(unit: CompilationUnit) = new DslExtender
 
@@ -24,13 +24,15 @@ class DslExtension(val global: Global, emap: Map[String, Set[String]])
       case _ => ""
     }
 
-    def getTraitTrees(names: Option[Set[String]]): List[Tree] = {
-      //print("Bingo")
-      List[Tree](
-        q"trait SegmsDsl extends impl.SegmsAbs",
-        q"trait SegmsDslSeq extends impl.SegmsSeq",
-        q"trait SegmsDslExp extends impl.SegmsExp"
-      )
+    def getTraitTrees(names: Option[Set[String]]): List[Tree] = names match {
+      case None => List[Tree]()
+      case Some(set) if set.isEmpty => List[Tree]()
+      case Some(_) => //print("Bingo")
+        List[Tree](
+          q"trait SegmsDsl extends impl.SegmsAbs",
+          q"trait SegmsDslSeq extends impl.SegmsSeq",
+          q"trait SegmsDslExp extends impl.SegmsExp"
+        )
     }
 
     def isCakeSlice(mods: Modifiers): Boolean = {

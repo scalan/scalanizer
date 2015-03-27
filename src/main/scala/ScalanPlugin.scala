@@ -37,6 +37,7 @@ object ScalanPlugin {
       //new Printer(global),
       new ScalanImport(global),
       new AddAnnot(global, emap),
+      new CheckExtension(global, emap),
       new DslExtension(global, emap)
     )
   }

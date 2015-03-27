@@ -10,8 +10,8 @@ class Printer(val global: Global) extends PluginComponent {
   val phaseName: String = "scalan-print"
   override def description: String = "Print AST of compilation units"
 
-  val runsAfter = List[String]("scalan-annotation")
-  override val runsRightAfter: Option[String] = Some("scalan-annotation")
+  val runsAfter = List[String]("scalan-annot")
+  override val runsRightAfter: Option[String] = Some("scalan-annot")
 
   def newPhase(prev: Phase) = new StdPhase(prev) {
     def apply(unit: CompilationUnit) {
