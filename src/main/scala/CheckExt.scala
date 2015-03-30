@@ -5,7 +5,7 @@ import scala.tools.nsc.plugins.PluginComponent
 import scala.collection.mutable.Map
 
 /** The component searches user's extensions traits */
-class CheckExtension(val global: Global, emap: Map[String, Set[String]]) extends PluginComponent {
+class CheckExt(val global: Global, emap: Map[String, Set[String]]) extends PluginComponent {
   import global._
 
   val phaseName: String = "scalan-check"

@@ -6,7 +6,7 @@ import scala.tools.nsc.transform.Transform
 import scala.collection.mutable.Map
 
 /** The class adds default extensions */
-class DslExtension(val global: Global, emap: Map[String, Set[String]])
+class AddExt(val global: Global, emap: Map[String, Set[String]])
   extends PluginComponent with Transform  {
   import global._
 

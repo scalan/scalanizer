@@ -16,29 +16,33 @@ class ScalanPlugin(val global: Global) extends Plugin {
   /** Pluging-specific options without -P:scalan:  */
   override def processOptions(options: List[String], error: String => Unit) {
     options foreach {
-      case "save-boilerplate" => println("Save META boilerplate as source files.")
-      case "read-boilerplate" => println("Read META boilerplate from source files.")
+      case "save-meta" => ScalanPlugin.saveMeta = true
+      case "read-meta" => ScalanPlugin.readMeta = true
       case option => error("Option not understood: " + option)
     }
   }
 
   /** A description of the plugin's options */
   override val optionsHelp = Some(
-    "  -P:"+ name +":debug     output debug information")
+    "  -P:"+ name +":save-meta     Save META boilerplate to source files.\n"+
+    "  -P:"+ name +":read-meta     Read META boilerplate from source files.\n")
 }
 
 object ScalanPlugin {
+  var readMeta: Boolean = false
+  var saveMeta: Boolean = false
+
   /** Mapping of CakeSlice to user's extension traits */
   val emap = scala.collection.mutable.Map[String, Set[String]]()
 
   /** Yields the list of Components to be executed in this plugin */
   def components(global: Global) = {
     List(
-      //new Printer(global),
       new ScalanImport(global),
       new AddAnnot(global, emap),
-      new CheckExtension(global, emap),
-      new DslExtension(global, emap)
+      new CheckExt(global, emap),
+      new AddExt(global, emap),
+      new Printer(global)
     )
   }
 }
