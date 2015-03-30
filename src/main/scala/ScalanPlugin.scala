@@ -37,12 +37,17 @@ object ScalanPlugin {
 
   /** Yields the list of Components to be executed in this plugin */
   def components(global: Global) = {
-    List(
-      new ScalanImport(global),
-      new AddAnnot(global, emap),
-      new CheckExt(global, emap),
-      new AddExt(global, emap),
-      new Print(global)
+    val result = scala.collection.mutable.ListBuffer(
+      new ScalanImport(global)
+      ,new AddAnnot(global, emap)
+      ,new CheckExt(global, emap)
+      ,new AddExt(global, emap)
+      //,new Print(global)
     )
+
+    if (readMeta)
+      result += new ReadMeta(global)
+
+    result.toList
   }
 }
