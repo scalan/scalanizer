@@ -42,7 +42,7 @@ object ScalanPlugin {
       new AddAnnot(global, emap),
       new CheckExt(global, emap),
       new AddExt(global, emap),
-      new Printer(global)
+      new Print(global)
     )
   }
 }

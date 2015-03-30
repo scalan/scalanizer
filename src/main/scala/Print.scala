@@ -4,7 +4,7 @@ import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
 
 /** The component outputs the tree of compilation unit. */
-class Printer(val global: Global) extends PluginComponent {
+class Print(val global: Global) extends PluginComponent {
   import global._
 
   val phaseName: String = "scalan-print"
