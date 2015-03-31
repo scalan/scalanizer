@@ -15,8 +15,22 @@ class Print(val global: Global) extends PluginComponent {
 
   def newPhase(prev: Phase) = new StdPhase(prev) {
     def apply(unit: CompilationUnit) {
-      if (unit.source.file.name == "Segms.scala")
-        print(showCode(unit.body))
+      if (unit.source.file.name == "Segms.scala") {
+
+        val allValNames = new Traverser {
+          var valNames = Set.empty[String]
+          override def traverse(tree: Tree) = tree match {
+            case ValDef(_, name,_ ,_) => valNames += name.toString
+            case _ => super.traverse(tree)
+          }
+          def apply(tree: Tree) = {
+            traverse(tree)
+            valNames
+          }
+        }.apply(unit.body)
+
+        print(allValNames)
+      }
     }
   }
 }
