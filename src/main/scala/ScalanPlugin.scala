@@ -3,10 +3,11 @@ package scalan.plugin
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.{PluginComponent, Plugin}
 
-object ScalanPluginConfig {
+object ScalanConfig {
   var saveMeta: Boolean = false
   var readMeta: Boolean = false
   var debug: Boolean = false
+  val files = List[String]("Segms.scala")
 }
 
 class ScalanPluginComponent(val global: Global) extends PluginComponent {
@@ -20,7 +21,13 @@ class ScalanPluginComponent(val global: Global) extends PluginComponent {
 
   def newPhase(prev: Phase) = new StdPhase(prev) {
     def apply(unit: CompilationUnit): Unit = {
+      if (ScalanConfig.files.contains(unit.source.file.name)) {
+        //val scalanAST = ScalanAST(unit.body)
+        /** Transformations of Scalan AST */
+        /* ... */
 
+        //unit.body = scalanAST.toScalaAST
+      }
     }
   }
 }
@@ -38,9 +45,9 @@ class ScalanPlugin(val global: Global) extends Plugin {
   /** Pluging-specific options without -P:scalan:  */
   override def processOptions(options: List[String], error: String => Unit) {
     options foreach {
-      case "save-meta" => ScalanPluginConfig.saveMeta = true
-      case "read-meta" => ScalanPluginConfig.readMeta = true
-      case "debug"     => ScalanPluginConfig.debug = true
+      case "save-meta" => ScalanConfig.saveMeta = true
+      case "read-meta" => ScalanConfig.readMeta = true
+      case "debug"     => ScalanConfig.debug = true
       case option => error("Option not understood: " + option)
     }
   }
