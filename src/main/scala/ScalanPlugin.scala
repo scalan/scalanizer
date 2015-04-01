@@ -7,7 +7,7 @@ object ScalanConfig {
   var saveMeta: Boolean = false
   var readMeta: Boolean = false
   var debug: Boolean = false
-  val files = List[String]("Segms.scala")
+  val files = List[String]("Segments.scala")
 }
 
 class ScalanPluginComponent(val global: Global) extends PluginComponent with ScalanParsers {
@@ -23,11 +23,11 @@ class ScalanPluginComponent(val global: Global) extends PluginComponent with Sca
   def newPhase(prev: Phase) = new StdPhase(prev) {
     def apply(unit: CompilationUnit): Unit = {
       if (ScalanConfig.files.contains(unit.source.file.name)) {
-        //val scalanAst = ScalanAst(unit.body)
+        val scalanAst = parse(unit.body)
         /** Transformations of Scalan AST */
         /* ... */
-
-        //unit.body = scalanAst.toScalaAst
+        printAst(scalanAst)
+        //unit.body = genScalaAst(scalanAst)
       }
     }
   }

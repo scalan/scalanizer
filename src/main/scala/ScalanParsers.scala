@@ -15,10 +15,11 @@ trait ScalanParsers extends ScalanAst {
   //settings.embeddedDefaults(getClass.getClassLoader)
   //settings.usejavacp.value = true
   //val reporter = new StoreReporter
-  val compiler: Global /*= new Global(settings, reporter)*/
+  //val compiler: Global = new Global(settings, reporter)
+  val global: Global
 
-  import compiler._
-  implicit def nameToString(name: compiler.Name): String = name.toString
+  import global._
+  implicit def nameToString(name: Name): String = name.toString
 
   implicit class OptionListOps[A](opt: Option[List[A]]) {
     def flatList: List[A] = opt.toList.flatten
@@ -49,6 +50,13 @@ trait ScalanParsers extends ScalanAst {
     val pos = tree.pos
     val msg = s"Unhandled case in ${positionString(tree)}:\nAST: ${showRaw(tree)}\n\nCode for AST: $tree"
     throw new IllegalStateException(msg)
+  }
+
+  def parse(tree: Tree) = tree match {
+    case pd: PackageDef =>
+      entityModule(pd)
+    case tree =>
+      throw new Exception(s"Unexpected Scala tree")
   }
 
   //def config: CodegenConfig

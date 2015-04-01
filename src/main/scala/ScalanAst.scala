@@ -369,4 +369,12 @@ trait ScalanAst {
       SEntityModuleDef(packageName, imports, moduleName, entityRepSynonym, entity, traits, classes, methods, moduleTrait.selfType)
     }
   }
+
+  def printAst(ast: SEntityModuleDef): Unit = {
+    print(
+     s"""
+        | Package name: ${ast.packageName}
+        | Module name: ${ast.name}
+      """)
+  }
 }
