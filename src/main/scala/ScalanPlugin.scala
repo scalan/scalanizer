@@ -22,11 +22,11 @@ class ScalanPluginComponent(val global: Global) extends PluginComponent {
   def newPhase(prev: Phase) = new StdPhase(prev) {
     def apply(unit: CompilationUnit): Unit = {
       if (ScalanConfig.files.contains(unit.source.file.name)) {
-        //val scalanAST = ScalanAST(unit.body)
+        //val scalanAst = ScalanAst(unit.body)
         /** Transformations of Scalan AST */
         /* ... */
 
-        //unit.body = scalanAST.toScalaAST
+        //unit.body = scalanAst.toScalaAst
       }
     }
   }
