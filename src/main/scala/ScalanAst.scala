@@ -371,10 +371,15 @@ trait ScalanAst {
   }
 
   def printAst(ast: SEntityModuleDef): Unit = {
+    val entityNames = ast.entities.map(_.name).mkString(",")
+    val concreteClassNames = ast.concreteSClasses.map(_.name).mkString(",")
+
     print(
      s"""
         | Package name: ${ast.packageName}
         | Module name: ${ast.name}
+        | Entity: $entityNames
+        | Concrete Classes: $concreteClassNames
       """)
   }
 }
