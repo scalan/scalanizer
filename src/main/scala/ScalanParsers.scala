@@ -3,9 +3,9 @@ package scalan.plugin
 //import java.io.File
 
 //import scala.reflect.{ClassTag,classTag}
-import scala.tools.nsc.interactive.Global
-import scala.tools.nsc.Settings
-import scala.tools.nsc.reporters.StoreReporter
+import scala.tools.nsc._
+//import scala.tools.nsc.Settings
+//import scala.tools.nsc.reporters.StoreReporter
 import scala.language.implicitConversions
 import scala.reflect.internal.util.RangePosition
 import scala.reflect.internal.util.OffsetPosition

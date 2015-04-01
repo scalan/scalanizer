@@ -10,8 +10,9 @@ object ScalanConfig {
   val files = List[String]("Segms.scala")
 }
 
-class ScalanPluginComponent(val global: Global) extends PluginComponent {
+class ScalanPluginComponent(val global: Global) extends PluginComponent with ScalanParsers {
   import global._
+  val compiler: Global = global
 
   val phaseName: String = "scalan"
   override def description: String = "Code virtualization and specialization"
