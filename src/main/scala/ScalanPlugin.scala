@@ -7,10 +7,13 @@ object ScalanConfig {
   var saveMeta: Boolean = false
   var readMeta: Boolean = false
   var debug: Boolean = false
-  val files = List[String]("Segms.scala")
+  val files = List[String]("Segments.scala")
 }
 
-class ScalanPluginComponent(val global: Global) extends PluginComponent with ScalanParsers {
+trait ScalanPluginCake extends ScalanParsers with ScalanUtils
+
+class ScalanPluginComponent(val global: Global) extends PluginComponent
+with ScalanPluginCake { self: ScalanPluginCake =>
   import global._
   val compiler: Global = global
 
@@ -25,10 +28,11 @@ class ScalanPluginComponent(val global: Global) extends PluginComponent with Sca
       val unitName = unit.source.file.name
 
       if (ScalanConfig.files.contains(unitName)) try {
-        val scalanAst = parse(unit.body)
+        val ast = parse(unit.body)
         /** Transformations of Scalan AST */
-        /* ... */
-        printAst(scalanAst)
+        val updatedAst = addImports(ast)
+
+        print(updatedAst)
         //unit.body = genScalaAst(scalanAst)
       } catch {
         case e: Exception => print(s"Error: failed to parse ${unitName} due to " + e)
