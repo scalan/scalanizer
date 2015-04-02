@@ -30,7 +30,7 @@ with ScalanPluginCake { self: ScalanPluginCake =>
       if (ScalanConfig.files.contains(unitName)) try {
         val ast = parse(unit.body)
         /** Transformations of Scalan AST */
-        val updatedAst = addImports(ast)
+        val updatedAst = repSynonym(addImports(ast))
 
         print(updatedAst)
         //unit.body = genScalaAst(scalanAst)
