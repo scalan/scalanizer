@@ -53,23 +53,39 @@ trait ScalanUtils { self: ScalanPluginCake =>
     module.copy(methods = newMethods)
   }
 
+  def createCompanion(baseName: String) = STraitDef(
+    name = baseName + "Companion",
+    tpeArgs = List(),
+    ancestors = List(),
+    body = List(),
+    selfType = None,
+    companion = None
+  )
+
   /** Checks that the entity has a companion. If the entity doesn't have it
     * then the method adds the companion. */
   def checkEntityCompanion(module: SEntityModuleDef) = {
     val entity = module.entityOps
     val newCompanion = entity.companion match {
       case c @ Some(_) => c
-      case None => Some(STraitDef(
-        name = entity.name + "Companion",
-        tpeArgs = List(),
-        ancestors = List(),
-        body = List(),
-        selfType = None,
-        companion = None
-      ))
+      case None => Some(createCompanion(entity.name))
     }
     val newEntity = entity.copy(companion = newCompanion)
 
     module.copy(entityOps = newEntity, entities = List(newEntity))
+  }
+
+  /** Checks that concrete classes have their companions. */
+  def checkClassCompanion(module: SEntityModuleDef) = {
+    val newClasses = module.concreteSClasses.map{ clazz =>
+      val newCompanion = clazz.companion match {
+        case c @ Some(_) => c
+        case None => Some(createCompanion(clazz.name))
+      }
+
+      clazz.copy(companion = newCompanion)
+    }
+
+    module.copy(concreteSClasses = newClasses)
   }
 }
