@@ -7,10 +7,22 @@ object ScalanConfig {
   var saveMeta: Boolean = false
   var readMeta: Boolean = false
   var debug: Boolean = false
-  val files = List[String]("Segments.scala")
+  val files = List[String]("Segms.scala")
+  val baseContextTrait = "ScalanDsl"
+  val seqContextTrait = "ScalanSeq"
+  val stagedContextTrait = "ScalanExp"
+  val extraImports = List(
+    "scala.reflect.runtime.universe._",
+    "scalan.common.Default")
+  val entityTypeSynonyms = Map[String, String](
+    "RepSegment" -> "Segment",
+    "RepSegm" -> "Segm"
+  )
 }
 
 trait ScalanPluginCake extends ScalanParsers with ScalanUtils
+with ScalanCodegen with ScalanAst with ScalanAstExtensions
+with SqlCompiler with SqlAST with SqlParser
 
 class ScalanPluginComponent(val global: Global) extends PluginComponent
 with ScalanPluginCake { self: ScalanPluginCake =>

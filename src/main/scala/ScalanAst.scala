@@ -61,21 +61,23 @@ trait ScalanAst {
       case STpeSum(items) => STpeSum(items map { _.applySubst(subst) })
       case _ => self
     }
-/*
-    def unRep(module: SEntityModuleDef, config: CodegenConfig) = self match {
+
+    def unRep(module: SEntityModuleDef /*, config: CodegenConfig*/): Option[STpeExpr] = self match {
       case STraitCall("Rep", Seq(t)) => Some(t)
+/*
       case STraitCall(name, args) =>
         val typeSynonyms = config.entityTypeSynonyms ++
           module.entityRepSynonym.toSeq.map(typeSyn => typeSyn.name -> module.entityOps.name).toMap
         typeSynonyms.get(name).map(unReppedName => STraitCall(unReppedName, args))
-      case _ => None
+*/
+      case t => Some(t)
     }
 
-    def isRep(module: SEntityModuleDef, config: CodegenConfig) = unRep(module, config) match {
+    def isRep(module: SEntityModuleDef/*, config: CodegenConfig*/) = unRep(module/*, config*/) match {
       case Some(_) => true
       case None => false
     }
-*/
+
     def isTupledFunc = self match {
       case STraitCall("Rep", List(STpeFunc(STpeTuple(a1 :: a2 :: tail), _))) => true
       case STpeFunc(STpeTuple(a1 :: a2 :: tail), _) => true
