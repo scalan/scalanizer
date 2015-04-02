@@ -31,7 +31,8 @@ with ScalanPluginCake { self: ScalanPluginCake =>
         val ast = parse(unit.body)
         /** Transformations of Scalan AST */
         val pipeline = scala.Function.chain(Seq(
-          addAncestors _, updateSelf _, repSynonym _, addImports _, addDefaultElem _
+          addAncestors _, updateSelf _, repSynonym _, addImports _, addDefaultElem _,
+          checkEntityCompanion _
         ))
         val newAst = pipeline(ast)
 
