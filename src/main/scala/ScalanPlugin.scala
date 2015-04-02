@@ -47,8 +47,12 @@ with ScalanPluginCake { self: ScalanPluginCake =>
           checkEntityCompanion _, checkClassCompanion _
         ))
         val newAst = pipeline(ast)
+        //print(newAst)
+        /** Boilerplate generation */
+        val entityGen = new EntityFileGenerator(newAst)
+        val implCode = entityGen.getImplFile
+        print(implCode)
 
-        print(newAst)
         //unit.body = genScalaAst(scalanAst)
       } catch {
         case e: Exception => print(s"Error: failed to parse ${unitName} due to " + e)
