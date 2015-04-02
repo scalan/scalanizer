@@ -4,7 +4,7 @@ import scala.tools.nsc._
 import scala.tools.nsc.plugins.{PluginComponent, Plugin}
 
 object ScalanConfig {
-  var saveMeta: Boolean = false
+  var saveMeta: Boolean = true
   var readMeta: Boolean = false
   var debug: Boolean = false
   val files = List[String]("Segms.scala")

@@ -792,7 +792,7 @@ trait ScalanCodegen extends ScalanParsers with SqlCompiler with ScalanAstExtensi
               val typeVars = (e.tpeArgs ++ m.tpeArgs).map(_.declaration).toSet
               val returnType = {
                 val receiverType = s"Rep[${e.name + typeArgString(e.tpeArgs.map(_.name))}]"
-                val argTypes = methodArgs.map(_.tpe.toString)
+                val argTypes = methodArgs.map("Rep[" + _.tpe.toString + "]")
                 val receiverAndArgTypes = ((if (isCompanion) Nil else List(receiverType)) ++ argTypes) match {
                   case Seq() => "Unit"
                   case Seq(single) => single
