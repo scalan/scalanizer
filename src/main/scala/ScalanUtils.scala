@@ -37,4 +37,19 @@ trait ScalanUtils { self: ScalanPluginCake =>
       components = List(STraitCall(module.name + "Dsl", List()))
     )))
   }
+
+  /** Defines a default elem for the entity */
+  def addDefaultElem(module: SEntityModuleDef) = {
+    val entityName = module.entityOps.name
+    val newMethods = SMethodDef(
+      name = "default" + entityName + "Elem",
+      tpeArgs = List[STpeArg](),
+      argSections = List[SMethodArgs](),
+      tpeRes = Some(STraitCall("Elem", List(STraitCall(entityName, List())))),
+      isImplicit = true,
+      overloadId = None
+    ) :: module.methods
+
+    module.copy(methods = newMethods)
+  }
 }
