@@ -1,5 +1,7 @@
 package scalan.plugin
 
+import java.io.File
+
 trait ScalanUtils { self: ScalanPluginCake =>
   /** Imports scalan._ and other packages needed by Scalan and further transformations. */
   def addImports(module: SEntityModuleDef) = {
@@ -87,5 +89,15 @@ trait ScalanUtils { self: ScalanPluginCake =>
     }
 
     module.copy(concreteSClasses = newClasses)
+  }
+
+  def saveImplCode(file: File, implCode: String) = {
+    val fileName = file.getName.split('.')(0)
+    val folder = file.getParentFile
+    val implFile = FileUtil.file(folder, "impl", s"${fileName}Impl.scala")
+
+    implFile.mkdirs()
+
+    FileUtil.write(implFile, implCode)
   }
 }

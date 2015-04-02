@@ -51,7 +51,9 @@ with ScalanPluginCake { self: ScalanPluginCake =>
         /** Boilerplate generation */
         val entityGen = new EntityFileGenerator(newAst)
         val implCode = entityGen.getImplFile
-        print(implCode)
+
+        if (ScalanConfig.saveMeta)
+          saveImplCode(unit.source.file.file, implCode)
 
         //unit.body = genScalaAst(scalanAst)
       } catch {
