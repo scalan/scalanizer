@@ -18,5 +18,14 @@ trait ScalanUtils { self: ScalanPluginCake =>
     )))
   }
 
-  
+  /** Extends the entiry T by Reifiable[T] */
+  def addAncestors(module: SEntityModuleDef) = {
+    val newAncestors = STraitCall(
+      name = "Reifiable",
+      tpeSExprs = List(STraitCall(module.entityOps.name, List()))
+    ) :: module.entityOps.ancestors
+    val newEntity = module.entityOps.copy(ancestors = newAncestors)
+
+    module.copy(entityOps = newEntity, entities = List(newEntity))
+  }
 }
