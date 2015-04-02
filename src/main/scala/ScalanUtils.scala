@@ -28,4 +28,13 @@ trait ScalanUtils { self: ScalanPluginCake =>
 
     module.copy(entityOps = newEntity, entities = List(newEntity))
   }
+
+  /** Puts the module to the cake. For example, trait Segments is transformed to
+    * trait Segments {self: SegmentsDsl => ... } */
+  def updateSelf(module: SEntityModuleDef) = {
+    module.copy(selfType = Some(SSelfTypeDef(
+      name = "self",
+      components = List(STraitCall(module.name + "Dsl", List()))
+    )))
+  }
 }

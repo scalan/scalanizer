@@ -30,9 +30,10 @@ with ScalanPluginCake { self: ScalanPluginCake =>
       if (ScalanConfig.files.contains(unitName)) try {
         val ast = parse(unit.body)
         /** Transformations of Scalan AST */
-        val updatedAst = addAncestors(repSynonym(addImports(ast)))
+        val updatedEntity = addAncestors(ast)
+        val newModule = updateSelf(repSynonym(addImports(updatedEntity)))
 
-        print(updatedAst)
+        print(newModule)
         //unit.body = genScalaAst(scalanAst)
       } catch {
         case e: Exception => print(s"Error: failed to parse ${unitName} due to " + e)
