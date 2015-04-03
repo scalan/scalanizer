@@ -63,8 +63,10 @@ with ScalanPluginCake { self: ScalanPluginCake =>
 
         val implCodeFile = new BatchSourceFile("<impl>", implCode)
         val implAst = newUnitParser(new CompilationUnit(implCodeFile)).parse()
+        /** Checking of user's extensions like SegmentDsl, SegmentDslSeq and SegmentDslExp */
+        val extensions = getExtensions(ast)
 
-        unit.body = combineAst(unit.body, implAst)
+        unit.body = combineAst(unit.body, implAst, extensions)
         //saveImplCode(unit.source.file.file, showCode(unit.body))
 
         unit.body
@@ -74,7 +76,7 @@ with ScalanPluginCake { self: ScalanPluginCake =>
     }
   }
 
-  def combineAst(orig: Tree, impl: Tree): Tree = {
+  def combineAst(orig: Tree, impl: Tree, exts: List[Tree]): Tree = {
     val implContent = impl match {
       case PackageDef(_, topstats) => topstats.flatMap{ _ match {
         case PackageDef(Ident(TermName("impl")), stats) => stats
@@ -91,6 +93,13 @@ with ScalanPluginCake { self: ScalanPluginCake =>
     }
 
     newTree
+  }
+
+  def getExtensions(module: SEntityModuleDef) = {
+    val entityName = module.entityOps.name
+    val suffixes = ScalanConfig.emap(entityName)
+
+    //suffixes.map{suffix => }
   }
 }
 
