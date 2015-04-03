@@ -2,6 +2,7 @@ package scalan.plugin
 
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.{PluginComponent, Plugin}
+import scala.reflect.internal.util.BatchSourceFile
 
 object ScalanConfig {
   var saveMeta: Boolean = true
@@ -54,6 +55,9 @@ with ScalanPluginCake { self: ScalanPluginCake =>
 
         if (ScalanConfig.saveMeta)
           saveImplCode(unit.source.file.file, implCode)
+
+        val implCodeFile = new BatchSourceFile("<boilerplate>", implCode)
+        print(showRaw(implCodeFile))
 
         //unit.body = genScalaAst(scalanAst)
       } catch {
