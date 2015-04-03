@@ -63,12 +63,24 @@ with ScalanPluginCake { self: ScalanPluginCake =>
         val implCodeFile = new BatchSourceFile("<impl>", implCode)
         val implAst = newUnitParser(new CompilationUnit(implCodeFile)).parse()
 
-        //print(showRaw(implAst))
-        //unit.body = genScalaAst(scalanAst)
+        unit.body = combineAst(unit.body, implAst)
       } catch {
         case e: Exception => print(s"Error: failed to parse ${unitName} due to " + e)
       }
     }
+  }
+
+  def combineAst(orig: Tree, impl: Tree): Tree = {
+    val dup = orig.duplicate
+    val body = List(dup, impl)
+    val stagedObj = q"object StagedEvaluation { ..$body }"
+/*
+    orig match {
+      case q"package $ref { ..$topstats }" => q"package $ref { ..${stagedObj :: topstats} }"
+      case _ => orig
+    }
+*/
+    orig
   }
 }
 
