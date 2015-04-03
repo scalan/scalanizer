@@ -44,11 +44,15 @@ with ScalanPluginCake { self: ScalanPluginCake =>
         val ast = parse(unit.body)
         /** Transformations of Scalan AST */
         val pipeline = scala.Function.chain(Seq(
-          addAncestors _, updateSelf _, repSynonym _, addImports _, addDefaultElem _,
+          addAncestors _,
+          updateSelf _,
+          repSynonym _,
+          addImports _,
+          addDefaultElem _,
           checkEntityCompanion _, checkClassCompanion _
         ))
         val newAst = pipeline(ast)
-        //print(newAst)
+
         /** Boilerplate generation */
         val entityGen = new EntityFileGenerator(newAst)
         val implCode = entityGen.getImplFile
@@ -56,9 +60,10 @@ with ScalanPluginCake { self: ScalanPluginCake =>
         if (ScalanConfig.saveMeta)
           saveImplCode(unit.source.file.file, implCode)
 
-        val implCodeFile = new BatchSourceFile("<boilerplate>", implCode)
-        print(showRaw(implCodeFile))
+        val implCodeFile = new BatchSourceFile("<impl>", implCode)
+        val implAst = newUnitParser(new CompilationUnit(implCodeFile)).parse()
 
+        //print(showRaw(implAst))
         //unit.body = genScalaAst(scalanAst)
       } catch {
         case e: Exception => print(s"Error: failed to parse ${unitName} due to " + e)
