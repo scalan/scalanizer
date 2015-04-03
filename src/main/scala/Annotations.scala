@@ -85,7 +85,7 @@ class Annotations(val global: Global)
         })
 
         q"object StagedEvaluation {..$newBody}"
-      case _ => tree
+      case _ => super.transform(tree)
     }
   }
 }

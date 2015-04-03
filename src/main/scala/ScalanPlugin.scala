@@ -14,7 +14,9 @@ object ScalanConfig {
   val stagedContextTrait = "ScalanExp"
   val extraImports = List(
     "scala.reflect.runtime.universe._",
-    "scalan.common.Default")
+    "scalan.common.Default",
+    "scalan.paradise._"
+  )
   val entityTypeSynonyms = Map[String, String](
     "RepSegment" -> "Segment",
     "RepSegm" -> "Segm"
@@ -69,7 +71,7 @@ with ScalanPluginCake { self: ScalanPluginCake =>
         val extensions = getExtensions(ast)
 
         unit.body = combineAst(unit.body, implAst, extensions)
-        saveImplCode(unit.source.file.file, showCode(unit.body))
+        //saveImplCode(unit.source.file.file, showCode(unit.body))
 
         unit.body
       } catch {
@@ -150,7 +152,7 @@ object ScalanPlugin {
       new CheckExtensions(global)
       ,new ScalanPluginComponent(global)
       ,new Annotations(global)
-      ,new Debug(global)
+      //,new Debug(global)
     )
 
     result.toList
