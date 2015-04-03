@@ -64,6 +64,9 @@ with ScalanPluginCake { self: ScalanPluginCake =>
         val implAst = newUnitParser(new CompilationUnit(implCodeFile)).parse()
 
         unit.body = combineAst(unit.body, implAst)
+        //saveImplCode(unit.source.file.file, showCode(unit.body))
+
+        unit.body
       } catch {
         case e: Exception => print(s"Error: failed to parse ${unitName} due to " + e)
       }
@@ -76,12 +79,16 @@ with ScalanPluginCake { self: ScalanPluginCake =>
         case PackageDef(Ident(TermName("impl")), stats) => stats
       }}
     }
-    val stagedObj = q"object StagedEvaluation {..$implContent}"
+    val origContent = orig match {
+      case PackageDef(_, topstats) => topstats
+    }
+    val body = implContent ++ origContent
+    val stagedObj = q"object StagedEvaluation {..$body}"
     val newTree = orig match {
-      case PackageDef(pkgname, stats: List[Tree]) => PackageDef(pkgname, stagedObj :: stats)
+      case PackageDef(pkgname, stats: List[Tree]) => PackageDef(pkgname, stats ++ List(stagedObj))
       case _ => orig
     }
-    //print(showRaw(newTree))
+
     newTree
   }
 
