@@ -149,6 +149,7 @@ object ScalanPlugin {
     val result = scala.collection.mutable.ListBuffer[PluginComponent](
       new CheckExtensions(global)
       ,new ScalanPluginComponent(global)
+      ,new Annotations(global)
     )
 
     result.toList
