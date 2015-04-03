@@ -19,6 +19,7 @@ object ScalanConfig {
     "RepSegment" -> "Segment",
     "RepSegm" -> "Segm"
   )
+  var emap = scala.collection.mutable.Map[String, Set[String]]()
 }
 
 trait ScalanPluginCake extends ScalanParsers with ScalanUtils
@@ -33,8 +34,8 @@ with ScalanPluginCake { self: ScalanPluginCake =>
   val phaseName: String = "scalan"
   override def description: String = "Code virtualization and specialization"
 
-  val runsAfter = List[String]("parser")
-  override val runsRightAfter: Option[String] = Some("parser")
+  val runsAfter = List[String]("scalan-check")
+  override val runsRightAfter: Option[String] = Some("scalan-check")
 
   def newPhase(prev: Phase) = new StdPhase(prev) {
     def apply(unit: CompilationUnit): Unit = {
@@ -91,7 +92,6 @@ with ScalanPluginCake { self: ScalanPluginCake =>
 
     newTree
   }
-
 }
 
 class ScalanPlugin(val global: Global) extends Plugin {
@@ -126,7 +126,8 @@ object ScalanPlugin {
   /** Yields the list of Components to be executed in this plugin */
   def components(global: Global) = {
     val result = scala.collection.mutable.ListBuffer[PluginComponent](
-      new ScalanPluginComponent(global)
+      new CheckExtensions(global)
+      ,new ScalanPluginComponent(global)
     )
 
     result.toList
