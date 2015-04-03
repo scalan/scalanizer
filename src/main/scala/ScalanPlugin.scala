@@ -19,7 +19,9 @@ object ScalanConfig {
     "RepSegment" -> "Segment",
     "RepSegm" -> "Segm"
   )
-  var emap = scala.collection.mutable.Map[String, Set[String]]()
+  var emap = scala.collection.mutable.Map(
+    "Segms" -> Set("SegmsDsl", "SegmsDslSeq", "SegmsDslExp")
+  )
 }
 
 trait ScalanPluginCake extends ScalanParsers with ScalanUtils
@@ -85,11 +87,11 @@ with ScalanPluginCake { self: ScalanPluginCake =>
     val origContent = orig match {
       case PackageDef(_, topstats) => topstats
     }
-    val body = implContent ++ origContent
+    val body = implContent ++ origContent ++ exts
     val stagedObj = q"object StagedEvaluation {..$body}"
     val newTree = orig match {
       case PackageDef(pkgname, stats: List[Tree]) =>
-        PackageDef(pkgname, stats ++ List(stagedObj) ++ exts)
+        PackageDef(pkgname, stats ++ List(stagedObj))
       case _ => orig
     }
 
@@ -97,22 +99,19 @@ with ScalanPluginCake { self: ScalanPluginCake =>
   }
 
   def getExtensions(module: SEntityModuleDef): List[Tree] = {
-    val entityName = module.entityOps.name
-    val suffixes = ScalanConfig.emap(entityName)
-    val extsWithParents = suffixes.map(_ match {
-      case s @ "Dsl" => (entityName + s, entityName + "Abs")
-      case s @ "DslSeq" => (entityName + s, entityName + "Seq")
-      case s @ "DslExp" => (entityName + s, entityName + "Exp")
-      case s @ _ => !!!("Unknown extension " + s)
-    }).toList
+    val extNames = ScalanConfig.emap(module.name)
+    val psuf = Map("Dsl" -> "Abs", "DslSeq" -> "Seq", "DslExp" -> "Exp")
+    val extsWithParents = extNames.map(extName =>
+      (extName, module.name + psuf(extName.stripPrefix(module.name)))
+    )
 
-    extsWithParents.map{pair => {
+    extsWithParents.map(pair => {
       val (extName, parentName) = pair
       val extTree = TypeName(extName)
       val parentTree = TypeName(parentName)
 
       q"trait $extTree extends $parentTree" : Tree
-    }}
+    }).toList
   }
 }
 
