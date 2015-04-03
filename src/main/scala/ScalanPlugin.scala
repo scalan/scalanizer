@@ -150,6 +150,7 @@ object ScalanPlugin {
       new CheckExtensions(global)
       ,new ScalanPluginComponent(global)
       ,new Annotations(global)
+      ,new Debug(global)
     )
 
     result.toList
