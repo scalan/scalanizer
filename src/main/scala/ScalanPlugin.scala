@@ -5,7 +5,7 @@ import scala.tools.nsc.plugins.{PluginComponent, Plugin}
 import scala.reflect.internal.util.BatchSourceFile
 
 object ScalanConfig {
-  var saveMeta: Boolean = true
+  var saveMeta: Boolean = false
   var readMeta: Boolean = false
   var debug: Boolean = false
   val files = List[String]("Segms.scala")
@@ -71,17 +71,20 @@ with ScalanPluginCake { self: ScalanPluginCake =>
   }
 
   def combineAst(orig: Tree, impl: Tree): Tree = {
-    val dup = orig.duplicate
-    val body = List(dup, impl)
-    val stagedObj = q"object StagedEvaluation { ..$body }"
-/*
-    orig match {
-      case q"package $ref { ..$topstats }" => q"package $ref { ..${stagedObj :: topstats} }"
+    val implContent = impl match {
+      case PackageDef(_, topstats) => topstats.flatMap{ _ match {
+        case PackageDef(Ident(TermName("impl")), stats) => stats
+      }}
+    }
+    val stagedObj = q"object StagedEvaluation {..$implContent}"
+    val newTree = orig match {
+      case PackageDef(pkgname, stats: List[Tree]) => PackageDef(pkgname, stagedObj :: stats)
       case _ => orig
     }
-*/
-    orig
+    //print(showRaw(newTree))
+    newTree
   }
+
 }
 
 class ScalanPlugin(val global: Global) extends Plugin {
