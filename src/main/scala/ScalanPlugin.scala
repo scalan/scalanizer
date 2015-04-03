@@ -67,7 +67,7 @@ with ScalanPluginCake { self: ScalanPluginCake =>
         val extensions = getExtensions(ast)
 
         unit.body = combineAst(unit.body, implAst, extensions)
-        //saveImplCode(unit.source.file.file, showCode(unit.body))
+        saveImplCode(unit.source.file.file, showCode(unit.body))
 
         unit.body
       } catch {
@@ -88,18 +88,31 @@ with ScalanPluginCake { self: ScalanPluginCake =>
     val body = implContent ++ origContent
     val stagedObj = q"object StagedEvaluation {..$body}"
     val newTree = orig match {
-      case PackageDef(pkgname, stats: List[Tree]) => PackageDef(pkgname, stats ++ List(stagedObj))
+      case PackageDef(pkgname, stats: List[Tree]) =>
+        PackageDef(pkgname, stats ++ List(stagedObj) ++ exts)
       case _ => orig
     }
 
     newTree
   }
 
-  def getExtensions(module: SEntityModuleDef) = {
+  def getExtensions(module: SEntityModuleDef): List[Tree] = {
     val entityName = module.entityOps.name
     val suffixes = ScalanConfig.emap(entityName)
+    val extsWithParents = suffixes.map(_ match {
+      case s @ "Dsl" => (entityName + s, entityName + "Abs")
+      case s @ "DslSeq" => (entityName + s, entityName + "Seq")
+      case s @ "DslExp" => (entityName + s, entityName + "Exp")
+      case s @ _ => !!!("Unknown extension " + s)
+    }).toList
 
-    //suffixes.map{suffix => }
+    extsWithParents.map{pair => {
+      val (extName, parentName) = pair
+      val extTree = TypeName(extName)
+      val parentTree = TypeName(parentName)
+
+      q"trait $extTree extends $parentTree" : Tree
+    }}
   }
 }
 
