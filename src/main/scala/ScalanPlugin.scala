@@ -70,13 +70,16 @@ with ScalanPluginCake { self: ScalanPluginCake =>
         /** Checking of user's extensions like SegmentDsl, SegmentDslSeq and SegmentDslExp */
         val extensions = getExtensions(ast)
 
+        /** Staged Ast is package which contains virtualized Tree + boilerplate */
         val stagedAst = getStagedAst(cakeSlice, implAst, extensions)
+
         if (ScalanConfig.save) {
           saveImplCode(unit.source.file.file, showCode(stagedAst))
         }
 
-        if (!ScalanConfig.read)
+        if (!ScalanConfig.read) {
           unit.body = combineAst(unit.body, stagedAst)
+        }
 
         unit.body
       } catch {
