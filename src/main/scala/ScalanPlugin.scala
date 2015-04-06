@@ -14,8 +14,7 @@ object ScalanConfig {
   val stagedContextTrait = "ScalanExp"
   val extraImports = List(
     "scala.reflect.runtime.universe._",
-    "scalan.common.Default",
-    "scalan.paradise._"
+    "scalan.common.Default"
   )
   val entityTypeSynonyms = Map[String, String](
     "RepSegment" -> "Segment",
