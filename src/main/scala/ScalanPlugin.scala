@@ -5,8 +5,8 @@ import scala.tools.nsc.plugins.{PluginComponent, Plugin}
 import scala.reflect.internal.util.BatchSourceFile
 
 object ScalanConfig {
-  var saveMeta: Boolean = false
-  var readMeta: Boolean = false
+  var save: Boolean = false
+  var read: Boolean = false
   var debug: Boolean = false
   val files = List[String]("Segms.scala")
   val baseContextTrait = "ScalanDsl"
@@ -61,20 +61,22 @@ with ScalanPluginCake { self: ScalanPluginCake =>
         /** Boilerplate generation */
         val entityGen = new EntityFileGenerator(newAst)
         val implCode = entityGen.getImplFile
-
-        if (ScalanConfig.saveMeta)
-          saveImplCode(unit.source.file.file, implCode)
-
         val implCodeFile = new BatchSourceFile("<impl>", implCode)
         val implAst = newUnitParser(new CompilationUnit(implCodeFile)).parse()
+
         /** Creates a duplicate of original Scala AST, wraps types by Rep[] and etc. */
         val cakeSlice = cookCakeSlice(unit.body)
 
         /** Checking of user's extensions like SegmentDsl, SegmentDslSeq and SegmentDslExp */
         val extensions = getExtensions(ast)
 
-        unit.body = combineAst(unit.body, cakeSlice, implAst, extensions)
-        //saveImplCode(unit.source.file.file, showCode(unit.body))
+        val stagedAst = getStagedAst(cakeSlice, implAst, extensions)
+        if (ScalanConfig.save) {
+          saveImplCode(unit.source.file.file, showCode(stagedAst))
+        }
+
+        if (!ScalanConfig.read)
+          unit.body = combineAst(unit.body, stagedAst)
 
         unit.body
       } catch {
@@ -83,20 +85,28 @@ with ScalanPluginCake { self: ScalanPluginCake =>
     }
   }
 
-  def combineAst(orig: Tree, cake: Tree, impl: Tree, exts: List[Tree]): Tree = {
+  def getStagedAst(cake: Tree, impl: Tree, exts: List[Tree]): Tree = {
     val implContent = impl match {
       case PackageDef(_, topstats) => topstats.flatMap{ _ match {
         case PackageDef(Ident(TermName("impl")), stats) => stats
       }}
     }
-    val cakeContent = cake match {
-      case PackageDef(_, topstats) => topstats
+    cake match {
+      case PackageDef(pkgName, cakeContent) =>
+        val body = implContent ++ cakeContent ++ exts
+        val stagedObj = q"object StagedEvaluation {..$body}"
+
+        PackageDef(pkgName, List(stagedObj))
     }
-    val body = implContent ++ cakeContent ++ exts
-    val stagedObj = q"object StagedEvaluation {..$body}"
+  }
+
+  def combineAst(orig: Tree, staged: Tree): Tree = {
+    val stagedStats = staged match {
+      case PackageDef(_, stats: List[Tree]) => stats
+    }
     val newTree = orig match {
       case PackageDef(pkgname, stats: List[Tree]) =>
-        PackageDef(pkgname, stats ++ List(stagedObj))
+        PackageDef(pkgname, stats ++ stagedStats)
       case _ => orig
     }
 
@@ -133,8 +143,8 @@ class ScalanPlugin(val global: Global) extends Plugin {
   /** Pluging-specific options without -P:scalan:  */
   override def processOptions(options: List[String], error: String => Unit) {
     options foreach {
-      case "save-meta" => ScalanConfig.saveMeta = true
-      case "read-meta" => ScalanConfig.readMeta = true
+      case "save" => ScalanConfig.save = true
+      case "read" => ScalanConfig.read = true
       case "debug"     => ScalanConfig.debug = true
       case option => error("Option not understood: " + option)
     }
@@ -142,9 +152,9 @@ class ScalanPlugin(val global: Global) extends Plugin {
 
   /** A description of the plugin's options */
   override val optionsHelp = Some(
-    "  -P:"+ name +":save-meta     Save META boilerplate to source files.\n"+
-    "  -P:"+ name +":read-meta     Read META boilerplate from source files.\n"+
-    "  -P:"+ name +":debug         Print debug information: final AST and etc.\n"
+    "  -P:"+ name +":save     Save META boilerplate and staged version to source files.\n"+
+    "  -P:"+ name +":read     Read META boilerplate and staged version from source files.\n"+
+    "  -P:"+ name +":debug    Print debug information: final AST and etc.\n"
   )
 }
 
