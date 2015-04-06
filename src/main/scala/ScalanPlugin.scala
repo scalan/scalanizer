@@ -29,6 +29,7 @@ object ScalanConfig {
 trait ScalanPluginCake extends ScalanParsers with ScalanUtils
 with ScalanCodegen with ScalanAst with ScalanAstExtensions
 with SqlCompiler with SqlAST with SqlParser
+with CakeSlice
 
 class ScalanPluginComponent(val global: Global) extends PluginComponent
 with ScalanPluginCake { self: ScalanPluginCake =>
@@ -67,10 +68,13 @@ with ScalanPluginCake { self: ScalanPluginCake =>
 
         val implCodeFile = new BatchSourceFile("<impl>", implCode)
         val implAst = newUnitParser(new CompilationUnit(implCodeFile)).parse()
+        /** Creates a duplicate of original Scala AST, wraps types by Rep[] and etc. */
+        val cakeSlice = cookCakeSlice(unit.body)
+
         /** Checking of user's extensions like SegmentDsl, SegmentDslSeq and SegmentDslExp */
         val extensions = getExtensions(ast)
 
-        unit.body = combineAst(unit.body, implAst, extensions)
+        unit.body = combineAst(cakeSlice, implAst, extensions)
         //saveImplCode(unit.source.file.file, showCode(unit.body))
 
         unit.body
@@ -151,7 +155,6 @@ object ScalanPlugin {
     val result = scala.collection.mutable.ListBuffer[PluginComponent](
       new CheckExtensions(global)
       ,new ScalanPluginComponent(global)
-      ,new Annotations(global)
       //,new Debug(global)
     )
 
