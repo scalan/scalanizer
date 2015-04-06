@@ -117,8 +117,10 @@ trait CakeSlice { self: ScalanPluginCake =>
     }
   }
 
-  def cookCakeSlice(orig: Tree): Tree = orig match {
-    case PackageDef(pkgname, topstats) => PackageDef(pkgname, topstats.map(toCake(_)))
-    case _ => orig
+  def cookCakeSlice(orig: Tree): Tree = {
+    orig.duplicate match {
+      case PackageDef(pkgname, topstats) => PackageDef(pkgname, topstats.map(toCake(_)))
+      case _ => orig
+    }
   }
 }

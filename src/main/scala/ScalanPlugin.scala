@@ -74,7 +74,7 @@ with ScalanPluginCake { self: ScalanPluginCake =>
         /** Checking of user's extensions like SegmentDsl, SegmentDslSeq and SegmentDslExp */
         val extensions = getExtensions(ast)
 
-        unit.body = combineAst(cakeSlice, implAst, extensions)
+        unit.body = combineAst(unit.body, cakeSlice, implAst, extensions)
         //saveImplCode(unit.source.file.file, showCode(unit.body))
 
         unit.body
@@ -84,16 +84,16 @@ with ScalanPluginCake { self: ScalanPluginCake =>
     }
   }
 
-  def combineAst(orig: Tree, impl: Tree, exts: List[Tree]): Tree = {
+  def combineAst(orig: Tree, cake: Tree, impl: Tree, exts: List[Tree]): Tree = {
     val implContent = impl match {
       case PackageDef(_, topstats) => topstats.flatMap{ _ match {
         case PackageDef(Ident(TermName("impl")), stats) => stats
       }}
     }
-    val origContent = orig match {
+    val cakeContent = cake match {
       case PackageDef(_, topstats) => topstats
     }
-    val body = implContent ++ origContent ++ exts
+    val body = implContent ++ cakeContent ++ exts
     val stagedObj = q"object StagedEvaluation {..$body}"
     val newTree = orig match {
       case PackageDef(pkgname, stats: List[Tree]) =>
