@@ -95,7 +95,6 @@ trait CakeSlice { self: ScalanPluginCake =>
     stats :+ defaultElem
   }
 
-
   private def toCake(tree: Tree): Tree = {
 
     tree match {

@@ -1,12 +1,14 @@
 package scalan.plugin
 
+import java.io.{ByteArrayOutputStream, ObjectOutputStream}
+
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.{PluginComponent, Plugin}
 import scala.reflect.internal.util.BatchSourceFile
 
 object ScalanConfig {
-  var save: Boolean = false
-  var read: Boolean = false
+  var save: Boolean = true
+  var read: Boolean = true
   var debug: Boolean = false
   val files = List[String]("Segms.scala")
   val baseContextTrait = "ScalanDsl"
@@ -57,6 +59,8 @@ with ScalanPluginCake { self: ScalanPluginCake =>
           checkEntityCompanion _, checkClassCompanion _
         ))
         val newAst = pipeline(ast)
+        /** Prepare Scalan AST for passing to run-time. */
+        val serialAst = serializeAst(newAst)
 
         /** Boilerplate generation */
         val entityGen = new EntityFileGenerator(newAst)
@@ -71,7 +75,7 @@ with ScalanPluginCake { self: ScalanPluginCake =>
         val extensions = getExtensions(ast)
 
         /** Staged Ast is package which contains virtualized Tree + boilerplate */
-        val stagedAst = getStagedAst(cakeSlice, implAst, extensions)
+        val stagedAst = getStagedAst(cakeSlice, implAst, extensions, serialAst)
 
         if (ScalanConfig.save) {
           saveImplCode(unit.source.file.file, showCode(stagedAst))
@@ -88,7 +92,7 @@ with ScalanPluginCake { self: ScalanPluginCake =>
     }
   }
 
-  def getStagedAst(cake: Tree, impl: Tree, exts: List[Tree]): Tree = {
+  def getStagedAst(cake: Tree, impl: Tree, exts: List[Tree], serial: Tree): Tree = {
     val implContent = impl match {
       case PackageDef(_, topstats) => topstats.flatMap{ _ match {
         case PackageDef(Ident(TermName("impl")), stats) => stats
@@ -96,7 +100,7 @@ with ScalanPluginCake { self: ScalanPluginCake =>
     }
     cake match {
       case PackageDef(pkgName, cakeContent) =>
-        val body = implContent ++ cakeContent ++ exts
+        val body = serial :: (implContent ++ cakeContent ++ exts)
         val stagedObj = q"object StagedEvaluation {..$body}"
 
         PackageDef(pkgName, List(stagedObj))
@@ -130,6 +134,17 @@ with ScalanPluginCake { self: ScalanPluginCake =>
 
       q"trait $extTree extends $parentTree" : Tree
     }).toList
+  }
+
+  def serializeAst(module: SEntityModuleDef): Tree = {
+    val bos = new ByteArrayOutputStream()
+    val objOut = new ObjectOutputStream(bos)
+
+    objOut.writeObject(module)
+    objOut.close()
+
+    val serialized = global.Literal(Constant(bos.toString))
+    q"val serial = $serialized"
   }
 }
 
