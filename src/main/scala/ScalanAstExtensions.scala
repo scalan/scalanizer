@@ -1,9 +1,11 @@
 package scalan.plugin
 
+import ScalanAst._
+
 /**
  * Created by slesarenko on 23/02/15.
  */
-trait ScalanAstExtensions extends ScalanAst {
+trait ScalanAstExtensions {
   import scalan.plugin.PrintExtensions._
 
   implicit class SMethodOrClassArgsOps(as: SMethodOrClassArgs) {

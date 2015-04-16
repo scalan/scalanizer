@@ -1,6 +1,6 @@
 package scalan.plugin
 
-trait ScalanAst {
+package object ScalanAst {
   // STpe universe --------------------------------------------------------------------------
 
   /** Type expressions */

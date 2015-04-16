@@ -1,10 +1,10 @@
 package scalan.plugin
 
 import java.io.{ByteArrayOutputStream, ObjectOutputStream}
-
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.{PluginComponent, Plugin}
 import scala.reflect.internal.util.BatchSourceFile
+import ScalanAst._
 
 object ScalanConfig {
   var save: Boolean = true
@@ -28,7 +28,7 @@ object ScalanConfig {
 }
 
 trait ScalanPluginCake extends ScalanParsers with ScalanUtils
-with ScalanCodegen with ScalanAst with ScalanAstExtensions
+with ScalanCodegen with ScalanAstExtensions
 with SqlCompiler with SqlAST with SqlParser
 with CakeSlice
 
@@ -144,7 +144,7 @@ with ScalanPluginCake { self: ScalanPluginCake =>
     objOut.close()
 
     val serialized = global.Literal(Constant(bos.toString))
-    q"val serial = $serialized"
+    q"val serializedMetaAst = $serialized"
   }
 }
 

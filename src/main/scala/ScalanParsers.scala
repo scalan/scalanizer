@@ -9,8 +9,9 @@ import scala.tools.nsc._
 import scala.language.implicitConversions
 import scala.reflect.internal.util.RangePosition
 import scala.reflect.internal.util.OffsetPosition
+import ScalanAst._
 
-trait ScalanParsers extends ScalanAst {
+trait ScalanParsers {
   //val settings = new Settings
   //settings.embeddedDefaults(getClass.getClassLoader)
   //settings.usejavacp.value = true

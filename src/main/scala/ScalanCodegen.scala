@@ -1,5 +1,7 @@
 package scalan.plugin
 
+import ScalanAst._
+
 trait ScalanCodegen extends ScalanParsers with SqlCompiler with ScalanAstExtensions { ctx: ScalanPluginCake =>
   import PrintExtensions._
 
