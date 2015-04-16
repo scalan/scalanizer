@@ -125,10 +125,9 @@ trait CakeSlice { self: ScalanPluginCake =>
       =>
         val newstats = defaultElem(module) :: stats.map(toRep _)
         val newSelf = getSelf(module)
-        val res =
-          q"""
-            trait $tpname extends Base with BaseTypes { $newSelf => ..$newstats }
-            """
+        val name = TypeName(module.name)
+
+        val res = q"trait $name extends Base with BaseTypes { $newSelf => ..$newstats }"
         //print(showCode(res))
         res
       case _ => tree
