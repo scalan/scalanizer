@@ -90,9 +90,11 @@ trait CakeSlice { self: ScalanPluginCake =>
     case _ => tree
   }
 
+  private def getTypeByName(name: String) = tq"${TypeName(name)}"
+
   private def defaultElem(module: SEntityModuleDef): Tree = {
     val entityName = module.entityOps.name
-    val entityNameType = tq"${TypeName(entityName)}"
+    val entityNameType = getTypeByName(entityName)
     val defaultClassName = module.concreteSClasses.head.name
     val defaultClass = tq"${TypeName(defaultClassName)}"
 
@@ -103,8 +105,14 @@ trait CakeSlice { self: ScalanPluginCake =>
       implicit def $methodName: $returnType = element[$defaultClass].asElem[$entityNameType]
       """
 
-    //print(showRaw(defaultElem))
     defaultElem
+  }
+
+  private def getSelf(module: SEntityModuleDef): Tree = {
+    val selfType = getTypeByName(module.name + "Dsl")
+    val res = q"val self: $selfType"
+
+    res
   }
 
   private def toCake(module: SEntityModuleDef, tree: Tree): Tree = {
@@ -116,11 +124,10 @@ trait CakeSlice { self: ScalanPluginCake =>
              """
       =>
         val newstats = defaultElem(module) :: stats.map(toRep _)
+        val newSelf = getSelf(module)
         val res =
           q"""
-            $mods trait $tpname[..$tparams]
-            extends { ..$earlydefns } with ..$parents with Base with BaseTypes
-               { self: SegmsDsl => ..$newstats }
+            trait $tpname extends Base with BaseTypes { $newSelf => ..$newstats }
             """
         //print(showCode(res))
         res
