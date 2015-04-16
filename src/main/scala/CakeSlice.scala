@@ -58,20 +58,25 @@ trait CakeSlice { self: ScalanPluginCake =>
     })
   }
 
-  def toRep(tree: Tree): Tree = tree match {
-    case q"""$mods trait $tpname[..$tparams]
+  def toRep(module: SEntityModuleDef, tree: Tree): Tree = tree match {
+    case entityTree @ q"""$mods trait $tpname[..$tparams]
                extends { ..$earlydefns } with ..$parents
                { $self => ..$stats }
-             """
-    =>
+             """ if module.entityOps.name == tpname.toString =>
+      val entityName = TypeName(module.entityOps.name)
+      val entitySelf = module.entityOps.selfType match {
+        case Some(selfDef: SSelfTypeDef) => q"val ${selfDef.name}: ${getTypeByName(selfDef.tpe)}"
+        case None => noSelfType
+      }
       val repStats = toRepStats(stats)
       val res = q"""
-            $mods trait $tpname[..$tparams]
-            extends { ..$earlydefns } with ..$parents with Reifiable[$tpname[..$tparams]]
-               { $self => ..$repStats }
+            trait $entityName extends ..$parents with Reifiable[$tpname[..$tparams]]
+               { $entitySelf => ..$repStats }
             """
-      //print(showCode(res))
+
+      //print(showRaw(res))
       res
+
     case q"""
             $mods class $tpname[..$tparams] $ctorMods(...$paramss)
             extends { ..$earlydefns } with ..$parents
@@ -85,7 +90,7 @@ trait CakeSlice { self: ScalanPluginCake =>
             extends { ..$earlydefns } with ..$parents
             { $self => ..$repStats }
             """
-      //print(showCode(res))
+      //print(showRaw(res))
       res
     case _ => tree
   }
@@ -123,7 +128,7 @@ trait CakeSlice { self: ScalanPluginCake =>
                { $self => ..$stats }
              """
       =>
-        val newstats = defaultElem(module) :: stats.map(toRep _)
+        val newstats = defaultElem(module) :: stats.map(toRep(module, _))
         val newSelf = getSelf(module)
         val name = TypeName(module.name)
 
