@@ -1,6 +1,7 @@
 package scalan.plugin
 
 import scala.tools.nsc._
+import ScalanAst._
 
 trait CakeSlice { self: ScalanPluginCake =>
   val global: Global
@@ -89,13 +90,24 @@ trait CakeSlice { self: ScalanPluginCake =>
     case _ => tree
   }
 
-  private def defaultElem(stats: List[Tree]) = {
+  private def defaultElem(module: SEntityModuleDef): Tree = {
+    val entityName = module.entityOps.name
+    val entityNameType = tq"${TypeName(entityName)}"
+    val defaultClassName = module.concreteSClasses.head.name
+    val defaultClass = tq"${TypeName(defaultClassName)}"
 
-    val defaultElem = q"implicit def defaultSegmElem: Elem[Segm] = element[Interval].asElem[Segm]"
-    stats :+ defaultElem
+    val methodName = TermName("default" + entityName + "Elem")
+    val returnType = tq"Elem[$entityNameType]"
+
+    val defaultElem = q"""
+      implicit def $methodName: $returnType = element[$defaultClass].asElem[$entityNameType]
+      """
+
+    //print(showRaw(defaultElem))
+    defaultElem
   }
 
-  private def toCake(tree: Tree): Tree = {
+  private def toCake(module: SEntityModuleDef, tree: Tree): Tree = {
 
     tree match {
       case q"""$mods trait $tpname[..$tparams]
@@ -103,7 +115,7 @@ trait CakeSlice { self: ScalanPluginCake =>
                { $self => ..$stats }
              """
       =>
-        val newstats = defaultElem(stats).map(toRep _)
+        val newstats = defaultElem(module) :: stats.map(toRep _)
         val res =
           q"""
             $mods trait $tpname[..$tparams]
@@ -116,9 +128,9 @@ trait CakeSlice { self: ScalanPluginCake =>
     }
   }
 
-  def cookCakeSlice(orig: Tree): Tree = {
+  def cookCakeSlice(module: SEntityModuleDef, orig: Tree): Tree = {
     orig.duplicate match {
-      case PackageDef(pkgname, topstats) => PackageDef(pkgname, topstats.map(toCake(_)))
+      case PackageDef(pkgname, topstats) => PackageDef(pkgname, topstats.map(toCake(module, _)))
       case _ => orig
     }
   }
