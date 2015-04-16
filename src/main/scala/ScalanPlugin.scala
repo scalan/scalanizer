@@ -100,7 +100,7 @@ with ScalanPluginCake { self: ScalanPluginCake =>
     }
     cake match {
       case PackageDef(pkgName, cakeContent) =>
-        val body = serial :: (implContent ++ cakeContent ++ exts)
+        val body = implContent ++ cakeContent ++ exts ++ List(serial)
         val stagedObj = q"object StagedEvaluation {..$body}"
 
         PackageDef(pkgName, List(stagedObj))
@@ -143,7 +143,8 @@ with ScalanPluginCake { self: ScalanPluginCake =>
     objOut.writeObject(module)
     objOut.close()
 
-    val serialized = global.Literal(Constant(bos.toString))
+    val str = javax.xml.bind.DatatypeConverter.printBase64Binary(bos.toByteArray)
+    val serialized = global.Literal(Constant(str))
     q"val serializedMetaAst = $serialized"
   }
 }
