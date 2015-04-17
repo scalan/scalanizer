@@ -64,7 +64,7 @@ trait CakeSlice { self: ScalanPluginCake =>
     parents :: ancestors.map{ancestor =>
       val tpt = TypeName(ancestor.name)
       val tpts = ancestor.tpeSExprs.map(_ match {
-        case tpe: STraitCall => getTypeByName(tpe.name)
+        case tpe: STraitCall => genTypeByName(tpe.name)
       })
 
       tq"$tpt[..$tpts]"
@@ -74,7 +74,7 @@ trait CakeSlice { self: ScalanPluginCake =>
   def genEntity(entity: STraitDef, body: List[Tree]): Tree = {
     val entityName = TypeName(entity.name)
     val entitySelf = entity.selfType match {
-      case Some(selfDef: SSelfTypeDef) => q"val ${selfDef.name}: ${getTypeByName(selfDef.tpe)}"
+      case Some(selfDef: SSelfTypeDef) => q"val ${selfDef.name}: ${genTypeByName(selfDef.tpe)}"
       case None => noSelfType
     }
     val repStats = toRepStats(body)
@@ -110,11 +110,11 @@ trait CakeSlice { self: ScalanPluginCake =>
     case _ => tree
   }
 
-  private def getTypeByName(name: String) = tq"${TypeName(name)}"
+  def genTypeByName(name: String) = tq"${TypeName(name)}"
 
-  private def defaultElem(module: SEntityModuleDef): Tree = {
+  def genDefaultElem(module: SEntityModuleDef): Tree = {
     val entityName = module.entityOps.name
-    val entityNameType = getTypeByName(entityName)
+    val entityNameType = genTypeByName(entityName)
     val defaultClassName = module.concreteSClasses.head.name
     val defaultClass = tq"${TypeName(defaultClassName)}"
 
@@ -128,14 +128,15 @@ trait CakeSlice { self: ScalanPluginCake =>
     defaultElem
   }
 
-  private def getSelf(module: SEntityModuleDef): Tree = {
-    val selfType = getTypeByName(module.name + "Dsl")
+  def genSelf(module: SEntityModuleDef): Tree = {
+    val selfType = genTypeByName(module.name + "Dsl")
     val res = q"val self: $selfType"
 
     res
   }
 
-  private def toCake(module: SEntityModuleDef, tree: Tree): Tree = {
+  
+  def toCake(module: SEntityModuleDef, tree: Tree): Tree = {
 
     tree match {
       case q"""$mods trait $tpname[..$tparams]
@@ -143,8 +144,8 @@ trait CakeSlice { self: ScalanPluginCake =>
                { $self => ..$stats }
              """
       =>
-        val newstats = defaultElem(module) :: stats.map(toRep(module, _))
-        val newSelf = getSelf(module)
+        val newstats = genDefaultElem(module) :: stats.map(toRep(module, _))
+        val newSelf = genSelf(module)
         val name = TypeName(module.name)
 
         val res = q"trait $name extends Base with BaseTypes { $newSelf => ..$newstats }"
