@@ -71,12 +71,14 @@ trait CakeSlice { self: ScalanPluginCake =>
     }
   }
 
+  def genSelf(selfType: Option[SSelfTypeDef]) = selfType match {
+    case Some(selfDef: SSelfTypeDef) => q"val ${selfDef.name}: ${genTypeByName(selfDef.tpe)}"
+    case None => noSelfType
+  }
+
   def genEntity(entity: STraitDef): Tree = {
     val entityName = TypeName(entity.name)
-    val entitySelf = entity.selfType match {
-      case Some(selfDef: SSelfTypeDef) => q"val ${selfDef.name}: ${genTypeByName(selfDef.tpe)}"
-      case None => noSelfType
-    }
+    val entitySelf = genSelf(entity.selfType)
     val repStats = toRepStats(entity.bodyTree.asInstanceOf[List[Tree]])
     val entityParents = genParents(entity.ancestors)
     val res = q"trait $entityName extends ..$entityParents { $entitySelf => ..$repStats }"
@@ -84,7 +86,27 @@ trait CakeSlice { self: ScalanPluginCake =>
     //print(showRaw(res))
     res
   }
-
+  
+  def genClasses(classes: List[SClassDef]): List[Tree] = {
+    classes.map{clazz =>
+      val className = TypeName(clazz.name)
+      val classSelf = genSelf(clazz.selfType)
+      val parents = genParents(clazz.ancestors)
+      val repStats = toRepStats(clazz.bodyTree.asInstanceOf[List[Tree]].filter(_ match {
+        case dd: DefDef if dd.name == TermName(termNames.CONSTRUCTOR) => false
+        case _ => true
+      }))
+      val repparamss = clazz.argsTree.asInstanceOf[List[List[ValDef]]].map(_.map(param => toRepParam(param)))
+      val res = q"""
+            abstract class $className (...$repparamss)
+            extends ..$parents
+            { $classSelf => ..$repStats }
+            """
+      //print(showRaw())
+      res
+    }
+  }
+  
   def toRep(module: SEntityModuleDef, tree: Tree): Tree = tree match {
     case q"""
             $mods class $tpname[..$tparams] $ctorMods(...$paramss)
@@ -103,7 +125,7 @@ trait CakeSlice { self: ScalanPluginCake =>
       res
     case _ => EmptyTree
   }
-
+  
   def genTypeByName(name: String) = tq"${TypeName(name)}"
 
   def genDefaultElem(module: SEntityModuleDef): Tree = {
@@ -122,7 +144,7 @@ trait CakeSlice { self: ScalanPluginCake =>
     defaultElem
   }
 
-  def genSelf(module: SEntityModuleDef): Tree = {
+  def genModuleSelf(module: SEntityModuleDef): Tree = {
     val selfType = genTypeByName(module.name + "Dsl")
     val res = q"val self: $selfType"
 
@@ -150,11 +172,12 @@ trait CakeSlice { self: ScalanPluginCake =>
       =>
         val newstats = genDefaultElem(module) ::
                        genEntity(module.entityOps) ::
-                       (stats.map(toRep(module, _)) ++ genCompanions(module))
-        val newSelf = genSelf(module)
+                       (genClasses(module.concreteSClasses) ++ genCompanions(module))
+        val newSelf = genModuleSelf(module)
         val name = TypeName(module.name)
 
         val res = q"trait $name extends Base with BaseTypes { $newSelf => ..$newstats }"
+        val classes = genClasses(module.concreteSClasses)
         //print(showCode(res))
         res
       case _ => tree
