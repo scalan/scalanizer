@@ -58,24 +58,39 @@ trait CakeSlice { self: ScalanPluginCake =>
     })
   }
 
+  def genParents(ancestors: List[STraitCall]): List[Tree] = {
+    val parents = Select(Ident("scala"), TypeName("AnyRef"))
+
+    parents :: ancestors.map{ancestor =>
+      val tpt = TypeName(ancestor.name)
+      val tpts = ancestor.tpeSExprs.map(_ match {
+        case tpe: STraitCall => getTypeByName(tpe.name)
+      })
+
+      tq"$tpt[..$tpts]"
+    }
+  }
+
+  def genEntity(entity: STraitDef, body: List[Tree]): Tree = {
+    val entityName = TypeName(entity.name)
+    val entitySelf = entity.selfType match {
+      case Some(selfDef: SSelfTypeDef) => q"val ${selfDef.name}: ${getTypeByName(selfDef.tpe)}"
+      case None => noSelfType
+    }
+    val repStats = toRepStats(body)
+    val entityParents = genParents(entity.ancestors)
+    val res = q"trait $entityName extends ..$entityParents { $entitySelf => ..$repStats }"
+
+    //print(showRaw(res))
+    res
+  }
+
   def toRep(module: SEntityModuleDef, tree: Tree): Tree = tree match {
     case entityTree @ q"""$mods trait $tpname[..$tparams]
                extends { ..$earlydefns } with ..$parents
                { $self => ..$stats }
              """ if module.entityOps.name == tpname.toString =>
-      val entityName = TypeName(module.entityOps.name)
-      val entitySelf = module.entityOps.selfType match {
-        case Some(selfDef: SSelfTypeDef) => q"val ${selfDef.name}: ${getTypeByName(selfDef.tpe)}"
-        case None => noSelfType
-      }
-      val repStats = toRepStats(stats)
-      val res = q"""
-            trait $entityName extends ..$parents with Reifiable[$tpname[..$tparams]]
-               { $entitySelf => ..$repStats }
-            """
-
-      //print(showRaw(res))
-      res
+      genEntity(module.entityOps, stats)
 
     case q"""
             $mods class $tpname[..$tparams] $ctorMods(...$paramss)
