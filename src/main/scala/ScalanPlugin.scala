@@ -59,8 +59,6 @@ with ScalanPluginCake { self: ScalanPluginCake =>
           checkEntityCompanion _, checkClassCompanion _
         ))
         val virtAst = pipeline(metaAst)
-        /** Prepare Virtualized AST for passing to run-time. */
-        val serialAst = serializeAst(virtAst)
 
         /** Boilerplate generation */
         val entityGen = new EntityFileGenerator(virtAst)
@@ -73,6 +71,9 @@ with ScalanPluginCake { self: ScalanPluginCake =>
 
         /** Checking of user's extensions like SegmentDsl, SegmentDslSeq and SegmentDslExp */
         val extensions = getExtensions(metaAst)
+
+        /** Prepare Virtualized AST for passing to run-time. */
+        val serialAst = serializeAst(virtAst)
 
         /** Staged Ast is package which contains virtualized Tree + boilerplate */
         val stagedAst = getStagedAst(cakeSlice, implAst, extensions, serialAst)
@@ -140,7 +141,10 @@ with ScalanPluginCake { self: ScalanPluginCake =>
     val bos = new ByteArrayOutputStream()
     val objOut = new ObjectOutputStream(bos)
 
-    objOut.writeObject(module)
+    /* Erasing of the module: give up Scala Trees */
+    val erasedModule = eraseModule(module)
+
+    objOut.writeObject(erasedModule)
     objOut.close()
 
     val str = javax.xml.bind.DatatypeConverter.printBase64Binary(bos.toByteArray)

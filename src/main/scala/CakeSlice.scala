@@ -71,13 +71,13 @@ trait CakeSlice { self: ScalanPluginCake =>
     }
   }
 
-  def genEntity(entity: STraitDef, body: List[Tree]): Tree = {
+  def genEntity(entity: STraitDef): Tree = {
     val entityName = TypeName(entity.name)
     val entitySelf = entity.selfType match {
       case Some(selfDef: SSelfTypeDef) => q"val ${selfDef.name}: ${genTypeByName(selfDef.tpe)}"
       case None => noSelfType
     }
-    val repStats = toRepStats(body)
+    val repStats = toRepStats(entity.bodyTree.asInstanceOf[List[Tree]])
     val entityParents = genParents(entity.ancestors)
     val res = q"trait $entityName extends ..$entityParents { $entitySelf => ..$repStats }"
 
@@ -86,12 +86,6 @@ trait CakeSlice { self: ScalanPluginCake =>
   }
 
   def toRep(module: SEntityModuleDef, tree: Tree): Tree = tree match {
-    case entityTree @ q"""$mods trait $tpname[..$tparams]
-               extends { ..$earlydefns } with ..$parents
-               { $self => ..$stats }
-             """ if module.entityOps.name == tpname.toString =>
-      genEntity(module.entityOps, stats)
-
     case q"""
             $mods class $tpname[..$tparams] $ctorMods(...$paramss)
             extends { ..$earlydefns } with ..$parents
@@ -154,7 +148,9 @@ trait CakeSlice { self: ScalanPluginCake =>
                { $self => ..$stats }
              """
       =>
-        val newstats = genDefaultElem(module) :: (stats.map(toRep(module, _)) ++ genCompanions(module))
+        val newstats = genDefaultElem(module) ::
+                       genEntity(module.entityOps) ::
+                       (stats.map(toRep(module, _)) ++ genCompanions(module))
         val newSelf = genSelf(module)
         val name = TypeName(module.name)
 
