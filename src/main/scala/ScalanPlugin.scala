@@ -66,8 +66,8 @@ with ScalanPluginCake { self: ScalanPluginCake =>
         val implCodeFile = new BatchSourceFile("<impl>", implCode)
         val implAst = newUnitParser(new CompilationUnit(implCodeFile)).parse()
 
-        /** Creates a duplicate of original Scala AST, wraps types by Rep[] and etc. */
-        val cakeSlice = cookCakeSlice(virtAst, unit.body)
+        /** Generates a duplicate of original Scala AST, wraps types by Rep[] and etc. */
+        val virtScalaAst = genScalaAst(virtAst, unit.body)
 
         /** Checking of user's extensions like SegmentDsl, SegmentDslSeq and SegmentDslExp */
         val extensions = getExtensions(metaAst)
@@ -76,7 +76,7 @@ with ScalanPluginCake { self: ScalanPluginCake =>
         val serialAst = serializeAst(virtAst)
 
         /** Staged Ast is package which contains virtualized Tree + boilerplate */
-        val stagedAst = getStagedAst(cakeSlice, implAst, extensions, serialAst)
+        val stagedAst = getStagedAst(virtScalaAst, implAst, extensions, serialAst)
 
         if (ScalanConfig.save) {
           saveImplCode(unit.source.file.file, showCode(stagedAst))

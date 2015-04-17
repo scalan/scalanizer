@@ -157,10 +157,11 @@ trait CakeSlice { self: ScalanPluginCake =>
     res
   }
 
-  def cookCakeSlice(module: SEntityModuleDef, orig: Tree): Tree = {
-    orig.duplicate match {
-      case PackageDef(pkgname, topstats) => PackageDef(pkgname, genModule(module) :: List[Tree]())
-      case _ => orig
-    }
+  def genScalaAst(module: SEntityModuleDef, orig: Tree): Tree = orig match {
+    case q"package $ref { ..$body }" =>
+      val virtBody = List[Tree](genModule(module))
+
+      q"package $ref { ..$virtBody }"
+    case tree => ???(tree)
   }
 }
