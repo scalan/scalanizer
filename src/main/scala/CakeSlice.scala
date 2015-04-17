@@ -107,7 +107,7 @@ trait CakeSlice { self: ScalanPluginCake =>
             """
       //print(showRaw(res))
       res
-    case _ => tree
+    case _ => EmptyTree
   }
 
   def genTypeByName(name: String) = tq"${TypeName(name)}"
@@ -135,7 +135,17 @@ trait CakeSlice { self: ScalanPluginCake =>
     res
   }
 
-  
+  def genCompanion(comp: Option[STraitOrClassDef]): Tree = comp match {
+    case Some(c) =>
+      val compName = TypeName(c.name)
+      q"trait $compName"
+    case None => EmptyTree
+  }
+
+  def genCompanions(module: SEntityModuleDef): List[Tree] = {
+    genCompanion(module.entityOps.companion) :: module.concreteSClasses.map(clazz => genCompanion(clazz.companion))
+  }
+
   def toCake(module: SEntityModuleDef, tree: Tree): Tree = {
 
     tree match {
@@ -144,7 +154,7 @@ trait CakeSlice { self: ScalanPluginCake =>
                { $self => ..$stats }
              """
       =>
-        val newstats = genDefaultElem(module) :: stats.map(toRep(module, _))
+        val newstats = genDefaultElem(module) :: (stats.map(toRep(module, _)) ++ genCompanions(module))
         val newSelf = genSelf(module)
         val name = TypeName(module.name)
 
