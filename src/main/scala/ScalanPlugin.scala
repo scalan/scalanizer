@@ -19,7 +19,6 @@ object ScalanConfig {
     "scalan.common.Default"
   )
   val entityTypeSynonyms = Map[String, String](
-    "RepSegment" -> "Segment",
     "RepSegm" -> "Segm"
   )
   var emap = scala.collection.mutable.Map(
@@ -30,7 +29,7 @@ object ScalanConfig {
 trait ScalanPluginCake extends ScalanParsers with ScalanUtils
 with ScalanCodegen with ScalanAstExtensions
 with SqlCompiler with SqlAST with SqlParser
-with CakeSlice
+with GenScalaAst
 
 class ScalanPluginComponent(val global: Global) extends PluginComponent
 with ScalanPluginCake { self: ScalanPluginCake =>

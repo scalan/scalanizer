@@ -3,7 +3,7 @@ package scalan.plugin
 import scala.tools.nsc._
 import ScalanAst._
 
-trait CakeSlice { self: ScalanPluginCake =>
+trait GenScalaAst { self: ScalanPluginCake =>
   val global: Global
   import global._
 
