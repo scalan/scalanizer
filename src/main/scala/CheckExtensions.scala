@@ -47,10 +47,10 @@ class CheckExtensions(val global: Global) extends PluginComponent {
     case q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
       val traitName = getTraitName(tpname)
       val cakeName = getCakeSliceName(traitName)
-      ScalanConfig.emap get cakeName match {
+      ScalanPluginState.emap get cakeName match {
         case Some(s) =>
           //print("Extension is found: " + traitName + " for the cake slice: " + cakeName)
-          ScalanConfig.emap(cakeName) -= traitName
+          ScalanPluginState.emap(cakeName) -= traitName
           ()
         case None => ()
       }

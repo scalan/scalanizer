@@ -16,7 +16,7 @@ class Debug(val global: Global) extends PluginComponent {
   def newPhase(prev: Phase) = new StdPhase(prev) {
     def apply(unit: CompilationUnit) {
 
-      if (ScalanConfig.files.contains(unit.source.file.name)) {
+      if (ScalanPluginConfig.files.contains(unit.source.file.name)) {
         print(showCode(unit.body))
       }
     }

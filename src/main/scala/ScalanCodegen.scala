@@ -474,7 +474,7 @@ trait ScalanCodegen extends ScalanParsers with SqlCompiler with ScalanAstExtensi
 
       s"""
        |// Abs -----------------------------------
-       |trait ${module.name}Abs extends ${ScalanConfig.baseContextTrait} with ${module.name} {
+       |trait ${module.name}Abs extends ${ScalanPluginConfig.baseContextTrait} with ${module.name} {
        |  ${module.selfType.opt(t => s"self: ${t.tpe} =>")}
        |${entityProxy(templateData)}
        |$proxyBT
@@ -611,7 +611,7 @@ trait ScalanCodegen extends ScalanParsers with SqlCompiler with ScalanAstExtensi
 
       s"""
        |// Seq -----------------------------------
-       |trait ${module.name}Seq extends ${module.name}Dsl with ${ScalanConfig.seqContextTrait} {
+       |trait ${module.name}Seq extends ${module.name}Dsl with ${ScalanPluginConfig.seqContextTrait} {
        |  ${module.selfType.opt(t => s"self: ${t.tpe}Seq =>")}
        |  lazy val $entityName: Rep[${entityName}CompanionAbs] = new ${entityName}CompanionAbs with UserTypeSeq[${entityName}CompanionAbs, ${entityName}CompanionAbs] {
        |    lazy val selfType = element[${entityName}CompanionAbs]
@@ -730,7 +730,7 @@ trait ScalanCodegen extends ScalanParsers with SqlCompiler with ScalanAstExtensi
       
       s"""
        |// Exp -----------------------------------
-       |trait ${module.name}Exp extends ${module.name}Dsl with ${ScalanConfig.stagedContextTrait} {
+       |trait ${module.name}Exp extends ${module.name}Dsl with ${ScalanPluginConfig.stagedContextTrait} {
        |  ${module.selfType.opt(t => s"self: ${t.tpe}Exp =>")}
        |  lazy val $entityName: Rep[${entityName}CompanionAbs] = new ${entityName}CompanionAbs with UserTypeDef[${entityName}CompanionAbs, ${entityName}CompanionAbs] {
        |    lazy val selfType = element[${entityName}CompanionAbs]
@@ -886,7 +886,7 @@ trait ScalanCodegen extends ScalanParsers with SqlCompiler with ScalanAstExtensi
       |package ${module.packageName}
       |package impl
       |
-      |${(module.imports ++ ScalanConfig.extraImports.map(SImportStat(_))).rep(i => s"import ${i.name}", "\n")}
+      |${(module.imports ++ ScalanPluginConfig.extraImports.map(SImportStat(_))).rep(i => s"import ${i.name}", "\n")}
       |""".stripAndTrim
     }
 

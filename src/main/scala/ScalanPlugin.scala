@@ -6,7 +6,7 @@ import scala.tools.nsc.plugins.{PluginComponent, Plugin}
 import scala.reflect.internal.util.BatchSourceFile
 import ScalanAst._
 
-object ScalanConfig {
+object ScalanPluginConfig {
   var save: Boolean = true
   var read: Boolean = true
   var debug: Boolean = false
@@ -20,9 +20,6 @@ object ScalanConfig {
   )
   val entityTypeSynonyms = Map[String, String](
     "RepSegm" -> "Segm"
-  )
-  var emap = scala.collection.mutable.Map(
-    "Segms" -> Set("SegmsDsl", "SegmsDslSeq", "SegmsDslExp")
   )
 }
 
@@ -46,7 +43,7 @@ with ScalanPluginCake { self: ScalanPluginCake =>
     def apply(unit: CompilationUnit): Unit = {
       val unitName = unit.source.file.name
 
-      if (ScalanConfig.files.contains(unitName)) try {
+      if (ScalanPluginConfig.files.contains(unitName)) try {
         val metaAst = parse(unit.body)
         /** Transformations of Scalan AST */
         val pipeline = scala.Function.chain(Seq(
@@ -77,11 +74,11 @@ with ScalanPluginCake { self: ScalanPluginCake =>
         /** Staged Ast is package which contains virtualized Tree + boilerplate */
         val stagedAst = getStagedAst(virtScalaAst, implAst, extensions, serialAst)
 
-        if (ScalanConfig.save) {
+        if (ScalanPluginConfig.save) {
           saveImplCode(unit.source.file.file, showCode(stagedAst))
         }
 
-        if (!ScalanConfig.read) {
+        if (!ScalanPluginConfig.read) {
           unit.body = combineAst(unit.body, stagedAst)
         }
 
@@ -121,7 +118,7 @@ with ScalanPluginCake { self: ScalanPluginCake =>
   }
 
   def getExtensions(module: SEntityModuleDef): List[Tree] = {
-    val extNames = ScalanConfig.emap(module.name)
+    val extNames = ScalanPluginState.emap(module.name)
     val psuf = Map("Dsl" -> "Abs", "DslSeq" -> "Seq", "DslExp" -> "Exp")
     val extsWithParents = extNames.map(extName =>
       (extName, module.name + psuf(extName.stripPrefix(module.name)))
@@ -165,9 +162,9 @@ class ScalanPlugin(val global: Global) extends Plugin {
   /** Pluging-specific options without -P:scalan:  */
   override def processOptions(options: List[String], error: String => Unit) {
     options foreach {
-      case "save" => ScalanConfig.save = true
-      case "read" => ScalanConfig.read = true
-      case "debug"     => ScalanConfig.debug = true
+      case "save" => ScalanPluginConfig.save = true
+      case "read" => ScalanPluginConfig.read = true
+      case "debug"     => ScalanPluginConfig.debug = true
       case option => error("Option not understood: " + option)
     }
   }
@@ -177,6 +174,12 @@ class ScalanPlugin(val global: Global) extends Plugin {
     "  -P:"+ name +":save     Save META boilerplate and staged version to source files.\n"+
     "  -P:"+ name +":read     Read META boilerplate and staged version from source files.\n"+
     "  -P:"+ name +":debug    Print debug information: final AST and etc.\n"
+  )
+}
+
+object ScalanPluginState {
+  var emap = scala.collection.mutable.Map(
+    "Segms" -> Set("SegmsDsl", "SegmsDslSeq", "SegmsDslExp")
   )
 }
 
