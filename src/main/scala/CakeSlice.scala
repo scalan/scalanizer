@@ -106,26 +106,7 @@ trait CakeSlice { self: ScalanPluginCake =>
       res
     }
   }
-  
-  def toRep(module: SEntityModuleDef, tree: Tree): Tree = tree match {
-    case q"""
-            $mods class $tpname[..$tparams] $ctorMods(...$paramss)
-            extends { ..$earlydefns } with ..$parents
-            { $self => ..$stats }
-            """
-    =>
-      val repStats = toRepStats(stats)
-      val repparamss = paramss.map(_.map(param => toRepParam(param)))
-      val res = q"""
-            abstract class $tpname[..$tparams] $ctorMods(...$repparamss)
-            extends { ..$earlydefns } with ..$parents
-            { $self => ..$repStats }
-            """
-      //print(showRaw(res))
-      res
-    case _ => EmptyTree
-  }
-  
+
   def genTypeByName(name: String) = tq"${TypeName(name)}"
 
   def genDefaultElem(module: SEntityModuleDef): Tree = {
@@ -162,31 +143,23 @@ trait CakeSlice { self: ScalanPluginCake =>
     genCompanion(module.entityOps.companion) :: module.concreteSClasses.map(clazz => genCompanion(clazz.companion))
   }
 
-  def toCake(module: SEntityModuleDef, tree: Tree): Tree = {
+  def genModule(module: SEntityModuleDef): Tree = {
+    val newstats = genDefaultElem(module) ::
+      genEntity(module.entityOps) ::
+      (genClasses(module.concreteSClasses) ++ genCompanions(module))
+    val newSelf = genModuleSelf(module)
+    val name = TypeName(module.name)
 
-    tree match {
-      case q"""$mods trait $tpname[..$tparams]
-               extends { ..$earlydefns } with ..$parents
-               { $self => ..$stats }
-             """
-      =>
-        val newstats = genDefaultElem(module) ::
-                       genEntity(module.entityOps) ::
-                       (genClasses(module.concreteSClasses) ++ genCompanions(module))
-        val newSelf = genModuleSelf(module)
-        val name = TypeName(module.name)
+    val res = q"trait $name extends Base with BaseTypes { $newSelf => ..$newstats }"
+    val classes = genClasses(module.concreteSClasses)
+    //print(showCode(res))
 
-        val res = q"trait $name extends Base with BaseTypes { $newSelf => ..$newstats }"
-        val classes = genClasses(module.concreteSClasses)
-        //print(showCode(res))
-        res
-      case _ => tree
-    }
+    res
   }
 
   def cookCakeSlice(module: SEntityModuleDef, orig: Tree): Tree = {
     orig.duplicate match {
-      case PackageDef(pkgname, topstats) => PackageDef(pkgname, topstats.map(toCake(module, _)))
+      case PackageDef(pkgname, topstats) => PackageDef(pkgname, genModule(module) :: List[Tree]())
       case _ => orig
     }
   }
