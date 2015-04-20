@@ -86,7 +86,31 @@ trait GenScalaAst { self: ScalanPluginCake =>
     //print(showRaw(res))
     res
   }
-  
+
+  def repTypeExpr(tpeExpr: STpeExpr) = tpeExpr match {
+    case STpePrimitive(name: String, _) => tq"Rep[${TypeName(name)}]"
+  }
+
+  def genClassArg(arg: SClassArg): Tree = {
+    val tname = TermName(arg.name)
+    val tpt = repTypeExpr(arg.tpe)
+    val valFlag = if (arg.valFlag) Flag.PARAMACCESSOR else NoFlags
+    val overFlag = if (arg.overFlag) Flag.OVERRIDE else NoFlags
+    val impFlag = if (arg.impFlag) Flag.IMPLICIT else NoFlags
+    val flags = Flag.PARAM | valFlag | overFlag | impFlag
+    val mods = Modifiers(flags)
+
+    q"$mods val $tname: $tpt"
+  }
+
+  def genClassArgs(args: SClassArgs, implicitArgs: SClassArgs, argsTree: AnyRef): List[List[Tree]] = {
+    val repArgs = args.args.map(genClassArg)
+    val repImplArgs = implicitArgs.args.map(genClassArg)
+    val repClassArgs = List[List[Tree]](repArgs, repImplArgs)
+
+    repClassArgs.filterNot(_.isEmpty)
+  }
+
   def genClasses(classes: List[SClassDef]): List[Tree] = {
     classes.map{clazz =>
       val className = TypeName(clazz.name)
@@ -96,7 +120,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
         case dd: DefDef if dd.name == TermName(termNames.CONSTRUCTOR) => false
         case _ => true
       }))
-      val repparamss = clazz.argsTree.asInstanceOf[List[List[ValDef]]].map(_.map(param => toRepParam(param)))
+      val repparamss = genClassArgs(clazz.args, clazz.implicitArgs, clazz.argsTree)
       val res = q"""
             abstract class $className (...$repparamss)
             extends ..$parents
