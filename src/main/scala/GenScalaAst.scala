@@ -103,7 +103,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     q"$mods val $tname: $tpt"
   }
 
-  def genClassArgs(args: SClassArgs, implicitArgs: SClassArgs, argsTree: AnyRef): List[List[Tree]] = {
+  def genClassArgs(args: SClassArgs, implicitArgs: SClassArgs): List[List[Tree]] = {
     val repArgs = args.args.map(genClassArg)
     val repImplArgs = implicitArgs.args.map(genClassArg)
     val repClassArgs = List[List[Tree]](repArgs, repImplArgs)
@@ -120,7 +120,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
         case dd: DefDef if dd.name == TermName(termNames.CONSTRUCTOR) => false
         case _ => true
       }))
-      val repparamss = genClassArgs(clazz.args, clazz.implicitArgs, clazz.argsTree)
+      val repparamss = genClassArgs(clazz.args, clazz.implicitArgs)
       val res = q"""
             abstract class $className (...$repparamss)
             extends ..$parents

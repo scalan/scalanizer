@@ -269,7 +269,6 @@ package object ScalanAst {
                         name: String,
                         tpeArgs: List[STpeArg],
                         args: SClassArgs,
-                        argsTree: AnyRef,
                         implicitArgs: SClassArgs,
                         ancestors: List[STraitCall],
                         body: List[SBodyItem],
@@ -355,7 +354,6 @@ package object ScalanAst {
             name = entityImplName,
             tpeArgs = entity.tpeArgs,
             args = SClassArgs(List(SClassArg(false, false, true, "wrappedValueOfBaseType", STraitCall("Rep", List(bt)), None))),
-            argsTree = List(List()),
             implicitArgs = entity.implicitArgs,
             ancestors = List(STraitCall(entity.name, typeUseExprs)),
             body = List(

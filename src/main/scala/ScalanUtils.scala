@@ -106,7 +106,7 @@ trait ScalanUtils { self: ScalanPluginCake =>
   def eraseModule(module: SEntityModuleDef): SEntityModuleDef = {
     val entityOps = module.entityOps.copy(bodyTree = List())
     val entities = module.entities.map(entity => entity.copy(bodyTree = List()))
-    val classes = module.concreteSClasses.map(clazz => clazz.copy(bodyTree = List(), argsTree = List(List())))
+    val classes = module.concreteSClasses.map(clazz => clazz.copy(bodyTree = List()))
 
     module.copy(entityOps = entityOps, entities = entities, concreteSClasses = classes)
   }
