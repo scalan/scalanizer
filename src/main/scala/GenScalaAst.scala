@@ -36,8 +36,9 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case _ => param
   }
 
-  def toRepStats(stats: List[Tree]): List[Tree] = {
-    stats.map((stat: Tree) => stat match {
+  def toRepStats(body: List[SBodyItem], stats: List[Tree]): List[Tree] = {
+    //print(showRaw(stats))
+    val repStats = stats.map((stat: Tree) => stat match {
       case q"$mods def $tname[..$tparams](...$paramss): $tpt = $expr" =>
         val reptpt = toRepType(tpt)
         val repparamss = paramss.map(_.map(param => toRepParam(param)))
@@ -56,6 +57,43 @@ trait GenScalaAst { self: ScalanPluginCake =>
         q"$mods val $name: $reptpt = $reprhs"
       case _ => stat
     })
+
+    repStats
+  }
+
+  def genMethodArg(arg: SMethodArg): Tree = {
+    val tname = TermName(arg.name)
+    val tpt = repTypeExpr(arg.tpe)
+    val overFlag = if (arg.overFlag) Flag.OVERRIDE else NoFlags
+    val impFlag = if (arg.impFlag) Flag.IMPLICIT else NoFlags
+    val flags = overFlag | impFlag
+    val mods = Modifiers(flags)
+
+    q"$mods val $tname: $tpt"
+  }
+
+  def genMethodArgs(argSections: List[SMethodArgs]): List[List[Tree]] = {
+    argSections.map(_.args.map(genMethodArg))
+  }
+
+  def genBody(body: List[SBodyItem]): List[Tree] = {
+    val repBody = body.map((item: SBodyItem) => item match {
+      case m: SMethodDef =>
+        val tname = TermName(m.name)
+        val impFlag = if (m.isImplicit) Flag.IMPLICIT else NoFlags
+        val flags = Flag.PARAM | impFlag
+        val mods = Modifiers(flags)
+        val reptpt = m.tpeRes match {
+          case Some(tpeRes) => repTypeExpr(tpeRes)
+          case None => EmptyTree
+        }
+        val repparamss = genMethodArgs(m.argSections)
+
+        q"$mods def $tname(...$repparamss): $reptpt"
+      case _ => print("Unsupported body item: " + item);EmptyTree
+    })
+
+    repBody
   }
 
   def genParents(ancestors: List[STraitCall]): List[Tree] = {
@@ -79,7 +117,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
   def genEntity(entity: STraitDef): Tree = {
     val entityName = TypeName(entity.name)
     val entitySelf = genSelf(entity.selfType)
-    val repStats = toRepStats(entity.bodyTree.asInstanceOf[List[Tree]])
+    val repStats = genBody(entity.body)
     val entityParents = genParents(entity.ancestors)
     val res = q"trait $entityName extends ..$entityParents { $entitySelf => ..$repStats }"
 
@@ -87,8 +125,20 @@ trait GenScalaAst { self: ScalanPluginCake =>
     res
   }
 
+  def genTypeExpr(tpeExpr: STpeExpr): Tree = tpeExpr match {
+    case STpePrimitive(name: String, _) => tq"${TypeName(name)}"
+    case STraitCall(name: String, tpeSExprs: List[STpeExpr]) =>
+      val targs = tpeSExprs.map(genTypeExpr)
+      tq"${TypeName(name)}[..$targs]"
+  }
+
   def repTypeExpr(tpeExpr: STpeExpr) = tpeExpr match {
     case STpePrimitive(name: String, _) => tq"Rep[${TypeName(name)}]"
+    case STraitCall(name: String, tpeSExprs: List[STpeExpr]) =>
+      val targs = tpeSExprs.map(genTypeExpr)
+      val appliedType = tq"${TypeName(name)}[..$targs]"
+      tq"Rep[$appliedType]"
+    case _ => print("Unsupported tpeEpr: " + tpeExpr); EmptyTree
   }
 
   def genClassArg(arg: SClassArg): Tree = {
@@ -116,7 +166,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
       val className = TypeName(clazz.name)
       val classSelf = genSelf(clazz.selfType)
       val parents = genParents(clazz.ancestors)
-      val repStats = toRepStats(clazz.bodyTree.asInstanceOf[List[Tree]].filter(_ match {
+      val repStats = toRepStats(clazz.body, clazz.bodyTree.asInstanceOf[List[Tree]].filter(_ match {
         case dd: DefDef if dd.name == TermName(termNames.CONSTRUCTOR) => false
         case _ => true
       }))

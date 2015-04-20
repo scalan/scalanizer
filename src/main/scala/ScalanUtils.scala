@@ -61,7 +61,6 @@ trait ScalanUtils { self: ScalanPluginCake =>
     tpeArgs = List(),
     ancestors = List(),
     body = List(),
-    bodyTree = List(),
     selfType = None,
     companion = None
   )
@@ -104,10 +103,8 @@ trait ScalanUtils { self: ScalanPluginCake =>
   }
 
   def eraseModule(module: SEntityModuleDef): SEntityModuleDef = {
-    val entityOps = module.entityOps.copy(bodyTree = List())
-    val entities = module.entities.map(entity => entity.copy(bodyTree = List()))
     val classes = module.concreteSClasses.map(clazz => clazz.copy(bodyTree = List()))
 
-    module.copy(entityOps = entityOps, entities = entities, concreteSClasses = classes)
+    module.copy(concreteSClasses = classes)
   }
 }

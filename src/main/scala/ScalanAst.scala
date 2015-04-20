@@ -227,7 +227,6 @@ package object ScalanAst {
                         tpeArgs: List[STpeArg],
                         ancestors: List[STraitCall],
                         body: List[SBodyItem],
-                        bodyTree: AnyRef,
                         selfType: Option[SSelfTypeDef],
                         companion: Option[STraitOrClassDef],
                         annotations: List[STraitOrClassAnnotation] = Nil
