@@ -300,7 +300,7 @@ trait ScalanParsers {
     val optBody:Option[SExpr] = md.rhs match {
       case Apply(ident:Ident, args) if ident.name.intern() == "sql" =>
         Some(SApply(SLiteral("sql"), List(SLiteral(args(0).asInstanceOf[Literal].value.stringValue))))
-      case _ => None
+      case ext @ _ => Some(SExternalExpr(ext))
     }
     val optElem = if (isElem) Some(()) else None
     SMethodDef(md.name, tpeArgs, args, tpeRes, isImplicit, optOverloadId, annotations, optBody, optElem)
