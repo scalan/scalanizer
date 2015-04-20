@@ -272,7 +272,6 @@ package object ScalanAst {
                         implicitArgs: SClassArgs,
                         ancestors: List[STraitCall],
                         body: List[SBodyItem],
-                        bodyTree: AnyRef,
                         selfType: Option[SSelfTypeDef],
                         companion: Option[STraitOrClassDef],
                         isAbstract: Boolean,
@@ -359,7 +358,6 @@ package object ScalanAst {
             body = List(
 
             ),
-            bodyTree = List(),
             selfType = None,
             companion = None,
             //            companion = defs.collectFirst {

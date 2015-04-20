@@ -184,7 +184,7 @@ trait ScalanParsers {
         if (c.mods.isTrait) traitDef(c, parentScope) else classDef(c, parentScope)
     }.headOption
     val annotations = parseAnnotations(cd)((n,as) => STraitOrClassAnnotation(n,as.map(expr)))
-    SClassDef(cd.name, tpeArgs, args, implicitArgs, ancestors, body, cd.impl.body, selfType, companion, isAbstract, annotations)
+    SClassDef(cd.name, tpeArgs, args, implicitArgs, ancestors, body, selfType, companion, isAbstract, annotations)
   }
 
   def objectDef(od: ModuleDef): SObjectDef = {

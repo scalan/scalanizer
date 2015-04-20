@@ -27,40 +27,6 @@ trait GenScalaAst { self: ScalanPluginCake =>
       expr
   }
 
-  def toRepParam(param: Tree): Tree = param match {
-    case q"$mods val $name: $tpt = $rhs" =>
-      val reptpt = toRepType(tpt)
-      val reprhs = toRepExpr(rhs)
-
-      q"$mods val $name: $reptpt = $reprhs"
-    case _ => param
-  }
-
-  def toRepStats(body: List[SBodyItem], stats: List[Tree]): List[Tree] = {
-    //print(showRaw(stats))
-    val repStats = stats.map((stat: Tree) => stat match {
-      case q"$mods def $tname[..$tparams](...$paramss): $tpt = $expr" =>
-        val reptpt = toRepType(tpt)
-        val repparamss = paramss.map(_.map(param => toRepParam(param)))
-        val repexpr = toRepExpr(expr)
-
-        q"$mods def $tname[..$tparams](...$repparamss): $reptpt = $repexpr"
-      case q"$mods var $name: $tpt = $rhs" =>
-        val reptpt = toRepType(tpt)
-        val reprhs = toRepExpr(rhs)
-
-        q"$mods var $name: $reptpt = $reprhs"
-      case q"$mods val $name: $tpt = $rhs" =>
-        val reptpt = toRepType(tpt)
-        val reprhs = toRepExpr(rhs)
-
-        q"$mods val $name: $reptpt = $reprhs"
-      case _ => stat
-    })
-
-    repStats
-  }
-
   def genMethodArg(arg: SMethodArg): Tree = {
     val tname = TermName(arg.name)
     val tpt = repTypeExpr(arg.tpe)
@@ -88,8 +54,12 @@ trait GenScalaAst { self: ScalanPluginCake =>
           case None => EmptyTree
         }
         val repparamss = genMethodArgs(m.argSections)
+        val repExprs = m.body match {
+          case Some(SExternalExpr(tree)) => toRepExpr(tree.asInstanceOf[Tree])
+          case None => EmptyTree
+        }
 
-        q"$mods def $tname(...$repparamss): $reptpt"
+        q"$mods def $tname(...$repparamss): $reptpt = $repExprs"
       case _ => print("Unsupported body item: " + item);EmptyTree
     })
 
@@ -166,17 +136,13 @@ trait GenScalaAst { self: ScalanPluginCake =>
       val className = TypeName(clazz.name)
       val classSelf = genSelf(clazz.selfType)
       val parents = genParents(clazz.ancestors)
-      val repStats = toRepStats(clazz.body, clazz.bodyTree.asInstanceOf[List[Tree]].filter(_ match {
-        case dd: DefDef if dd.name == TermName(termNames.CONSTRUCTOR) => false
-        case _ => true
-      }))
+      val repStats = genBody(clazz.body)
       val repparamss = genClassArgs(clazz.args, clazz.implicitArgs)
       val res = q"""
             abstract class $className (...$repparamss)
             extends ..$parents
             { $classSelf => ..$repStats }
             """
-      //print(showRaw())
       res
     }
   }
