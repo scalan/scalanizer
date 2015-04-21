@@ -71,6 +71,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     val repBody = body.map((item: SBodyItem) => item match {
       case m: SMethodDef => genMethod(m)
       case v: SValDef => genVal(v)
+      case i: SImportStat => genImport(i)
       case _ => print("Unsupported body item: " + item);EmptyTree
     })
 
@@ -125,6 +126,24 @@ trait GenScalaAst { self: ScalanPluginCake =>
     }
 
     q"$mods val $tname: $tpt = $expr"
+  }
+
+  def genRefs(refs: List[String]): Tree = {
+    if (refs.length == 1)
+      Ident(TermName(refs.head))
+    else
+      q"${genRefs(refs.init)}.${TermName(refs.last)}"
+  }
+
+  def genImport(imp: SImportStat): Tree = {
+    val impParts = imp.name.split('.').toList
+    val refs = genRefs(impParts.init)
+    val sels = impParts.last match {
+      case bindName => List(Bind(TermName(bindName), Ident(termNames.WILDCARD)))
+      case "_" => List(Ident(termNames.WILDCARD))
+    }
+
+    q"import $refs.{..$sels}"
   }
 
   def genParents(ancestors: List[STraitCall]): List[Tree] = {
