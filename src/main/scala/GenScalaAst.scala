@@ -72,6 +72,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
       case m: SMethodDef => genMethod(m)
       case v: SValDef => genVal(v)
       case i: SImportStat => genImport(i)
+      case t: STpeDef => genTypeDef(t)
       case _ => print("Unsupported body item: " + item);EmptyTree
     })
 
@@ -144,6 +145,23 @@ trait GenScalaAst { self: ScalanPluginCake =>
     }
 
     q"import $refs.{..$sels}"
+  }
+
+  def genTypeDef(t: STpeDef): Tree = {
+    val tpname = TypeName(t.name)
+    val tpt = genTypeExpr(t.rhs)
+    val tparams = genTypeArgs(t.tpeArgs)
+
+    q"type $tpname[..$tparams] = $tpt"
+  }
+
+  def genTypeArgs(tpeArgs: STpeArgs): List[TypeDef] = tpeArgs.map(genTypeArg)
+
+  def genTypeArg(arg: STpeArg): TypeDef = {
+    val tpname = TypeName(arg.name)
+    val tparams = arg.tparams.map(genTypeArg)
+    val mods = Modifiers(Flag.PARAM)
+    q"$mods type $tpname[..$tparams]"
   }
 
   def genParents(ancestors: List[STraitCall]): List[Tree] = {
