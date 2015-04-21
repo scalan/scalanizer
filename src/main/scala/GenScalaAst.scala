@@ -100,8 +100,9 @@ trait GenScalaAst { self: ScalanPluginCake =>
       case Some(SExternalExpr(tree)) => toRepExpr(tree.asInstanceOf[Tree])
       case None => EmptyTree
     }
+    val tparams = genTypeArgs(m.tpeArgs)
 
-    q"$mods def $tname(...$paramss): $tpt = $exprs"
+    q"$mods def $tname[..$tparams](...$paramss): $tpt = $exprs"
   }
 
   def genMethodArg(arg: SMethodArg): Tree = {
