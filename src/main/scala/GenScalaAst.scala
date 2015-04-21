@@ -169,8 +169,12 @@ trait GenScalaAst { self: ScalanPluginCake =>
     val tpname = TypeName(arg.name)
     val tparams = arg.tparams.map(genTypeArg)
     val mods = Modifiers(Flag.PARAM)
+    val tpt = arg.bound match {
+      case Some(tpe) => TypeBoundsTree(TypeTree(), genTypeExpr(tpe))
+      case None => TypeTree()
+    }
 
-    q"$mods type $tpname[..$tparams]"
+    q"$mods type $tpname[..$tparams] = $tpt"
   }
 
   def genObject(o: SObjectDef): Tree = {
