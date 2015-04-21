@@ -7,24 +7,92 @@ trait GenScalaAst { self: ScalanPluginCake =>
   val global: Global
   import global._
 
-  def toRepType(tp: Tree): Tree = tp match {
-    case tq"" => tp
-    case tq"$tpname" => tq"Rep[$tpname]"
+  def genScalaAst(module: SEntityModuleDef, orig: Tree): Tree = orig match {
+    case q"package $ref { ..$body }" =>
+      val virtBody = List[Tree](genModule(module))
+
+      q"package $ref { ..$virtBody }"
+    case tree => ???(tree)
   }
 
-  def toRepExpr(expr: Tree): Tree = expr match {
-    case q"$expr: $tpt" =>
-      val reptpt = toRepType(tpt)
-      q"$expr: $reptpt"
-    case q"if ($cond) $thenexpr else $elseexpr" =>
-      q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
-    case q"${global.Literal(Constant(c))}" => q"toRep(${global.Literal(Constant(c))})"
-    case Apply(Select(New(tpt), termNames.CONSTRUCTOR), args) =>
-      val Ident(TypeName(name)) = tpt
-      Apply(Ident(TermName(name)), args)
-    case _ =>
-      //print(showRaw(expr))
-      expr
+  def genModule(module: SEntityModuleDef): Tree = {
+    val newstats = genDefaultElem(module) ::
+      genEntity(module.entityOps) ::
+      (genClasses(module.concreteSClasses) ++ genCompanions(module))
+    val newSelf = genModuleSelf(module)
+    val name = TypeName(module.name)
+
+    val res = q"trait $name extends Base with BaseTypes { $newSelf => ..$newstats }"
+    val classes = genClasses(module.concreteSClasses)
+    //print(showCode(res))
+
+    res
+  }
+
+  def genEntity(entity: STraitDef): Tree = {
+    val entityName = TypeName(entity.name)
+    val entitySelf = genSelf(entity.selfType)
+    val repStats = genBody(entity.body)
+    val entityParents = genParents(entity.ancestors)
+    val res = q"trait $entityName extends ..$entityParents { $entitySelf => ..$repStats }"
+
+    //print(showRaw(res))
+    res
+  }
+
+  def genClasses(classes: List[SClassDef]): List[Tree] = {
+    classes.map{clazz =>
+      val className = TypeName(clazz.name)
+      val classSelf = genSelf(clazz.selfType)
+      val parents = genParents(clazz.ancestors)
+      val repStats = genBody(clazz.body)
+      val repparamss = genClassArgs(clazz.args, clazz.implicitArgs)
+      val res = q"""
+            abstract class $className (...$repparamss)
+            extends ..$parents
+            { $classSelf => ..$repStats }
+            """
+      res
+    }
+  }
+
+  def genCompanions(module: SEntityModuleDef): List[Tree] = {
+    genCompanion(module.entityOps.companion) :: module.concreteSClasses.map(clazz => genCompanion(clazz.companion))
+  }
+
+  def genCompanion(comp: Option[STraitOrClassDef]): Tree = comp match {
+    case Some(c) =>
+      val compName = TypeName(c.name)
+      q"trait $compName"
+    case None => EmptyTree
+  }
+
+  def genBody(body: List[SBodyItem]): List[Tree] = {
+    val repBody = body.map((item: SBodyItem) => item match {
+      case m: SMethodDef => genMethod(m)
+      case v: SValDef => genVal(v)
+      case _ => print("Unsupported body item: " + item);EmptyTree
+    })
+
+    repBody
+  }
+
+  def genMethod(m: SMethodDef): Tree = {
+    val tname = TermName(m.name)
+    val impFlag = if (m.isImplicit) Flag.IMPLICIT else NoFlags
+    val flags = Flag.PARAM | impFlag
+    val mods = Modifiers(flags)
+    val tpt = m.tpeRes match {
+      case Some(tpeRes) => repTypeExpr(tpeRes)
+      case None => EmptyTree
+    }
+    val paramss = genMethodArgs(m.argSections)
+    val exprs = m.body match {
+      case Some(SExternalExpr(tree)) => toRepExpr(tree.asInstanceOf[Tree])
+      case None => EmptyTree
+    }
+
+    q"$mods def $tname(...$paramss): $tpt = $exprs"
   }
 
   def genMethodArg(arg: SMethodArg): Tree = {
@@ -42,28 +110,17 @@ trait GenScalaAst { self: ScalanPluginCake =>
     argSections.map(_.args.map(genMethodArg))
   }
 
-  def genBody(body: List[SBodyItem]): List[Tree] = {
-    val repBody = body.map((item: SBodyItem) => item match {
-      case m: SMethodDef =>
-        val tname = TermName(m.name)
-        val impFlag = if (m.isImplicit) Flag.IMPLICIT else NoFlags
-        val flags = Flag.PARAM | impFlag
-        val mods = Modifiers(flags)
-        val reptpt = m.tpeRes match {
-          case Some(tpeRes) => repTypeExpr(tpeRes)
-          case None => EmptyTree
-        }
-        val repparamss = genMethodArgs(m.argSections)
-        val repExprs = m.body match {
-          case Some(SExternalExpr(tree)) => toRepExpr(tree.asInstanceOf[Tree])
-          case None => EmptyTree
-        }
+  def genVal(v: SValDef): Tree = {
+    val impFlag = if (v.isImplicit) Flag.IMPLICIT else NoFlags
+    val lazyFlag = if (v.isLazy) Flag.LAZY else NoFlags
+    val mods = Modifiers(impFlag | lazyFlag)
+    val tname = TermName(v.name)
+    val tpt =v.tpe match {
+      case Some(tpe) => repTypeExpr(tpe)
+      case None => TypeTree()
+    }
 
-        q"$mods def $tname(...$repparamss): $reptpt = $repExprs"
-      case _ => print("Unsupported body item: " + item);EmptyTree
-    })
-
-    repBody
+    q"$mods val $tname: $tpt"
   }
 
   def genParents(ancestors: List[STraitCall]): List[Tree] = {
@@ -84,14 +141,10 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case None => noSelfType
   }
 
-  def genEntity(entity: STraitDef): Tree = {
-    val entityName = TypeName(entity.name)
-    val entitySelf = genSelf(entity.selfType)
-    val repStats = genBody(entity.body)
-    val entityParents = genParents(entity.ancestors)
-    val res = q"trait $entityName extends ..$entityParents { $entitySelf => ..$repStats }"
+  def genModuleSelf(module: SEntityModuleDef): Tree = {
+    val selfType = genTypeByName(module.name + "Dsl")
+    val res = q"val self: $selfType"
 
-    //print(showRaw(res))
     res
   }
 
@@ -131,22 +184,6 @@ trait GenScalaAst { self: ScalanPluginCake =>
     repClassArgs.filterNot(_.isEmpty)
   }
 
-  def genClasses(classes: List[SClassDef]): List[Tree] = {
-    classes.map{clazz =>
-      val className = TypeName(clazz.name)
-      val classSelf = genSelf(clazz.selfType)
-      val parents = genParents(clazz.ancestors)
-      val repStats = genBody(clazz.body)
-      val repparamss = genClassArgs(clazz.args, clazz.implicitArgs)
-      val res = q"""
-            abstract class $className (...$repparamss)
-            extends ..$parents
-            { $classSelf => ..$repStats }
-            """
-      res
-    }
-  }
-
   def genTypeByName(name: String) = tq"${TypeName(name)}"
 
   def genDefaultElem(module: SEntityModuleDef): Tree = {
@@ -165,43 +202,23 @@ trait GenScalaAst { self: ScalanPluginCake =>
     defaultElem
   }
 
-  def genModuleSelf(module: SEntityModuleDef): Tree = {
-    val selfType = genTypeByName(module.name + "Dsl")
-    val res = q"val self: $selfType"
-
-    res
+  def toRepType(tp: Tree): Tree = tp match {
+    case tq"" => tp
+    case tq"$tpname" => tq"Rep[$tpname]"
   }
 
-  def genCompanion(comp: Option[STraitOrClassDef]): Tree = comp match {
-    case Some(c) =>
-      val compName = TypeName(c.name)
-      q"trait $compName"
-    case None => EmptyTree
-  }
-
-  def genCompanions(module: SEntityModuleDef): List[Tree] = {
-    genCompanion(module.entityOps.companion) :: module.concreteSClasses.map(clazz => genCompanion(clazz.companion))
-  }
-
-  def genModule(module: SEntityModuleDef): Tree = {
-    val newstats = genDefaultElem(module) ::
-      genEntity(module.entityOps) ::
-      (genClasses(module.concreteSClasses) ++ genCompanions(module))
-    val newSelf = genModuleSelf(module)
-    val name = TypeName(module.name)
-
-    val res = q"trait $name extends Base with BaseTypes { $newSelf => ..$newstats }"
-    val classes = genClasses(module.concreteSClasses)
-    //print(showCode(res))
-
-    res
-  }
-
-  def genScalaAst(module: SEntityModuleDef, orig: Tree): Tree = orig match {
-    case q"package $ref { ..$body }" =>
-      val virtBody = List[Tree](genModule(module))
-
-      q"package $ref { ..$virtBody }"
-    case tree => ???(tree)
+  def toRepExpr(expr: Tree): Tree = expr match {
+    case q"$expr: $tpt" =>
+      val reptpt = toRepType(tpt)
+      q"$expr: $reptpt"
+    case q"if ($cond) $thenexpr else $elseexpr" =>
+      q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
+    case q"${global.Literal(Constant(c))}" => q"toRep(${global.Literal(Constant(c))})"
+    case Apply(Select(New(tpt), termNames.CONSTRUCTOR), args) =>
+      val Ident(TypeName(name)) = tpt
+      Apply(Ident(TermName(name)), args)
+    case _ =>
+      //print(showRaw(expr))
+      expr
   }
 }
