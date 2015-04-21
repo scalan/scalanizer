@@ -18,42 +18,46 @@ trait GenScalaAst { self: ScalanPluginCake =>
   def genModule(module: SEntityModuleDef): Tree = {
     val newstats = genDefaultElem(module) ::
       genEntity(module.entityOps) ::
-      (genClasses(module.concreteSClasses) ++ genCompanions(module))
+      (genConcreteClasses(module.concreteSClasses) ++ genCompanions(module))
     val newSelf = genModuleSelf(module)
     val name = TypeName(module.name)
-
     val res = q"trait $name extends Base with BaseTypes { $newSelf => ..$newstats }"
-    val classes = genClasses(module.concreteSClasses)
+
     //print(showCode(res))
 
     res
   }
 
-  def genEntity(entity: STraitDef): Tree = {
-    val entityName = TypeName(entity.name)
-    val entitySelf = genSelf(entity.selfType)
-    val repStats = genBody(entity.body)
-    val entityParents = genParents(entity.ancestors)
+  def genTrait(tr: STraitDef): Tree = {
+    val entityName = TypeName(tr.name)
+    val entitySelf = genSelf(tr.selfType)
+    val repStats = genBody(tr.body)
+    val entityParents = genParents(tr.ancestors)
     val res = q"trait $entityName extends ..$entityParents { $entitySelf => ..$repStats }"
 
     //print(showRaw(res))
     res
   }
 
-  def genClasses(classes: List[SClassDef]): List[Tree] = {
-    classes.map{clazz =>
-      val className = TypeName(clazz.name)
-      val classSelf = genSelf(clazz.selfType)
-      val parents = genParents(clazz.ancestors)
-      val repStats = genBody(clazz.body)
-      val repparamss = genClassArgs(clazz.args, clazz.implicitArgs)
-      val res = q"""
-            abstract class $className (...$repparamss)
+  def genEntity(entity: STraitDef): Tree = genTrait(entity)
+
+  def genClass(c: SClassDef): Tree = {
+    val className = TypeName(c.name)
+    val classSelf = genSelf(c.selfType)
+    val parents = genParents(c.ancestors)
+    val repStats = genBody(c.body)
+    val repparamss = genClassArgs(c.args, c.implicitArgs)
+    val mods = if (c.isAbstract) Modifiers(Flag.ABSTRACT) else Modifiers(NoFlags)
+    val res = q"""
+            $mods class $className (...$repparamss)
             extends ..$parents
             { $classSelf => ..$repStats }
             """
-      res
-    }
+    res
+  }
+
+  def genConcreteClasses(classes: List[SClassDef]): List[Tree] = {
+    classes.map{clazz => genClass(clazz.copy(isAbstract = true))}
   }
 
   def genCompanions(module: SEntityModuleDef): List[Tree] = {
@@ -74,8 +78,8 @@ trait GenScalaAst { self: ScalanPluginCake =>
       case i: SImportStat => genImport(i)
       case t: STpeDef => genTypeDef(t)
       case o: SObjectDef => genObject(o)
-//      case tr: STraitDef => genTrait(tr)
-//      case c: SClassDef => genClass(c)
+      case tr: STraitDef => genTrait(tr)
+      case c: SClassDef => genClass(c)
       case _ => print("Unsupported body item: " + item);EmptyTree
     })
 
