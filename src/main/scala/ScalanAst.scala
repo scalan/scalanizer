@@ -128,7 +128,12 @@ package object ScalanAst {
     def explicitArgs = argSections.flatMap(_.args.filterNot(_.impFlag))
     def allArgs = argSections.flatMap(_.args)
   }
-  case class SValDef(name: String, tpe: Option[STpeExpr], isLazy: Boolean, isImplicit: Boolean) extends SBodyItem
+  case class SValDef(
+                      name: String,
+                      tpe: Option[STpeExpr],
+                      isLazy: Boolean,
+                      isImplicit: Boolean,
+                      expr: SExpr) extends SBodyItem
   case class STpeDef(name: String, tpeArgs: STpeArgs, rhs: STpeExpr) extends SBodyItem
 
   case class STpeArg(

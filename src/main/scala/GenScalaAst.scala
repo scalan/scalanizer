@@ -119,8 +119,12 @@ trait GenScalaAst { self: ScalanPluginCake =>
       case Some(tpe) => repTypeExpr(tpe)
       case None => TypeTree()
     }
+    val expr = v.expr match {
+      case SExternalExpr(e) => toRepExpr(e.asInstanceOf[Tree])
+      case _ => print("Unsupported value initializer: " + v.expr); EmptyTree
+    }
 
-    q"$mods val $tname: $tpt"
+    q"$mods val $tname: $tpt = $expr"
   }
 
   def genParents(ancestors: List[STraitCall]): List[Tree] = {
