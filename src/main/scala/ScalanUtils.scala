@@ -25,7 +25,8 @@ trait ScalanUtils { self: ScalanPluginCake =>
   def addAncestors(module: SEntityModuleDef) = {
     val newAncestors = STraitCall(
       name = "Reifiable",
-      tpeSExprs = List(STraitCall(module.entityOps.name, List()))
+      tpeSExprs = List(STraitCall(module.entityOps.name,
+                                  module.entityOps.tpeArgs.map(arg => STraitCall(arg.name, List()))))
     ) :: module.entityOps.ancestors
     val newEntity = module.entityOps.copy(ancestors = newAncestors)
 

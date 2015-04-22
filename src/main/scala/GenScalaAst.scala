@@ -193,7 +193,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     parents :: ancestors.map{ancestor =>
       val tpt = TypeName(ancestor.name)
       val tpts = ancestor.tpeSExprs.map(_ match {
-        case tpe: STraitCall => genTypeByName(tpe.name)
+        case tpe: STraitCall => genTypeExpr(tpe)
       })
 
       tq"$tpt[..$tpts]"
