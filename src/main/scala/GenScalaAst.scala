@@ -217,6 +217,12 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case STraitCall(name: String, tpeSExprs: List[STpeExpr]) =>
       val targs = tpeSExprs.map(genTypeExpr)
       tq"${TypeName(name)}[..$targs]"
+    case STpeTypeBounds(lo: STpeExpr, hi: STpeExpr) =>
+      TypeBoundsTree(genTypeExpr(lo), genTypeExpr(hi))
+    case STpeTuple(items: List[STpeExpr]) =>
+      val tpt = Select(Ident("scala"), TypeName("Tuple" + items.size.toString))
+      val tpts = items.map(genTypeExpr)
+      tq"$tpt[..$tpts]"
   }
 
   def repTypeExpr(tpeExpr: STpeExpr) = tpeExpr match {
@@ -225,7 +231,9 @@ trait GenScalaAst { self: ScalanPluginCake =>
       val targs = tpeSExprs.map(genTypeExpr)
       val appliedType = tq"${TypeName(name)}[..$targs]"
       tq"Rep[$appliedType]"
-    case _ => print("Unsupported tpeEpr: " + tpeExpr); EmptyTree
+    case STpeTuple(items: List[STpeExpr]) => tq"Rep[${genTypeExpr(tpeExpr)}]"
+//    case STpeFunc(domain: STpeExpr, range: STpeExpr) =>
+    case _ => print("Unsupported tpeExpr: " + tpeExpr); EmptyTree
   }
 
   def genClassArg(arg: SClassArg): Tree = {
