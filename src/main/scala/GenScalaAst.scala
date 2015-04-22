@@ -221,13 +221,8 @@ trait GenScalaAst { self: ScalanPluginCake =>
       TypeBoundsTree(genTypeExpr(lo), genTypeExpr(hi))
     case STpeTuple(items: List[STpeExpr]) => genTuples(items)
     case STpeFunc(domain: STpeExpr, range: STpeExpr) =>
-      val params = domain match {
-        case tuple: STpeTuple => tuple.items
-        case tpe: STpeExpr => List[STpeExpr](tpe)
-      }
-      val args = params ++ List(range)
-      val tpt = Select(Ident("scala"), TypeName("Function" + params.size.toString))
-      val tpts = args.map(genTypeExpr)
+      val tpt = genTypeSel("scala", "Function1")
+      val tpts = genTypeExpr(domain) :: genTypeExpr(range) :: Nil
 
       tq"$tpt[..$tpts]"
   }
