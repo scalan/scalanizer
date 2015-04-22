@@ -33,7 +33,8 @@ trait GenScalaAst { self: ScalanPluginCake =>
     val entitySelf = genSelf(tr.selfType)
     val repStats = genBody(tr.body)
     val entityParents = genParents(tr.ancestors)
-    val res = q"trait $entityName extends ..$entityParents { $entitySelf => ..$repStats }"
+    val tparams = tr.tpeArgs.map(genTypeArg)
+    val res = q"trait $entityName[..$tparams] extends ..$entityParents { $entitySelf => ..$repStats }"
 
     //print(showRaw(res))
     res
@@ -48,8 +49,9 @@ trait GenScalaAst { self: ScalanPluginCake =>
     val repStats = genBody(c.body)
     val repparamss = genClassArgs(c.args, c.implicitArgs)
     val mods = if (c.isAbstract) Modifiers(Flag.ABSTRACT) else Modifiers(NoFlags)
+    val tparams = c.tpeArgs.map(genTypeArg)
     val res = q"""
-            $mods class $className (...$repparamss)
+            $mods class $className[..$tparams] (...$repparamss)
             extends ..$parents
             { $classSelf => ..$repStats }
             """
