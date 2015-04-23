@@ -2,6 +2,7 @@ package scalan.plugin
 
 import scala.tools.nsc._
 import ScalanAst._
+import scala.tools.nsc.util.BatchSourceFile
 
 trait GenScalaAst { self: ScalanPluginCake =>
   val global: Global
@@ -34,7 +35,8 @@ trait GenScalaAst { self: ScalanPluginCake =>
     val repStats = genBody(tr.body)
     val entityParents = genParents(tr.ancestors)
     val tparams = tr.tpeArgs.map(genTypeArg)
-    val res = q"trait $entityName[..$tparams] extends ..$entityParents { $entitySelf => ..$repStats }"
+    val mods = Modifiers(NoFlags, tpnme.EMPTY, tr.annotations.map(genAnnotation))
+    val res = q"$mods trait $entityName[..$tparams] extends ..$entityParents { $entitySelf => ..$repStats }"
 
     //print(showRaw(res))
     res
@@ -48,7 +50,8 @@ trait GenScalaAst { self: ScalanPluginCake =>
     val parents = genParents(c.ancestors)
     val repStats = genBody(c.body)
     val repparamss = genClassArgs(c.args, c.implicitArgs)
-    val mods = if (c.isAbstract) Modifiers(Flag.ABSTRACT) else Modifiers(NoFlags)
+    val flags = if (c.isAbstract) Flag.ABSTRACT else NoFlags
+    val mods = Modifiers(flags, tpnme.EMPTY, c.annotations.map(genAnnotation))
     val tparams = c.tpeArgs.map(genTypeArg)
     val res = q"""
             $mods class $className[..$tparams] (...$repparamss)
@@ -92,14 +95,14 @@ trait GenScalaAst { self: ScalanPluginCake =>
     val tname = TermName(m.name)
     val impFlag = if (m.isImplicit) Flag.IMPLICIT else NoFlags
     val flags = Flag.PARAM | impFlag
-    val mods = Modifiers(flags)
+    val mods = Modifiers(flags, tpnme.EMPTY, m.annotations.map(genAnnotation))
     val tpt = m.tpeRes match {
       case Some(tpeRes) => repTypeExpr(tpeRes)
       case None => EmptyTree
     }
     val paramss = genMethodArgs(m.argSections)
     val exprs = m.body match {
-      case Some(SExternalExpr(tree)) => toRepExpr(tree.asInstanceOf[Tree])
+      case Some(expr) => toRepExpr(genExpr(expr))
       case None => EmptyTree
     }
     val tparams = genTypeArgs(m.tpeArgs)
@@ -113,7 +116,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     val overFlag = if (arg.overFlag) Flag.OVERRIDE else NoFlags
     val impFlag = if (arg.impFlag) Flag.IMPLICIT else NoFlags
     val flags = overFlag | impFlag
-    val mods = Modifiers(flags)
+    val mods = Modifiers(flags, tpnme.EMPTY, arg.annotations.map(genAnnotation))
 
     q"$mods val $tname: $tpt"
   }
@@ -131,10 +134,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
       case Some(tpe) => repTypeExpr(tpe)
       case None => TypeTree()
     }
-    val expr = v.expr match {
-      case SExternalExpr(e) => toRepExpr(e.asInstanceOf[Tree])
-      case _ => print("Unsupported value initializer: " + v.expr); EmptyTree
-    }
+    val expr = genExpr(v.expr)
 
     q"$mods val $tname: $tpt = $expr"
   }
@@ -245,7 +245,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     val overFlag = if (arg.overFlag) Flag.OVERRIDE else NoFlags
     val impFlag = if (arg.impFlag) Flag.IMPLICIT else NoFlags
     val flags = Flag.PARAM | valFlag | overFlag | impFlag
-    val mods = Modifiers(flags)
+    val mods = Modifiers(flags, tpnme.EMPTY, arg.annotations.map(genAnnotation))
 
     q"$mods val $tname: $tpt"
   }
@@ -310,5 +310,18 @@ trait GenScalaAst { self: ScalanPluginCake =>
   def genTuples(elems: List[STpeExpr]): Tree = elems match {
     case x :: y :: Nil => genTuple2(genTypeExpr(x), genTypeExpr(y))
     case x :: xs => genTuple2(genTypeExpr(x), genTuples(xs))
+  }
+
+  def genExpr(expr: SExpr): Tree = expr match {
+//    case SApply(fun: SExpr, args: List[SExpr]) =>
+//    case SLiteral(value: String) =>
+    case SDefaultExpr(s: String) => global.Literal(Constant(s))
+    case SExternalExpr(ext) => ext.asInstanceOf[Tree]
+    case e => print("Unsupported expr " + e); EmptyTree
+  }
+
+  def genAnnotation(annot: SAnnotation): Tree = {
+    val args = annot.args.map(genExpr)
+    Apply(Select(New(Ident(annot.annotationClass)), nme.CONSTRUCTOR), args)
   }
 }
