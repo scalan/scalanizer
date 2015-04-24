@@ -24,8 +24,6 @@ trait GenScalaAst { self: ScalanPluginCake =>
     val name = TypeName(module.name)
     val res = q"trait $name extends Base with BaseTypes { $newSelf => ..$newstats }"
 
-    //print(showCode(res))
-
     res
   }
 
@@ -38,7 +36,6 @@ trait GenScalaAst { self: ScalanPluginCake =>
     val mods = Modifiers(NoFlags, tpnme.EMPTY, tr.annotations.map(genAnnotation))
     val res = q"$mods trait $entityName[..$tparams] extends ..$entityParents { $entitySelf => ..$repStats }"
 
-    //print(showRaw(res))
     res
   }
 
@@ -294,7 +291,11 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case SConst(c: Any) => q"toRep(${global.Literal(global.Constant(c))})"
     case SIdent(name: String) => Ident(TermName(name))
     case SSelect(expr: SExpr, tname: String) => q"${genExpr(expr)}.${TermName(tname)}"
-    case SApply(fun: SExpr, args: List[SExpr]) => q"${genExpr(fun)}(..${args.map(genExpr)})"
+    case SApply(fun: SExpr, args: List[SExpr]) => fun match {
+        case SSelect(SIdent(pkg), name) if pkg == "scala" && name.startsWith("Tuple") =>
+          q"Tuple(..${args.map(genExpr)})"
+        case _ => q"${genExpr(fun)}(..${args.map(genExpr)})"
+      }
     case sv: SValDef => genVal(sv)
     case SBlock(init: List[SExpr], last) => Block(init.map(genExpr), genExpr(last))
     case SIf(c, t, e) => q"IF (${genExpr(c)}) THEN {${genExpr(t)}} ELSE {${genExpr(e)}}"
