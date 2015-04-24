@@ -89,7 +89,7 @@ trait ScalanParsers {
       case Seq(only) => only
       case seq => !!!(s"There must be exactly one module trait in file, found ${seq.length}")
     }
-    val moduleTraitDef = traitDef(moduleTraitTree, moduleTraitTree)
+    val moduleTraitDef = traitDef(moduleTraitTree, Some(moduleTraitTree))
     val module = SEntityModuleDef(packageName, imports, moduleTraitDef/*, config*/)
     val moduleName = moduleTraitDef.name
 
@@ -142,21 +142,26 @@ trait ScalanParsers {
   // exclude default parent
   def ancestors(trees: List[Tree]) = trees.map(traitCall).filter(_.name != "AnyRef")
 
-  def traitDef(td: ClassDef, parentScope: ImplDef): STraitDef = {
-    val tpeArgs = this.tpeArgs(td.tparams, Nil)
-    val ancestors = this.ancestors(td.impl.parents)
-    val body = td.impl.body.flatMap(optBodyItem(_, td))
-    val selfType = this.selfType(td.impl.self)
-    val name = td.name.toString
-    val companion = parentScope.impl.body.collect {
+  def findCompaion(name: String, parentScope: Option[ImplDef]) = parentScope match {
+    case Some(scope) => scope.impl.body.collect {
       case c: ClassDef if c.name.toString == name + "Companion" =>
         if (c.mods.isTrait) traitDef(c, parentScope) else classDef(c, parentScope)
     }.headOption
+    case None => None
+  }
+
+  def traitDef(td: ClassDef, parentScope: Option[ImplDef]): STraitDef = {
+    val tpeArgs = this.tpeArgs(td.tparams, Nil)
+    val ancestors = this.ancestors(td.impl.parents)
+    val body = td.impl.body.flatMap(optBodyItem(_, Some(td)))
+    val selfType = this.selfType(td.impl.self)
+    val name = td.name.toString
+    val companion = findCompaion(name, parentScope)
     val annotations = parseAnnotations(td)((n,as) => STraitOrClassAnnotation(n,as.map(parseExpr)))
     STraitDef(name, tpeArgs, ancestors, body, selfType, companion, annotations)
   }
 
-  def classDef(cd: ClassDef, parentScope: ImplDef): SClassDef = {
+  def classDef(cd: ClassDef, parentScope: Option[ImplDef]): SClassDef = {
     val ancestors = this.ancestors(cd.impl.parents)
     val constructor = (cd.impl.body.collect {
       case dd: DefDef if dd.name == nme.CONSTRUCTOR => dd
@@ -175,21 +180,18 @@ trait ScalanParsers {
       case seq => !!!(s"Constructor of class ${cd.name} has more than 2 parameter lists, not supported")
     }
     val tpeArgs = this.tpeArgs(cd.tparams, constructor.vparamss.lastOption.getOrElse(Nil))
-    val body = cd.impl.body.flatMap(optBodyItem(_, cd))
+    val body = cd.impl.body.flatMap(optBodyItem(_, Some(cd)))
     val selfType = this.selfType(cd.impl.self)
     val isAbstract = cd.mods.hasAbstractFlag
     val name = cd.name.toString
-    val companion = parentScope.impl.body.collect {
-      case c: ClassDef if c.name.toString == name + "Companion" =>
-        if (c.mods.isTrait) traitDef(c, parentScope) else classDef(c, parentScope)
-    }.headOption
+    val companion = findCompaion(name, parentScope)
     val annotations = parseAnnotations(cd)((n,as) => STraitOrClassAnnotation(n,as.map(parseExpr)))
     SClassDef(cd.name, tpeArgs, args, implicitArgs, ancestors, body, selfType, companion, isAbstract, annotations)
   }
 
   def objectDef(od: ModuleDef): SObjectDef = {
     val ancestors = this.ancestors(od.impl.parents)
-    val body = od.impl.body.flatMap(optBodyItem(_, od))
+    val body = od.impl.body.flatMap(optBodyItem(_, Some(od)))
     SObjectDef(od.name, ancestors, body)
   }
 
@@ -214,7 +216,7 @@ trait ScalanParsers {
     case tree => ???(tree)
   }
 
-  def optBodyItem(tree: Tree, parentScope: ImplDef): Option[SBodyItem] = tree match {
+  def optBodyItem(tree: Tree, parentScope: Option[ImplDef]): Option[SBodyItem] = tree match {
     case i: Import =>
       Some(importStat(i))
     case md: DefDef =>
@@ -388,6 +390,9 @@ trait ScalanParsers {
       SValDef(tname, optTpeExpr(tpt), mods.isLazy, mods.isImplicit, parseExpr(expr))
     case q"if ($cond) $th else $el" => SIf(parseExpr(cond), parseExpr(th), parseExpr(el))
     case q"$expr: $tpt" => SAscr(parseExpr(expr), tpeExpr(tpt))
-    case _ => print(showRaw(tree)) ; SDefaultExpr("Error parsing")
+    case bi => optBodyItem(bi, None) match {
+      case Some(item) => item
+      case None => print("Error parsing of " + showRaw(bi)); SDefaultExpr("Error parsing")
+    }
   }
 }

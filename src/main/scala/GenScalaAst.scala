@@ -76,20 +76,18 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case None => EmptyTree
   }
 
-  def genBody(body: List[SBodyItem]): List[Tree] = {
-    val repBody = body.map((item: SBodyItem) => item match {
-      case m: SMethodDef => genMethod(m)
-      case v: SValDef => genVal(v)
-      case i: SImportStat => genImport(i)
-      case t: STpeDef => genTypeDef(t)
-      case o: SObjectDef => genObject(o)
-      case tr: STraitDef => genTrait(tr)
-      case c: SClassDef => genClass(c)
-      case _ => print("Unsupported body item: " + item);EmptyTree
-    })
-
-    repBody
+  def genBodyItem(item: SBodyItem): Tree = item match {
+    case m: SMethodDef => genMethod(m)
+    case v: SValDef => genVal(v)
+    case i: SImportStat => genImport(i)
+    case t: STpeDef => genTypeDef(t)
+    case o: SObjectDef => genObject(o)
+    case tr: STraitDef => genTrait(tr)
+    case c: SClassDef => genClass(c)
+    case _ => print("Unsupported defs: " + item);EmptyTree
   }
+
+  def genBody(body: List[SBodyItem]): List[Tree] = body.map(genBodyItem)
 
   def genMethod(m: SMethodDef): Tree = {
     val tname = TermName(m.name)
@@ -303,8 +301,9 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case SAscr(expr, tpt) => q"${genExpr(expr)}: ${repTypeExpr(tpt)}"
     case SContr(name, args) => Apply(Ident(TermName(name)), args.map(genExpr))
 //    case SLiteral(value: String) =>
-    case SDefaultExpr(s: String) => global.Literal(Constant(s))
-    //case SExternalExpr(ext) => ext.asInstanceOf[Tree]
+//    case SDefaultExpr(s: String) => global.Literal(Constant(s))
+//    case SExternalExpr(ext) => ext.asInstanceOf[Tree]
+    case bi: SBodyItem => genBodyItem(bi)
     case e => print("Unsupported expr " + e); EmptyTree
   }
 
