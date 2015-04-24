@@ -288,6 +288,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
   }
 
   def genExpr(expr: SExpr): Tree = expr match {
+    case SEmpty() => q""
     case SConst(c: Any) => q"toRep(${global.Literal(global.Constant(c))})"
     case SIdent(name: String) => Ident(TermName(name))
     case SSelect(expr: SExpr, tname: String) => q"${genExpr(expr)}.${TermName(tname)}"
@@ -301,9 +302,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case SIf(c, t, e) => q"IF (${genExpr(c)}) THEN {${genExpr(t)}} ELSE {${genExpr(e)}}"
     case SAscr(expr, tpt) => q"${genExpr(expr)}: ${repTypeExpr(tpt)}"
     case SContr(name, args) => Apply(Ident(TermName(name)), args.map(genExpr))
-//    case SLiteral(value: String) =>
-//    case SDefaultExpr(s: String) => global.Literal(Constant(s))
-//    case SExternalExpr(ext) => ext.asInstanceOf[Tree]
+    case SFunc(params, res) => q"(..${params.map(genExpr)}) => ${genExpr(res)}"
     case bi: SBodyItem => genBodyItem(bi)
     case e => print("Unsupported expr " + e); EmptyTree
   }

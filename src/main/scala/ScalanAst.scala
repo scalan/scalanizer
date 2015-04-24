@@ -104,6 +104,7 @@ package object ScalanAst {
 
   // SExpr universe --------------------------------------------------------------------------
   trait SExpr
+  case class SEmpty() extends SExpr
   case class SConst(c: Any) extends SExpr
   case class SIdent(name: String) extends SExpr
   case class SApply(fun: SExpr, args: List[SExpr]) extends SExpr
@@ -111,6 +112,7 @@ package object ScalanAst {
   case class SBlock(init: List[SExpr], last: SExpr) extends SExpr
   case class SIf(cond: SExpr, th: SExpr, el: SExpr) extends SExpr
   case class SAscr(expr: SExpr, pt: STpeExpr) extends SExpr
+  case class SFunc(params: List[SExpr], res: SExpr) extends SExpr
   case class SContr(name: String, args: List[SExpr]) extends SExpr
   case class SLiteral(value: String) extends SExpr
   case class SDefaultExpr(expr: String) extends SExpr

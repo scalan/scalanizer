@@ -379,17 +379,19 @@ trait ScalanParsers {
   }
 
   def parseExpr(tree: Tree): SExpr = tree match {
-    case Apply(Select(New(name), termNames.CONSTRUCTOR), args) =>
-      SContr(name.toString(), args.map(parseExpr))
+    case EmptyTree => SEmpty()
     case Literal(Constant(c)) => SConst(c)
     case Ident(TermName(name)) => SIdent(name)
     case q"$expr.$tname" => SSelect(parseExpr(expr), tname)
+    case Apply(Select(New(name), termNames.CONSTRUCTOR), args) =>
+      SContr(name.toString(), args.map(parseExpr))
     case q"$expr(..$exprs)" => SApply(parseExpr(expr), exprs.map(parseExpr))
     case Block(init, last) => SBlock(init.map(parseExpr), parseExpr(last))
     case q"$mods val $tname: $tpt = $expr" =>
       SValDef(tname, optTpeExpr(tpt), mods.isLazy, mods.isImplicit, parseExpr(expr))
     case q"if ($cond) $th else $el" => SIf(parseExpr(cond), parseExpr(th), parseExpr(el))
     case q"$expr: $tpt" => SAscr(parseExpr(expr), tpeExpr(tpt))
+    case q"(..$params) => $expr" => SFunc(params.map(parseExpr), parseExpr(expr))
     case bi => optBodyItem(bi, None) match {
       case Some(item) => item
       case None => print("Error parsing of " + showRaw(bi)); SDefaultExpr("Error parsing")
