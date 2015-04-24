@@ -102,7 +102,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     }
     val paramss = genMethodArgs(m.argSections)
     val exprs = m.body match {
-      case Some(expr) => toRepExpr(genExpr(expr))
+      case Some(expr) => genExpr(expr)
       case None => EmptyTree
     }
     val tparams = genTypeArgs(m.tpeArgs)
@@ -276,26 +276,6 @@ trait GenScalaAst { self: ScalanPluginCake =>
     defaultElem
   }
 
-  def toRepType(tp: Tree): Tree = tp match {
-    case tq"" => tp
-    case tq"$tpname" => tq"Rep[$tpname]"
-  }
-
-  def toRepExpr(expr: Tree): Tree = expr match {
-    case q"$expr: $tpt" =>
-      val reptpt = toRepType(tpt)
-      q"$expr: $reptpt"
-    case q"if ($cond) $thenexpr else $elseexpr" =>
-      q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
-    case q"${global.Literal(Constant(c))}" => q"toRep(${global.Literal(Constant(c))})"
-    case Apply(Select(New(tpt), termNames.CONSTRUCTOR), args) =>
-      val Ident(TypeName(name)) = tpt
-      Apply(Ident(TermName(name)), args)
-    case _ =>
-      //print(showRaw(expr))
-      expr
-  }
-
   def genTypeSel(ref: String, name: String) = {
     Select(Ident(ref), TypeName(name))
   }
@@ -320,9 +300,11 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case sv: SValDef => genVal(sv)
     case SBlock(init: List[SExpr], last) => Block(init.map(genExpr), genExpr(last))
     case SIf(c, t, e) => q"IF (${genExpr(c)}) THEN {${genExpr(t)}} ELSE {${genExpr(e)}}"
+    case SAscr(expr, tpt) => q"${genExpr(expr)}: ${repTypeExpr(tpt)}"
+    case SContr(name, args) => Apply(Ident(TermName(name)), args.map(genExpr))
 //    case SLiteral(value: String) =>
     case SDefaultExpr(s: String) => global.Literal(Constant(s))
-    case SExternalExpr(ext) => ext.asInstanceOf[Tree]
+    //case SExternalExpr(ext) => ext.asInstanceOf[Tree]
     case e => print("Unsupported expr " + e); EmptyTree
   }
 

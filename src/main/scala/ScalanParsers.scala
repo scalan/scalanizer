@@ -377,7 +377,8 @@ trait ScalanParsers {
   }
 
   def parseExpr(tree: Tree): SExpr = tree match {
-    case contr @ Apply(Select(New(_), termNames.CONSTRUCTOR), _) => SExternalExpr(contr)
+    case Apply(Select(New(name), termNames.CONSTRUCTOR), args) =>
+      SContr(name.toString(), args.map(parseExpr))
     case Literal(Constant(c)) => SConst(c)
     case Ident(TermName(name)) => SIdent(name)
     case q"$expr.$tname" => SSelect(parseExpr(expr), tname)
@@ -386,7 +387,7 @@ trait ScalanParsers {
     case q"$mods val $tname: $tpt = $expr" =>
       SValDef(tname, optTpeExpr(tpt), mods.isLazy, mods.isImplicit, parseExpr(expr))
     case q"if ($cond) $th else $el" => SIf(parseExpr(cond), parseExpr(th), parseExpr(el))
-    case _ => print(showRaw(tree))
-      SExternalExpr(tree)
+    case q"$expr: $tpt" => SAscr(parseExpr(expr), tpeExpr(tpt))
+    case _ => print(showRaw(tree)) ; SDefaultExpr("Error parsing")
   }
 }

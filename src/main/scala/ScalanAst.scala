@@ -110,9 +110,11 @@ package object ScalanAst {
   case class SSelect(expr: SExpr, tname: String) extends SExpr
   case class SBlock(init: List[SExpr], last: SExpr) extends SExpr
   case class SIf(cond: SExpr, th: SExpr, el: SExpr) extends SExpr
+  case class SAscr(expr: SExpr, pt: STpeExpr) extends SExpr
+  case class SContr(name: String, args: List[SExpr]) extends SExpr
   case class SLiteral(value: String) extends SExpr
   case class SDefaultExpr(expr: String) extends SExpr
-  case class SExternalExpr(ext: AnyRef) extends SExpr
+  //case class SExternalExpr(ext: AnyRef) extends SExpr
 
   // SBodyItem universe ----------------------------------------------------------------------
   abstract class SBodyItem extends SExpr
