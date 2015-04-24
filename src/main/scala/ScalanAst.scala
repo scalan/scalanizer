@@ -104,13 +104,18 @@ package object ScalanAst {
 
   // SExpr universe --------------------------------------------------------------------------
   trait SExpr
+  case class SConst(c: Any) extends SExpr
+  case class SIdent(name: String) extends SExpr
   case class SApply(fun: SExpr, args: List[SExpr]) extends SExpr
+  case class SSelect(expr: SExpr, tname: String) extends SExpr
+  case class SBlock(init: List[SExpr], last: SExpr) extends SExpr
+  case class SIf(cond: SExpr, th: SExpr, el: SExpr) extends SExpr
   case class SLiteral(value: String) extends SExpr
   case class SDefaultExpr(expr: String) extends SExpr
   case class SExternalExpr(ext: AnyRef) extends SExpr
 
   // SBodyItem universe ----------------------------------------------------------------------
-  abstract class SBodyItem
+  abstract class SBodyItem extends SExpr
   case class SImportStat(name: String) extends SBodyItem
 
   case class SMethodDef(

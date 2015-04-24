@@ -152,7 +152,7 @@ trait ScalanParsers {
       case c: ClassDef if c.name.toString == name + "Companion" =>
         if (c.mods.isTrait) traitDef(c, parentScope) else classDef(c, parentScope)
     }.headOption
-    val annotations = parseAnnotations(td)((n,as) => STraitOrClassAnnotation(n,as.map(expr)))
+    val annotations = parseAnnotations(td)((n,as) => STraitOrClassAnnotation(n,as.map(parseExpr)))
     STraitDef(name, tpeArgs, ancestors, body, selfType, companion, annotations)
   }
 
@@ -183,7 +183,7 @@ trait ScalanParsers {
       case c: ClassDef if c.name.toString == name + "Companion" =>
         if (c.mods.isTrait) traitDef(c, parentScope) else classDef(c, parentScope)
     }.headOption
-    val annotations = parseAnnotations(cd)((n,as) => STraitOrClassAnnotation(n,as.map(expr)))
+    val annotations = parseAnnotations(cd)((n,as) => STraitOrClassAnnotation(n,as.map(parseExpr)))
     SClassDef(cd.name, tpeArgs, args, implicitArgs, ancestors, body, selfType, companion, isAbstract, annotations)
   }
 
@@ -200,7 +200,7 @@ trait ScalanParsers {
     val default = optExpr(vd.rhs)
     val isOverride = vd.mods.isAnyOverride
     val isVal = vd.mods.isParamAccessor
-    val annotations = parseAnnotations(vd)((n,as) => new SArgAnnotation(n, as.map(expr)))
+    val annotations = parseAnnotations(vd)((n,as) => new SArgAnnotation(n, as.map(parseExpr)))
     SClassArg(vd.mods.isImplicit, isOverride, isVal, vd.name, tpe, default, annotations)
   }
 
@@ -242,7 +242,7 @@ trait ScalanParsers {
         val tpeRes = optTpeExpr(vd.tpt)
         val isImplicit = vd.mods.isImplicit
         val isLazy = vd.mods.isLazy
-        Some(SValDef(vd.name, tpeRes, isImplicit, isLazy, SExternalExpr(vd.rhs)))
+        Some(SValDef(vd.name, tpeRes, isImplicit, isLazy, parseExpr(vd.rhs)))
       } else
         None
     case EmptyTree =>
@@ -289,7 +289,7 @@ trait ScalanParsers {
       case _ => None
     }
     val annotations = md.mods.annotations.map {
-      case ExtractAnnotation(name, args) => SMethodAnnotation(name, args.map(expr))
+      case ExtractAnnotation(name, args) => SMethodAnnotation(name, args.map(parseExpr))
       case a => !!!(s"Cannot parse annotation $a of the method $md")
     }
     //    val optExternal = md match {
@@ -300,7 +300,7 @@ trait ScalanParsers {
     val optBody:Option[SExpr] = md.rhs match {
       case Apply(ident:Ident, args) if ident.name.intern() == "sql" =>
         Some(SApply(SLiteral("sql"), List(SLiteral(args(0).asInstanceOf[Literal].value.stringValue))))
-      case ext @ _ => Some(SExternalExpr(ext))
+      case _ => optExpr(md.rhs)
     }
     val optElem = if (isElem) Some(()) else None
     SMethodDef(md.name, tpeArgs, args, tpeRes, isImplicit, optOverloadId, annotations, optBody, optElem)
@@ -345,21 +345,10 @@ trait ScalanParsers {
     case tree => ???(tree)
   }
 
-  def optExpr(tree: Tree): Option[SExpr] = {
-    if (tree.isEmpty)
-      None
-    else
-      Some(expr(tree))
-  }
-
-  def expr(tree: Tree): SExpr = tree match {
-    case tree => SDefaultExpr(tree.toString)
-  }
-
   def methodArg(vd: ValDef): SMethodArg = {
     val tpe = tpeExpr(vd.tpt)
     val default = optExpr(vd.rhs)
-    val annotations = parseAnnotations(vd)((n,as) => new SArgAnnotation(n, as.map(expr)))
+    val annotations = parseAnnotations(vd)((n,as) => new SArgAnnotation(n, as.map(parseExpr)))
     val isOverride = vd.mods.isAnyOverride
     SMethodArg(vd.mods.isImplicit, isOverride, vd.name, tpe, default, annotations)
   }
@@ -378,5 +367,26 @@ trait ScalanParsers {
       None
     else
       Some(SSelfTypeDef(vd.name.toString, components))
+  }
+
+  def optExpr(tree: Tree): Option[SExpr] = {
+    if (tree.isEmpty)
+      None
+    else
+      Some(parseExpr(tree))
+  }
+
+  def parseExpr(tree: Tree): SExpr = tree match {
+    case contr @ Apply(Select(New(_), termNames.CONSTRUCTOR), _) => SExternalExpr(contr)
+    case Literal(Constant(c)) => SConst(c)
+    case Ident(TermName(name)) => SIdent(name)
+    case q"$expr.$tname" => SSelect(parseExpr(expr), tname)
+    case q"$expr(..$exprs)" => SApply(parseExpr(expr), exprs.map(parseExpr))
+    case Block(init, last) => SBlock(init.map(parseExpr), parseExpr(last))
+    case q"$mods val $tname: $tpt = $expr" =>
+      SValDef(tname, optTpeExpr(tpt), mods.isLazy, mods.isImplicit, parseExpr(expr))
+    case q"if ($cond) $th else $el" => SIf(parseExpr(cond), parseExpr(th), parseExpr(el))
+    case _ => print(showRaw(tree))
+      SExternalExpr(tree)
   }
 }

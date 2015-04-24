@@ -313,7 +313,13 @@ trait GenScalaAst { self: ScalanPluginCake =>
   }
 
   def genExpr(expr: SExpr): Tree = expr match {
-//    case SApply(fun: SExpr, args: List[SExpr]) =>
+    case SConst(c: Any) => q"toRep(${global.Literal(global.Constant(c))})"
+    case SIdent(name: String) => Ident(TermName(name))
+    case SSelect(expr: SExpr, tname: String) => q"${genExpr(expr)}.${TermName(tname)}"
+    case SApply(fun: SExpr, args: List[SExpr]) => q"${genExpr(fun)}(..${args.map(genExpr)})"
+    case sv: SValDef => genVal(sv)
+    case SBlock(init: List[SExpr], last) => Block(init.map(genExpr), genExpr(last))
+    case SIf(c, t, e) => q"IF (${genExpr(c)}) THEN {${genExpr(t)}} ELSE {${genExpr(e)}}"
 //    case SLiteral(value: String) =>
     case SDefaultExpr(s: String) => global.Literal(Constant(s))
     case SExternalExpr(ext) => ext.asInstanceOf[Tree]
