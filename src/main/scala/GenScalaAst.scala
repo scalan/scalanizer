@@ -289,13 +289,13 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case SEmpty() => q""
     case SConst(c: Any) => q"toRep(${global.Literal(global.Constant(c))})"
     case SIdent(name: String) => Ident(TermName(name))
+    case SAssign(left, right) => q"${genExpr(left)} = ${genExpr(right)}"
     case SSelect(expr: SExpr, tname: String) => q"${genExpr(expr)}.${TermName(tname)}"
     case SApply(fun: SExpr, args: List[SExpr]) => fun match {
         case SSelect(SIdent(pkg), name) if pkg == "scala" && name.startsWith("Tuple") =>
           q"Tuple(..${args.map(genExpr)})"
         case _ => q"${genExpr(fun)}(..${args.map(genExpr)})"
       }
-    case sv: SValDef => genVal(sv)
     case SBlock(init: List[SExpr], last) => Block(init.map(genExpr), genExpr(last))
     case SIf(c, t, e) => q"IF (${genExpr(c)}) THEN {${genExpr(t)}} ELSE {${genExpr(e)}}"
     case SAscr(expr, tpt) => q"${genExpr(expr)}: ${repTypeExpr(tpt)}"
