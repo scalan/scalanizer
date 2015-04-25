@@ -13,7 +13,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
       val virtBody = List[Tree](genModule(module))
 
       q"package $ref { ..$virtBody }"
-    case tree => ???(tree)
+    case tree => throw new IllegalArgumentException("Module must be in a package")
   }
 
   def genModule(module: SEntityModuleDef): Tree = {
@@ -67,9 +67,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
   }
 
   def genCompanion(comp: Option[STraitOrClassDef]): Tree = comp match {
-    case Some(c) =>
-      val compName = TypeName(c.name)
-      q"trait $compName"
+    case Some(c) => q"trait ${TypeName(c.name)}"
     case None => EmptyTree
   }
 
@@ -81,7 +79,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case o: SObjectDef => genObject(o)
     case tr: STraitDef => genTrait(tr)
     case c: SClassDef => genClass(c)
-    case _ => print("Unsupported defs: " + item);EmptyTree
+    case unknown => throw new NotImplementedError(s"genBodyItem($unknown)")
   }
 
   def genBody(body: List[SBodyItem]): List[Tree] = body.map(genBodyItem)
@@ -189,7 +187,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
       val tpt = TypeName(ancestor.name)
       val tpts = ancestor.tpeSExprs.map(_ match {
         case tpe: STraitCall => genTypeExpr(tpe)
-        case _ => TypeTree() // Actually, invalid case
+        case inval => throw new IllegalArgumentException(s"genParents($inval)")
       })
 
       tq"$tpt[..$tpts]"
@@ -231,7 +229,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
       tq"Rep[$appliedType]"
     case STpeTuple(_) => tq"Rep[${genTypeExpr(tpeExpr)}]"
     case STpeFunc(_, _) => tq"Rep[${genTypeExpr(tpeExpr)}]"
-    case _ => print("Unsupported type expr: " + tpeExpr); EmptyTree
+    case unknown => throw new NotImplementedError(s"repTypeExp($unknown)")
   }
 
   def genClassArg(arg: SClassArg): Tree = {
@@ -261,10 +259,8 @@ trait GenScalaAst { self: ScalanPluginCake =>
     val entityNameType = genTypeByName(entityName)
     val defaultClassName = module.concreteSClasses.head.name
     val defaultClass = tq"${TypeName(defaultClassName)}"
-
     val methodName = TermName("default" + entityName + "Elem")
     val returnType = tq"Elem[$entityNameType]"
-
     val defaultElem = q"""
       implicit def $methodName: $returnType = element[$defaultClass].asElem[$entityNameType]
       """
@@ -286,7 +282,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
   def genTuples(elems: List[STpeExpr]): Tree = elems match {
     case x :: y :: Nil => genTuple2(genTypeExpr(x), genTypeExpr(y))
     case x :: xs => genTuple2(genTypeExpr(x), genTuples(xs))
-    case Nil => EmptyTree
+    case Nil => throw new IllegalArgumentException("Tuple must have at least 2 elements.")
   }
 
   def genExpr(expr: SExpr): Tree = expr match {
@@ -306,7 +302,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case SContr(name, args) => Apply(Ident(TermName(name)), args.map(genExpr))
     case SFunc(params, res) => q"(..${params.map(genExpr)}) => ${genExpr(res)}"
     case bi: SBodyItem => genBodyItem(bi)
-    case e => print("Unsupported expr " + e); EmptyTree
+    case unknown => throw new NotImplementedError(s"genExpr($unknown)")
   }
 
   def genAnnotation(annot: SAnnotation): Tree = {
