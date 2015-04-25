@@ -303,6 +303,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case SFunc(params, res) => q"(..${params.map(genExpr)}) => ${genExpr(res)}"
     case SThis(tname) => q"${TypeName(tname)}.this"
     case SSuper(name, qual, field) => q"${TypeName(name)}.super[${TypeName(qual)}].${TermName(field)}"
+    case SAnnotated(expr, annot) => q"${genExpr(expr)}: @${TypeName(annot)}"
     case bi: SBodyItem => genBodyItem(bi)
     case unknown => throw new NotImplementedError(s"genExpr($unknown)")
   }

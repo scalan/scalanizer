@@ -115,6 +115,7 @@ package object ScalanAst {
   case class SLiteral(value: String) extends SExpr
   case class SDefaultExpr(expr: String) extends SExpr
   //case class SExternalExpr(ext: AnyRef) extends SExpr
+  case class SAnnotated(expr: SExpr, annot: String) extends SExpr
 
   // SBodyItem universe ----------------------------------------------------------------------
   abstract class SBodyItem extends SExpr

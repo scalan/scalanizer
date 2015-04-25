@@ -395,6 +395,7 @@ trait ScalanParsers {
     case q"$expr: $tpt" => SAscr(parseExpr(expr), tpeExpr(tpt))
     case q"(..$params) => $expr" => SFunc(params.map(parseExpr), parseExpr(expr))
     case q"$tpname.this" => SThis(tpname)
+    case q"$expr: @$annot" => SAnnotated(parseExpr(expr), annot.toString)
     case bi => optBodyItem(bi, None) match {
       case Some(item) => item
       case None => print("Error parsing of " + showRaw(bi)); SDefaultExpr("Error parsing")
