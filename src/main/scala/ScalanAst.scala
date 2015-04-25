@@ -109,6 +109,7 @@ package object ScalanAst {
   case class SAscr(expr: SExpr, pt: STpeExpr) extends SExpr
   case class SFunc(params: List[SExpr], res: SExpr) extends SExpr
   case class SContr(name: String, args: List[SExpr]) extends SExpr
+  case class SThis(typeName: String) extends SExpr
   case class SLiteral(value: String) extends SExpr
   case class SDefaultExpr(expr: String) extends SExpr
   //case class SExternalExpr(ext: AnyRef) extends SExpr

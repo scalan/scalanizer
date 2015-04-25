@@ -392,6 +392,7 @@ trait ScalanParsers {
     case q"if ($cond) $th else $el" => SIf(parseExpr(cond), parseExpr(th), parseExpr(el))
     case q"$expr: $tpt" => SAscr(parseExpr(expr), tpeExpr(tpt))
     case q"(..$params) => $expr" => SFunc(params.map(parseExpr), parseExpr(expr))
+    case q"$tpname.this" => SThis(tpname)
     case bi => optBodyItem(bi, None) match {
       case Some(item) => item
       case None => print("Error parsing of " + showRaw(bi)); SDefaultExpr("Error parsing")
