@@ -308,7 +308,13 @@ trait GenScalaAst { self: ScalanPluginCake =>
   }
 
   def genAnnotation(annot: SAnnotation): Tree = {
-    val args = annot.args.map(genExpr)
+    def genAnnotExpr(expr: SExpr): Tree = expr match {
+      case SConst(c: Any) => global.Literal(global.Constant(c))
+      case SIdent(name: String) => Ident(TermName(name))
+      case SAssign(left, right) => q"${genAnnotExpr(left)} = ${genAnnotExpr(right)}"
+      case unknown => throw new NotImplementedError(s"genAnnotExpr($unknown)")
+    }
+    val args = annot.args.map(genAnnotExpr)
     Apply(Select(New(Ident(annot.annotationClass)), nme.CONSTRUCTOR), args)
   }
 }
