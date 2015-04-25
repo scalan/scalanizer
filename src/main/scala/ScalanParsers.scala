@@ -382,6 +382,7 @@ trait ScalanParsers {
     case EmptyTree => SEmpty()
     case Literal(Constant(c)) => SConst(c)
     case Ident(TermName(name)) => SIdent(name)
+    case q"$name.super[$qual].$field" => SSuper(name, qual, field)
     case q"$expr.$tname" => SSelect(parseExpr(expr), tname)
     case Apply(Select(New(name), termNames.CONSTRUCTOR), args) =>
       SContr(name.toString(), args.map(parseExpr))
