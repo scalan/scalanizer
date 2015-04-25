@@ -8,15 +8,18 @@ trait GenScalaAst { self: ScalanPluginCake =>
   val global: Global
   import global._
 
+  class GenCtx(val module: SEntityModuleDef)
+
   def genScalaAst(module: SEntityModuleDef, orig: Tree): Tree = orig match {
     case q"package $ref { ..$body }" =>
+      implicit val ctx = new GenCtx(module)
       val virtBody = List[Tree](genModule(module))
 
       q"package $ref { ..$virtBody }"
     case tree => throw new IllegalArgumentException("Module must be in a package")
   }
 
-  def genModule(module: SEntityModuleDef): Tree = {
+  def genModule(module: SEntityModuleDef)(implicit ctx: GenCtx): Tree = {
     val newstats = genDefaultElem(module) ::
       genEntity(module.entityOps) ::
       (genConcreteClasses(module.concreteSClasses) ++ genCompanions(module))
@@ -27,7 +30,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     res
   }
 
-  def genTrait(tr: STraitDef): Tree = {
+  def genTrait(tr: STraitDef)(implicit ctx: GenCtx): Tree = {
     val entityName = TypeName(tr.name)
     val entitySelf = genSelf(tr.selfType)
     val repStats = genBody(tr.body)
@@ -39,9 +42,9 @@ trait GenScalaAst { self: ScalanPluginCake =>
     res
   }
 
-  def genEntity(entity: STraitDef): Tree = genTrait(entity)
+  def genEntity(entity: STraitDef)(implicit ctx: GenCtx): Tree = genTrait(entity)
 
-  def genClass(c: SClassDef): Tree = {
+  def genClass(c: SClassDef)(implicit ctx: GenCtx): Tree = {
     val className = TypeName(c.name)
     val classSelf = genSelf(c.selfType)
     val parents = genParents(c.ancestors)
@@ -58,20 +61,20 @@ trait GenScalaAst { self: ScalanPluginCake =>
     res
   }
 
-  def genConcreteClasses(classes: List[SClassDef]): List[Tree] = {
+  def genConcreteClasses(classes: List[SClassDef])(implicit ctx: GenCtx): List[Tree] = {
     classes.map{clazz => genClass(clazz.copy(isAbstract = true))}
   }
 
-  def genCompanions(module: SEntityModuleDef): List[Tree] = {
+  def genCompanions(module: SEntityModuleDef)(implicit ctx: GenCtx): List[Tree] = {
     genCompanion(module.entityOps.companion) :: module.concreteSClasses.map(clazz => genCompanion(clazz.companion))
   }
 
-  def genCompanion(comp: Option[STraitOrClassDef]): Tree = comp match {
+  def genCompanion(comp: Option[STraitOrClassDef])(implicit ctx: GenCtx): Tree = comp match {
     case Some(c) => q"trait ${TypeName(c.name)}"
     case None => EmptyTree
   }
 
-  def genBodyItem(item: SBodyItem): Tree = item match {
+  def genBodyItem(item: SBodyItem)(implicit ctx: GenCtx): Tree = item match {
     case m: SMethodDef => genMethod(m)
     case v: SValDef => genVal(v)
     case i: SImportStat => genImport(i)
@@ -82,9 +85,9 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case unknown => throw new NotImplementedError(s"genBodyItem($unknown)")
   }
 
-  def genBody(body: List[SBodyItem]): List[Tree] = body.map(genBodyItem)
+  def genBody(body: List[SBodyItem])(implicit ctx: GenCtx): List[Tree] = body.map(genBodyItem)
 
-  def genMethod(m: SMethodDef): Tree = {
+  def genMethod(m: SMethodDef)(implicit ctx: GenCtx): Tree = {
     val tname = TermName(m.name)
     val impFlag = if (m.isImplicit) Flag.IMPLICIT else NoFlags
     val flags = Flag.PARAM | impFlag
@@ -103,7 +106,8 @@ trait GenScalaAst { self: ScalanPluginCake =>
     q"$mods def $tname[..$tparams](...$paramss): $tpt = $exprs"
   }
 
-  def genMethodArg(arg: SMethodArg): Tree = {
+  def genMethodArg(arg: SMethodArg)
+                  (implicit ctx: GenCtx): Tree = {
     val tname = TermName(arg.name)
     val tpt = repTypeExpr(arg.tpe)
     val overFlag = if (arg.overFlag) Flag.OVERRIDE else NoFlags
@@ -114,11 +118,12 @@ trait GenScalaAst { self: ScalanPluginCake =>
     q"$mods val $tname: $tpt"
   }
 
-  def genMethodArgs(argSections: List[SMethodArgs]): List[List[Tree]] = {
+  def genMethodArgs(argSections: List[SMethodArgs])
+                   (implicit ctx: GenCtx): List[List[Tree]] = {
     argSections.map(_.args.map(genMethodArg))
   }
 
-  def genVal(v: SValDef): Tree = {
+  def genVal(v: SValDef)(implicit ctx: GenCtx): Tree = {
     val impFlag = if (v.isImplicit) Flag.IMPLICIT else NoFlags
     val lazyFlag = if (v.isLazy) Flag.LAZY else NoFlags
     val mods = Modifiers(impFlag | lazyFlag)
@@ -132,14 +137,14 @@ trait GenScalaAst { self: ScalanPluginCake =>
     q"$mods val $tname: $tpt = $expr"
   }
 
-  def genRefs(refs: List[String]): Tree = {
+  def genRefs(refs: List[String])(implicit ctx: GenCtx): Tree = {
     if (refs.length == 1)
       Ident(TermName(refs.head))
     else
       q"${genRefs(refs.init)}.${TermName(refs.last)}"
   }
 
-  def genImport(imp: SImportStat): Tree = {
+  def genImport(imp: SImportStat)(implicit ctx: GenCtx): Tree = {
     val impParts = imp.name.split('.').toList
     val refs = genRefs(impParts.init)
     val sels = impParts.last match {
@@ -150,7 +155,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     q"import $refs.{..$sels}"
   }
 
-  def genTypeDef(t: STpeDef): Tree = {
+  def genTypeDef(t: STpeDef)(implicit ctx: GenCtx): Tree = {
     val tpname = TypeName(t.name)
     val tpt = genTypeExpr(t.rhs)
     val tparams = genTypeArgs(t.tpeArgs)
@@ -158,9 +163,10 @@ trait GenScalaAst { self: ScalanPluginCake =>
     q"type $tpname[..$tparams] = $tpt"
   }
 
-  def genTypeArgs(tpeArgs: STpeArgs): List[TypeDef] = tpeArgs.map(genTypeArg)
+  def genTypeArgs(tpeArgs: STpeArgs)
+                 (implicit ctx: GenCtx): List[TypeDef] = tpeArgs.map(genTypeArg)
 
-  def genTypeArg(arg: STpeArg): TypeDef = {
+  def genTypeArg(arg: STpeArg)(implicit ctx: GenCtx): TypeDef = {
     val tpname = TypeName(arg.name)
     val tparams = arg.tparams.map(genTypeArg)
     val mods = Modifiers(Flag.PARAM)
@@ -172,7 +178,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     q"$mods type $tpname[..$tparams] = $tpt"
   }
 
-  def genObject(o: SObjectDef): Tree = {
+  def genObject(o: SObjectDef)(implicit ctx: GenCtx): Tree = {
     val tname = TermName(o.name)
     val parents = genParents(o.ancestors)
     val body = genBody(o.body)
@@ -180,7 +186,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     q"object $tname extends ..$parents { ..$body }"
   }
 
-  def genParents(ancestors: List[STraitCall]): List[Tree] = {
+  def genParents(ancestors: List[STraitCall])(implicit ctx: GenCtx): List[Tree] = {
     val parents = Select(Ident("scala"), TypeName("AnyRef"))
 
     parents :: ancestors.map{ancestor =>
@@ -194,19 +200,19 @@ trait GenScalaAst { self: ScalanPluginCake =>
     }
   }
 
-  def genSelf(selfType: Option[SSelfTypeDef]) = selfType match {
+  def genSelf(selfType: Option[SSelfTypeDef])(implicit ctx: GenCtx) = selfType match {
     case Some(selfDef: SSelfTypeDef) => q"val ${selfDef.name}: ${genTypeByName(selfDef.tpe)}"
     case None => noSelfType
   }
 
-  def genModuleSelf(module: SEntityModuleDef): Tree = {
+  def genModuleSelf(module: SEntityModuleDef)(implicit ctx: GenCtx): Tree = {
     val selfType = genTypeByName(module.name + "Dsl")
     val res = q"val self: $selfType"
 
     res
   }
 
-  def genTypeExpr(tpeExpr: STpeExpr): Tree = tpeExpr match {
+  def genTypeExpr(tpeExpr: STpeExpr)(implicit ctx: GenCtx): Tree = tpeExpr match {
     case STpePrimitive(name: String, _) => tq"${TypeName(name)}"
     case STraitCall(name: String, tpeSExprs: List[STpeExpr]) =>
       val targs = tpeSExprs.map(genTypeExpr)
@@ -221,7 +227,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
       tq"$tpt[..$tpts]"
   }
 
-  def repTypeExpr(tpeExpr: STpeExpr) = tpeExpr match {
+  def repTypeExpr(tpeExpr: STpeExpr)(implicit ctx: GenCtx) = tpeExpr match {
     case STpePrimitive(name: String, _) => tq"Rep[${TypeName(name)}]"
     case STraitCall(name: String, tpeSExprs: List[STpeExpr]) =>
       val targs = tpeSExprs.map(genTypeExpr)
@@ -232,7 +238,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case unknown => throw new NotImplementedError(s"repTypeExp($unknown)")
   }
 
-  def genClassArg(arg: SClassArg): Tree = {
+  def genClassArg(arg: SClassArg)(implicit ctx: GenCtx): Tree = {
     val tname = TermName(arg.name)
     val tpt = repTypeExpr(arg.tpe)
     val valFlag = if (arg.valFlag) Flag.PARAMACCESSOR else NoFlags
@@ -244,7 +250,8 @@ trait GenScalaAst { self: ScalanPluginCake =>
     q"$mods val $tname: $tpt"
   }
 
-  def genClassArgs(args: SClassArgs, implicitArgs: SClassArgs): List[List[Tree]] = {
+  def genClassArgs(args: SClassArgs, implicitArgs: SClassArgs)
+                  (implicit ctx: GenCtx): List[List[Tree]] = {
     val repArgs = args.args.map(genClassArg)
     val repImplArgs = implicitArgs.args.map(genClassArg)
     val repClassArgs = List[List[Tree]](repArgs, repImplArgs)
@@ -252,9 +259,10 @@ trait GenScalaAst { self: ScalanPluginCake =>
     repClassArgs.filterNot(_.isEmpty)
   }
 
-  def genTypeByName(name: String) = tq"${TypeName(name)}"
+  def genTypeByName(name: String)(implicit ctx: GenCtx) = tq"${TypeName(name)}"
 
-  def genDefaultElem(module: SEntityModuleDef): Tree = {
+  def genDefaultElem(module: SEntityModuleDef)
+                    (implicit ctx: GenCtx): Tree = {
     val entityName = module.entityOps.name
     val entityNameType = genTypeByName(entityName)
     val defaultClassName = module.concreteSClasses.head.name
@@ -268,24 +276,32 @@ trait GenScalaAst { self: ScalanPluginCake =>
     defaultElem
   }
 
-  def genTypeSel(ref: String, name: String) = {
+  def genTypeSel(ref: String, name: String)(implicit ctx: GenCtx) = {
     Select(Ident(ref), TypeName(name))
   }
 
-  def genTuple2(first: Tree, second: Tree): Tree = {
+  def genTuple2(first: Tree, second: Tree)(implicit ctx: GenCtx): Tree = {
     val tpt = genTypeSel("scala", "Tuple2")
     val tpts = first :: second :: Nil
 
     tq"$tpt[..$tpts]"
   }
 
-  def genTuples(elems: List[STpeExpr]): Tree = elems match {
+  def genTuples(elems: List[STpeExpr])(implicit ctx: GenCtx): Tree = elems match {
     case x :: y :: Nil => genTuple2(genTypeExpr(x), genTypeExpr(y))
     case x :: xs => genTuple2(genTypeExpr(x), genTuples(xs))
     case Nil => throw new IllegalArgumentException("Tuple must have at least 2 elements.")
   }
 
-  def genExpr(expr: SExpr): Tree = expr match {
+  def genConstr(constr: SContr)(implicit ctx: GenCtx): Tree = {
+    val argsTree = constr.args.map(genExpr)
+    if (ctx.module.concreteSClasses.exists(clazz => clazz.name == constr.name))
+      Apply(Ident(TermName(constr.name)), argsTree)
+    else
+      q"new ${TypeName(constr.name)}(..${constr.args.map(genExpr)})"
+  }
+
+  def genExpr(expr: SExpr)(implicit ctx: GenCtx): Tree = expr match {
     case SEmpty() => q""
     case SConst(c: Any) => q"toRep(${global.Literal(global.Constant(c))})"
     case SIdent(name: String) => Ident(TermName(name))
@@ -302,7 +318,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case SBlock(init: List[SExpr], last) => Block(init.map(genExpr), genExpr(last))
     case SIf(c, t, e) => q"IF (${genExpr(c)}) THEN {${genExpr(t)}} ELSE {${genExpr(e)}}"
     case SAscr(expr, tpt) => q"${genExpr(expr)}: ${repTypeExpr(tpt)}"
-    case SContr(name, args) => Apply(Ident(TermName(name)), args.map(genExpr))
+    case constr: SContr => genConstr(constr)
     case SFunc(params, res) => q"(..${params.map(genExpr)}) => ${genExpr(res)}"
     case SThis(tname) => q"${TypeName(tname)}.this"
     case SSuper(name, qual, field) => q"${TypeName(name)}.super[${TypeName(qual)}].${TermName(field)}"
@@ -312,7 +328,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case unknown => throw new NotImplementedError(s"genExpr($unknown)")
   }
 
-  def genAnnotation(annot: SAnnotation): Tree = {
+  def genAnnotation(annot: SAnnotation)(implicit ctx: GenCtx): Tree = {
     def genAnnotExpr(expr: SExpr): Tree = expr match {
       case SConst(c: Any) => global.Literal(global.Constant(c))
       case SIdent(name: String) => Ident(TermName(name))
