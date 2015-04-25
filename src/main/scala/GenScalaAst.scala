@@ -298,7 +298,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     if (ctx.module.concreteSClasses.exists(clazz => clazz.name == constr.name))
       Apply(Ident(TermName(constr.name)), argsTree)
     else
-      q"new ${TypeName(constr.name)}(..${constr.args.map(genExpr)})"
+      throw new IllegalArgumentException(s"genConstr($constr)")
   }
 
   def genExpr(expr: SExpr)(implicit ctx: GenCtx): Tree = expr match {
