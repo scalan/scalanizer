@@ -291,10 +291,13 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case SIdent(name: String) => Ident(TermName(name))
     case SAssign(left, right) => q"${genExpr(left)} = ${genExpr(right)}"
     case SSelect(expr: SExpr, tname: String) => q"${genExpr(expr)}.${TermName(tname)}"
-    case SApply(fun: SExpr, args: List[SExpr]) => fun match {
+    case SApply(fun, tpts, args) =>
+      val typeArgs = tpts.map(genTypeExpr)
+      val valArgs = args.map(genExpr)
+      fun match {
         case SSelect(SIdent(pkg), name) if pkg == "scala" && name.startsWith("Tuple") =>
-          q"Tuple(..${args.map(genExpr)})"
-        case _ => q"${genExpr(fun)}(..${args.map(genExpr)})"
+          q"Tuple[..$typeArgs](..$valArgs)"
+        case _ => q"${genExpr(fun)}[..$typeArgs](..$valArgs)"
       }
     case SBlock(init: List[SExpr], last) => Block(init.map(genExpr), genExpr(last))
     case SIf(c, t, e) => q"IF (${genExpr(c)}) THEN {${genExpr(t)}} ELSE {${genExpr(e)}}"
@@ -304,6 +307,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case SThis(tname) => q"${TypeName(tname)}.this"
     case SSuper(name, qual, field) => q"${TypeName(name)}.super[${TypeName(qual)}].${TermName(field)}"
     case SAnnotated(expr, annot) => q"${genExpr(expr)}: @${TypeName(annot)}"
+    case STypeApply(fun, tpts) => q"${genExpr(fun)}[..${tpts.map(genTypeExpr)}]"
     case bi: SBodyItem => genBodyItem(bi)
     case unknown => throw new NotImplementedError(s"genExpr($unknown)")
   }
