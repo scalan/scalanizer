@@ -46,10 +46,6 @@ package object ScalanAst {
     }
   }
 
-  case class STpeSum(items: List[STpeExpr]) extends STpeExpr {
-    override def toString = items.mkString("(", "|", ")")
-  }
-
   implicit class STpeExprExtensions(self: STpeExpr) {
     def applySubst(subst: Map[String, STpeExpr]): STpeExpr = self match {
       case STraitCall(n, args) => // higher-kind usage of names is not supported  Array[A] - ok, A[Int] - nok
@@ -58,7 +54,6 @@ package object ScalanAst {
           case None => STraitCall(n, args map { _.applySubst(subst) })
         }
       case STpeTuple(items) => STpeTuple(items map { _.applySubst(subst) })
-      case STpeSum(items) => STpeSum(items map { _.applySubst(subst) })
       case _ => self
     }
 

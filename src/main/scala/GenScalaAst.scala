@@ -145,8 +145,8 @@ trait GenScalaAst { self: ScalanPluginCake =>
     val impParts = imp.name.split('.').toList
     val refs = genRefs(impParts.init)
     val sels = impParts.last match {
-      case bindName => List(Bind(TermName(bindName), Ident(termNames.WILDCARD)))
       case "_" => List(Ident(termNames.WILDCARD))
+      case bindName => List(Bind(TermName(bindName), Ident(termNames.WILDCARD)))
     }
 
     q"import $refs.{..$sels}"
@@ -189,6 +189,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
       val tpt = TypeName(ancestor.name)
       val tpts = ancestor.tpeSExprs.map(_ match {
         case tpe: STraitCall => genTypeExpr(tpe)
+        case _ => TypeTree() // Actually, invalid case
       })
 
       tq"$tpt[..$tpts]"
@@ -285,6 +286,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
   def genTuples(elems: List[STpeExpr]): Tree = elems match {
     case x :: y :: Nil => genTuple2(genTypeExpr(x), genTypeExpr(y))
     case x :: xs => genTuple2(genTypeExpr(x), genTuples(xs))
+    case Nil => EmptyTree
   }
 
   def genExpr(expr: SExpr): Tree = expr match {

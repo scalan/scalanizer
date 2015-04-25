@@ -81,8 +81,6 @@ with ScalanPluginCake { self: ScalanPluginCake =>
         if (!ScalanPluginConfig.read) {
           unit.body = combineAst(unit.body, stagedAst)
         }
-
-        unit.body
       } catch {
         case e: Exception => print(s"Error: failed to parse ${unitName} due to " + e)
       }
