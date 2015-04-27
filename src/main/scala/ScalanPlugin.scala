@@ -10,7 +10,10 @@ object ScalanPluginConfig {
   var save: Boolean = true
   var read: Boolean = true
   var debug: Boolean = false
-  val files = List[String]("Segms.scala", "Knds.scala")
+  val files = List[String](
+    "Segms.scala"
+    //, "Knds.scala"
+  )
   val baseContextTrait = "ScalanDsl"
   val seqContextTrait = "ScalanSeq"
   val stagedContextTrait = "ScalanExp"
