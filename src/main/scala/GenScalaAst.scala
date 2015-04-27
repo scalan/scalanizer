@@ -25,7 +25,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
       (genConcreteClasses(module.concreteSClasses) ++ genCompanions(module))
     val newSelf = genModuleSelf(module)
     val name = TypeName(module.name)
-    val res = q"trait $name extends Base with BaseTypes { $newSelf => ..$newstats }"
+    val res = q"trait $name extends Base { $newSelf => ..$newstats }"
 
     res
   }

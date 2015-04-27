@@ -10,7 +10,7 @@ object ScalanPluginConfig {
   var save: Boolean = true
   var read: Boolean = true
   var debug: Boolean = false
-  val files = List[String]("Segms.scala")
+  val files = List[String]("Segms.scala", "Knds.scala")
   val baseContextTrait = "ScalanDsl"
   val seqContextTrait = "ScalanSeq"
   val stagedContextTrait = "ScalanExp"
@@ -21,6 +21,7 @@ object ScalanPluginConfig {
   )
   val entityTypeSynonyms = Map[String, String](
     "RepSegm" -> "Segm"
+    ,"RKind" -> "Kind"
   )
 }
 
@@ -179,6 +180,7 @@ class ScalanPlugin(val global: Global) extends Plugin {
 object ScalanPluginState {
   var emap = scala.collection.mutable.Map(
     "Segms" -> Set("SegmsDsl", "SegmsDslSeq", "SegmsDslExp")
+    , "Knds" -> Set("KndsDsl", "KndsDslSeq", "KndsDslExp")
   )
 }
 
