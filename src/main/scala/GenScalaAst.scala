@@ -63,11 +63,29 @@ trait GenScalaAst { self: ScalanPluginCake =>
   def genEntity(entity: STraitDef)(implicit ctx: GenCtx): Tree = genTrait(entity)
 
   def genClass(c: SClassDef)(implicit ctx: GenCtx): Tree = {
+    def genElem(tpeArg: STpeArg): ValDef = {
+      val mods = Modifiers(Flag.IMPLICIT, tpnme.EMPTY, Nil)
+      val tname = TermName("elementOf" + tpeArg.name)
+      val tpt = tq"Elem[${genTypeByName(tpeArg.name)}]"
+      q"$mods val $tname: $tpt"
+    }
+    def genCont(tpeArg: STpeArg): ValDef = {
+      val mods = Modifiers(Flag.IMPLICIT, tpnme.EMPTY, Nil)
+      val tname = TermName("containerOf" + tpeArg.name)
+      val tpt = tq"Cont[${genTypeByName(tpeArg.name)}]"
+      q"$mods val $tname: $tpt"
+    }
+    def genTypeDescr(tpeArgs: List[STpeArg]): List[Tree] = {
+      val firstKind = firstKindArgs(tpeArgs).map(genElem)
+      val highKind = highKindArgs(tpeArgs).map(genCont)
+
+      firstKind ++ highKind
+    }
     val className = TypeName(c.name)
     val classSelf = genSelf(c.selfType)
     val parents = genParents(c.ancestors)
     val repStats = genBody(c.body)
-    val repparamss = genClassArgs(c.args, c.implicitArgs)
+    val repparamss = genClassArgs(c.args, c.implicitArgs) ++ List(genTypeDescr(c.tpeArgs))
     val flags = if (c.isAbstract) Flag.ABSTRACT else NoFlags
     val mods = Modifiers(flags, tpnme.EMPTY, c.annotations.map(genAnnotation))
     val tparams = c.tpeArgs.map(genTypeArg)
