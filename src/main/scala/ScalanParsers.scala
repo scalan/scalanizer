@@ -285,6 +285,7 @@ trait ScalanParsers {
     val args = if (!args0.isEmpty && args0.last.args.isEmpty) args0.init else args0
     val tpeRes = optTpeExpr(md.tpt)
     val isImplicit = md.mods.isImplicit
+    val isOverride = md.mods.isOverride
     val optOverloadId = md match {
       case OverloadIdAnnotation(List(Literal(Constant(overloadId)))) =>
         Some(overloadId.toString)
@@ -311,7 +312,8 @@ trait ScalanParsers {
         false
     }
 
-    SMethodDef(md.name, tpeArgs, args, tpeRes, isImplicit, optOverloadId, annotations, optBody, isElemOrCont)
+    SMethodDef(md.name, tpeArgs, args, tpeRes, isImplicit, isOverride,
+      optOverloadId, annotations, optBody, isElemOrCont)
   }
 
   def methodArgs(vds: List[ValDef]): SMethodArgs = vds match {

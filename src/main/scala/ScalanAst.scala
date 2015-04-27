@@ -150,6 +150,7 @@ package object ScalanAst {
                          argSections: List[SMethodArgs],
                          tpeRes: Option[STpeExpr],
                          isImplicit: Boolean,
+                         isOverride: Boolean,
                          overloadId: Option[String],
                          annotations: List[SMethodAnnotation] = Nil,
                          body: Option[SExpr] = None,
@@ -271,7 +272,7 @@ package object ScalanAst {
     def isTrait = true
     lazy val implicitArgs: SClassArgs = {
       val implicitElems = body.collect {
-        case SMethodDef(name, _, _, Some(elemOrCont), true, _, _, _, true) =>
+        case SMethodDef(name, _, _, Some(elemOrCont), true, _, _, _, _, true) =>
           (name, elemOrCont)
       }
       val args: List[Either[STpeArg, SClassArg]] = tpeArgs.map { a =>

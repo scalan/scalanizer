@@ -51,6 +51,7 @@ trait ScalanUtils { self: ScalanPluginCake =>
       argSections = List[SMethodArgs](),
       tpeRes = Some(STraitCall("Elem", List(STraitCall(entityName, List())))),
       isImplicit = true,
+      isOverride = false,
       overloadId = None
     ) :: module.methods
 
