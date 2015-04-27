@@ -49,7 +49,7 @@ with ScalanPluginCake { self: ScalanPluginCake =>
       val unitName = unit.source.file.name
 
       if (ScalanPluginConfig.files.contains(unitName)) try {
-        val metaAst = parse(unit.body)
+        val parsedAst = parse(unit.body)
         /** Transformations of Scalan AST */
         val pipeline = scala.Function.chain(Seq(
           addAncestors _,
@@ -59,25 +59,25 @@ with ScalanPluginCake { self: ScalanPluginCake =>
           //addDefaultElem _,
           checkEntityCompanion _, checkClassCompanion _
         ))
-        val virtAst = pipeline(metaAst)
+        val metaAst = pipeline(parsedAst)
 
         /** Boilerplate generation */
-        val entityGen = new EntityFileGenerator(virtAst)
+        val entityGen = new EntityFileGenerator(metaAst)
         val implCode = entityGen.getImplFile
         val implCodeFile = new BatchSourceFile("<impl>", implCode)
-        val implAst = newUnitParser(new CompilationUnit(implCodeFile)).parse()
+        val boilerplate = newUnitParser(new CompilationUnit(implCodeFile)).parse()
 
         /** Generates a duplicate of original Scala AST, wraps types by Rep[] and etc. */
-        val virtScalaAst = genScalaAst(virtAst, unit.body)
+        val virtAst = genScalaAst(metaAst, unit.body)
 
         /** Checking of user's extensions like SegmentDsl, SegmentDslSeq and SegmentDslExp */
-        val extensions = getExtensions(metaAst)
+        val extensions = getExtensions(parsedAst)
 
         /** Prepare Virtualized AST for passing to run-time. */
-        val serialAst = serializeAst(virtAst)
+        val pickledAst = serializeAst(metaAst)
 
         /** Staged Ast is package which contains virtualized Tree + boilerplate */
-        val stagedAst = getStagedAst(virtScalaAst, implAst, extensions, serialAst)
+        val stagedAst = getStagedAst(virtAst, boilerplate, extensions, pickledAst)
 
         if (ScalanPluginConfig.save) {
           saveImplCode(unit.source.file.file, showCode(stagedAst))
