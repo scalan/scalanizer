@@ -33,17 +33,15 @@ trait SqlCompiler extends SqlAST with SqlParser {
   }
 
   def lookup(col: ColumnRef): Binding = currScope.lookup(col)
-  
+
   def generateSchema(sql: String): String = {
     val statements = parseDDL(sql)
 
-    statements.map(stmt => {
-      stmt match {
-        case s: CreateIndexStmt => generateIndex(s)
-        case s: CreateTableStmt => generateTable(s.table)
-        case s => throw new NotImplementedError(s"Cannot generate schema for statement $s")
-      }
-    }).mkString("\n\n")
+    statements.map {
+      case s: CreateIndexStmt => generateIndex(s)
+      case s: CreateTableStmt => generateTable(s.table)
+      case s => throw new NotImplementedError(s"Cannot generate schema for statement $s")
+    }.mkString("\n\n")
   }
 
   var currMethod:SMethodDef = null
@@ -55,8 +53,8 @@ trait SqlCompiler extends SqlAST with SqlParser {
     val op = select.operator
     currMethod = m
     s"""type ${m.name}_Result = ${resultType(select)}
-      |
-      | override def ${m.name}(${args}) = ${generateOperator(op)}${tableToArray(op)}""".stripMargin
+        |
+        | override def ${m.name}(${args}) = ${generateOperator(op)}${tableToArray(op)}""".stripMargin
   }
 
   def tablesInNestedSelects(e: Expression): Set[Table] = {
@@ -116,7 +114,7 @@ trait SqlCompiler extends SqlAST with SqlParser {
   class GlobalContext() extends Context {
     def resolve(schema: String, name: String): Option[Binding] = None
   }
-  
+
   case class TableContext(table: Table) extends Context {
     def resolve(schema: String, name: String): Option[Binding] = {
       if (schema.isEmpty || schema == table.name) {
@@ -179,12 +177,11 @@ trait SqlCompiler extends SqlAST with SqlParser {
       case SubSelect(p) => buildContext(p)
       case _ => throw new NotImplementedError(s"tables($op)")
     }
-
   }
 
   def divOp(expr: Expression) = if (getExprType(expr) == IntType) "/!" else "/"
 
- 
+
   def castTo(from: Expression, to: Expression): Expression = {
     val fromType = getExprType(from)
     val toType = getExprType(to)
@@ -475,8 +472,8 @@ trait SqlCompiler extends SqlAST with SqlParser {
         val reduce = if (aggregates.length == 1) aggCombine(aggregates(0), "s1", "s2") else Array.tabulate(aggregates.length)(i => aggCombine(aggregates(i), "s1._" + (i+1), "s2._" + (i+1))).mkString(",")
         val aggResult = buildTree(Array.tabulate(columns.length)(i => generateAggResult(columns, aggregates, gby, i, countIndex)), "Pair(")
         val result = s"""ReadOnlyTable(${generateOperator(p)}
-           |$indent.mapReduce(${currScope.name} => Pair(${groupBy}, ${map}),
-           |$indent\t(s1: Rep[${aggTypes}], s2: Rep[${aggTypes}]) => (${reduce})).toArray.map(${currScope.name} => ${aggResult}))""".stripMargin
+            |$indent.mapReduce(${currScope.name} => Pair(${groupBy}, ${map}),
+                                                                             |$indent\t(s1: Rep[${aggTypes}], s2: Rep[${aggTypes}]) => (${reduce})).toArray.map(${currScope.name} => ${aggResult}))""".stripMargin
         popContext()
         result
       }
@@ -489,7 +486,7 @@ trait SqlCompiler extends SqlAST with SqlParser {
   }
 
   def and(left: Expression, right: Expression) = {
-    (left, right) match { 
+    (left, right) match {
       case (l:Literal, r:Expression) => r
       case (l:Expression, r:Literal) => l
       case (l:Expression, r:Expression) => AndExpr(l, r)
@@ -497,7 +494,7 @@ trait SqlCompiler extends SqlAST with SqlParser {
   }
 
   def depends(on: Operator, subquery: Operator): Boolean = {
-    subquery match { 
+    subquery match {
       case Join(outer, inner, cond) => depends(on, outer) || depends(on, inner)
       case Scan(t) => false
       case OrderBy(p, by) => depends(on, p) || using(on, by)
@@ -552,19 +549,19 @@ trait SqlCompiler extends SqlAST with SqlParser {
 
 
   def optimize(op: Operator, predicate: Expression): (Operator,Expression) = {
-    op match { 
+    op match {
       case Join(outer, inner, on) => {
         if (!using(inner, predicate)) (Join(Filter(outer, predicate), inner, on), Literal(true, BoolType))
         else predicate match {
           case AndExpr(l, r) => {
-            val (jr, cr) = optimize(op, r) 
-            val (jl, cl) = optimize(jr, l) 
+            val (jr, cr) = optimize(op, r)
+            val (jl, cl) = optimize(jr, l)
             (jl, and(cl, cr))
           }
           case _ => (op, predicate)
         }
       }
-      case _ => (op, predicate)      
+      case _ => (op, predicate)
     }
   }
 
@@ -572,7 +569,7 @@ trait SqlCompiler extends SqlAST with SqlParser {
     op match {
       case Join(outer, inner, on) => generateOperator(outer) + s"""\n$indent.join(${generateOperator(inner)})(${generateJoinKey(outer, on)}, ${generateJoinKey(inner, on)})"""
       case Scan(t) =>
-        currMethod.explicitArgs.find(arg =>arg.tpe match { 
+        currMethod.explicitArgs.find(arg =>arg.tpe match {
           case STraitCall(n1, List(STraitCall(n2, List(p)))) if n1 == "Rep" && n2 == "Table" && p.toString == t.name.capitalize => true
           case _ => false
         }) match { // TODO: global lookup
@@ -660,16 +657,16 @@ trait SqlCompiler extends SqlAST with SqlParser {
     val parse = buildTree(Array.tabulate(n_columns)(i => "c(" + i + ")" + parseType(columns(i).ctype)), "Pair(")
     val pairTableDef = buildTree(columns.map(c => "Table.create[" + c.ctype.scalaName + "](tableName + \"." + c.name + "\")"), "PairTable.create(")
     s"""type $typeName = $typeDef
-       |
-       |def create$typeName(tableName: Rep[String]) = $pairTableDef
-       |
-       |def parse$typeName(c: Arr[String]): Rep[$typeName] = $parse
-       |
-       |implicit class ${typeName}_class(self: Rep[$typeName]) {
-       |$classDef
-       |}
-       |
-       |""".stripMargin
+        |
+        |def create$typeName(tableName: Rep[String]) = $pairTableDef
+        |
+        |def parse$typeName(c: Arr[String]): Rep[$typeName] = $parse
+        |
+        |implicit class ${typeName}_class(self: Rep[$typeName]) {
+                                                               |$classDef
+        |}
+        |
+        |""".stripMargin
   }
 
   def generateIndex(index:CreateIndexStmt): String = {

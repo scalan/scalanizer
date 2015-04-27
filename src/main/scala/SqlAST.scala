@@ -1,4 +1,5 @@
 package scalan.plugin
+
 /**
  * Created by knizhnik on 1/13/15.
  */
