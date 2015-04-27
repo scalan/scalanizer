@@ -16,6 +16,7 @@ object ScalanPluginConfig {
   val stagedContextTrait = "ScalanExp"
   val extraImports = List(
     "scala.reflect.runtime.universe._",
+    "scala.reflect._",
     "scalan.common.Default"
   )
   val entityTypeSynonyms = Map[String, String](

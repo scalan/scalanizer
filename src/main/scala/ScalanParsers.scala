@@ -225,7 +225,7 @@ trait ScalanParsers {
           case AppliedTypeTree(tpt, _) if tpt.toString == "Elem" || tpt.toString == "Element" =>
             Some(methodDef(md, true))
           case _ =>
-            Some(methodDef(md))
+        Some(methodDef(md))
         }
       else
         None
@@ -236,7 +236,7 @@ trait ScalanParsers {
     case td: ClassDef if td.mods.isTrait =>
       Some(traitDef(td, parentScope))
     case cd: ClassDef if !cd.mods.isTrait => // isClass doesn't exist
-      Some(classDef(cd, parentScope))
+        Some(classDef(cd, parentScope))
     case od: ModuleDef =>
       Some(objectDef(od))
     case vd: ValDef =>
@@ -304,8 +304,14 @@ trait ScalanParsers {
         Some(SApply(SLiteral("sql"), List(), List(SLiteral(args(0).asInstanceOf[Literal].value.stringValue))))
       case _ => optExpr(md.rhs)
     }
-    val optElem = if (isElem) Some(()) else None
-    SMethodDef(md.name, tpeArgs, args, tpeRes, isImplicit, optOverloadId, annotations, optBody, optElem)
+    val isElemOrCont = md.tpt match {
+      case AppliedTypeTree(tpt, _) if Set("Elem", "Element", "Cont", "Container").contains(tpt.toString) =>
+        true
+      case _ =>
+        false
+    }
+
+    SMethodDef(md.name, tpeArgs, args, tpeRes, isImplicit, optOverloadId, annotations, optBody, isElemOrCont)
   }
 
   def methodArgs(vds: List[ValDef]): SMethodArgs = vds match {
