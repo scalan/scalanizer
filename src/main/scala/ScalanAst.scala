@@ -80,6 +80,8 @@ package object ScalanAst {
     }
   }
 
+  case class STpeSelectFromTT(qualifier: STpeExpr, name: String) extends STpeExpr
+
   // SAnnotation universe --------------------------------------------------------------------------
   trait SAnnotation {
     def annotationClass: String

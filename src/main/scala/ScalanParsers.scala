@@ -344,6 +344,7 @@ trait ScalanParsers {
     case Annotated(_, arg) =>
       tpeExpr(arg)
     case TypeBoundsTree(lo, hi) => STpeTypeBounds(tpeExpr(lo), tpeExpr(hi))
+    case SelectFromTypeTree(qualifier, TypeName(name)) => STpeSelectFromTT(tpeExpr(qualifier), name)
     case tree => ???(tree)
   }
 
