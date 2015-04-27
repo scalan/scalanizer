@@ -341,8 +341,7 @@ trait ScalanParsers {
         STpeFunc(domainTpeExpr, argTpeExprs.last)
       } else
         STraitCall(tpt.toString, argTpeExprs)
-    case Annotated(_, arg) =>
-      tpeExpr(arg)
+    case tq"$tpt @$annot" => STpeAnnotated(tpeExpr(tpt), annot.toString)
     case TypeBoundsTree(lo, hi) => STpeTypeBounds(tpeExpr(lo), tpeExpr(hi))
     case SingletonTypeTree(ref) => STpeSingleton(parseExpr(ref))
     case SelectFromTypeTree(qualifier, TypeName(name)) => STpeSelectFromTT(tpeExpr(qualifier), name)

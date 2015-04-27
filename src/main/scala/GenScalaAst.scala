@@ -227,6 +227,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
       tq"$tpt[..$tpts]"
     case STpeSingleton(ref) => tq"${genExpr(ref)}.type"
     case STpeSelectFromTT(qualifier, name) => tq"${genTypeExpr(qualifier)}#${TypeName(name)}"
+    case STpeAnnotated(tpt, annot) => tq"${genTypeExpr(tpt)} @${TypeName(annot)}"
   }
 
   def repTypeExpr(tpeExpr: STpeExpr)(implicit ctx: GenCtx) = tpeExpr match {

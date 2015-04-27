@@ -82,6 +82,7 @@ package object ScalanAst {
 
   case class STpeSingleton(ref: SExpr) extends STpeExpr
   case class STpeSelectFromTT(qualifier: STpeExpr, name: String) extends STpeExpr
+  case class STpeAnnotated(tpt: STpeExpr, annot: String) extends STpeExpr
 
   // SAnnotation universe --------------------------------------------------------------------------
   trait SAnnotation {
