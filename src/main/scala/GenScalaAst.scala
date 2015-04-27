@@ -225,6 +225,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
       val tpts = genTypeExpr(domain) :: genTypeExpr(range) :: Nil
 
       tq"$tpt[..$tpts]"
+    case STpeSingleton(ref) => tq"${genExpr(ref)}.type"
     case STpeSelectFromTT(qualifier, name) => tq"${genTypeExpr(qualifier)}#${TypeName(name)}"
   }
 
