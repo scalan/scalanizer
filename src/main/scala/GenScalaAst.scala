@@ -31,9 +31,27 @@ trait GenScalaAst { self: ScalanPluginCake =>
   }
 
   def genTrait(tr: STraitDef)(implicit ctx: GenCtx): Tree = {
+    def genElem(tpeArg: STpeArg): DefDef = {
+      val mods = Modifiers(Flag.IMPLICIT, tpnme.EMPTY, Nil)
+      val tname = TermName("elementOf" + tpeArg.name)
+      val tpt = tq"Elem[${genTypeByName(tpeArg.name)}]"
+      q"$mods def $tname: $tpt"
+    }
+    def genCont(tpeArg: STpeArg): DefDef = {
+      val mods = Modifiers(Flag.IMPLICIT, tpnme.EMPTY, Nil)
+      val tname = TermName("containerOf" + tpeArg.name)
+      val tpt = tq"Cont[${genTypeByName(tpeArg.name)}]"
+      q"$mods def $tname: $tpt"
+    }
+    def genTypeDescr(tpeArgs: List[STpeArg]): List[Tree] = {
+      val firstKind = firstKindArgs(tpeArgs).map(genElem)
+      val highKind = highKindArgs(tpeArgs).map(genCont)
+
+      firstKind ++ highKind
+    }
     val entityName = TypeName(tr.name)
     val entitySelf = genSelf(tr.selfType)
-    val repStats = genBody(tr.body)
+    val repStats = genTypeDescr(tr.tpeArgs) ++ genBody(tr.body)
     val entityParents = genParents(tr.ancestors)
     val tparams = tr.tpeArgs.map(genTypeArg)
     val mods = Modifiers(NoFlags, tpnme.EMPTY, tr.annotations.map(genAnnotation))

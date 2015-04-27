@@ -105,4 +105,12 @@ trait ScalanUtils { self: ScalanPluginCake =>
   }
 
   def eraseModule(module: SEntityModuleDef) = module
+
+  def firstKindArgs(tpeArgs: List[STpeArg]): List[STpeArg] = {
+    tpeArgs.filter(_.tparams.isEmpty)
+  }
+
+  def highKindArgs(tpeArgs: List[STpeArg]): List[STpeArg] = {
+    tpeArgs.filter(!_.tparams.isEmpty)
+  }
 }
