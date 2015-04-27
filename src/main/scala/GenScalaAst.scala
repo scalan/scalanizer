@@ -213,6 +213,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
   }
 
   def genTypeExpr(tpeExpr: STpeExpr)(implicit ctx: GenCtx): Tree = tpeExpr match {
+    case STpeEmpty() => tq""
     case STpePrimitive(name: String, _) => tq"${TypeName(name)}"
     case STraitCall(name: String, tpeSExprs: List[STpeExpr]) =>
       val targs = tpeSExprs.map(genTypeExpr)
@@ -228,6 +229,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case STpeSingleton(ref) => tq"${genExpr(ref)}.type"
     case STpeSelectFromTT(qualifier, name) => tq"${genTypeExpr(qualifier)}#${TypeName(name)}"
     case STpeAnnotated(tpt, annot) => tq"${genTypeExpr(tpt)} @${TypeName(annot)}"
+    case STpeExistential(tpt, defns) => tq"${genTypeExpr(tpt)} forSome { ..${defns.map(genBodyItem)} }"
   }
 
   def repTypeExpr(tpeExpr: STpeExpr)(implicit ctx: GenCtx) = tpeExpr match {

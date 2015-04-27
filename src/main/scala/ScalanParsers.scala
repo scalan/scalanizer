@@ -323,6 +323,7 @@ trait ScalanParsers {
   }
 
   def tpeExpr(tree: Tree): STpeExpr = tree match {
+    case EmptyTree => STpeEmpty()
     case ident: Ident =>
       val name = ident.name.toString
       STpePrimitives.getOrElse(name, STraitCall(name, List()))
@@ -345,6 +346,7 @@ trait ScalanParsers {
     case TypeBoundsTree(lo, hi) => STpeTypeBounds(tpeExpr(lo), tpeExpr(hi))
     case SingletonTypeTree(ref) => STpeSingleton(parseExpr(ref))
     case SelectFromTypeTree(qualifier, TypeName(name)) => STpeSelectFromTT(tpeExpr(qualifier), name)
+    case tq"$tpt forSome { ..$defns }" => STpeExistential(tpeExpr(tpt), defns.flatMap(defn => optBodyItem(defn, None)))
     case tree => ???(tree)
   }
 

@@ -7,6 +7,7 @@ package object ScalanAst {
   sealed abstract class STpeExpr
   type STpeExprs = List[STpeExpr]
 
+  case class STpeEmpty() extends STpeExpr
   /** Invocation of a trait with arguments */
   case class STraitCall(name: String, tpeSExprs: List[STpeExpr]) extends STpeExpr {
     override def toString = name + (if (tpeSExprs.isEmpty) "" else tpeSExprs.mkString("[", ",", "]"))
@@ -83,6 +84,7 @@ package object ScalanAst {
   case class STpeSingleton(ref: SExpr) extends STpeExpr
   case class STpeSelectFromTT(qualifier: STpeExpr, name: String) extends STpeExpr
   case class STpeAnnotated(tpt: STpeExpr, annot: String) extends STpeExpr
+  case class STpeExistential(tpt: STpeExpr, items: List[SBodyItem]) extends STpeExpr
 
   // SAnnotation universe --------------------------------------------------------------------------
   trait SAnnotation {
