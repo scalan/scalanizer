@@ -138,4 +138,54 @@ trait ScalanUtils { self: ScalanPluginCake =>
 
     module.copy(entityOps = newEntity, entities = List(newEntity))
   }
+
+  def genImplicitClassArgs(module: SEntityModuleDef, clazz: SClassDef): List[SClassArg] = {
+    def genImplicit(argPrefix: String, argSuffix: String,
+                    typePrefix: String, typeSuffix: String) = {
+      SClassArg(impFlag = true,
+        overFlag = false, valFlag = false,
+        name = argPrefix + argSuffix,
+        tpe = STraitCall(typePrefix, List(STraitCall(typeSuffix, Nil))),
+        default = None, annotations = Nil)
+    }
+    def genElem(valName: String, typeName: String) =
+      genImplicit("elementOf", valName, "Elem", typeName)
+    def genCont(valName: String, typeName: String) =
+      genImplicit("containerOf", valName, "Cont", typeName)
+    def genImplicitArg(isFirstKind: Boolean, valName: String, typeName: String): SClassArg = {
+      if (isFirstKind) genElem(valName, typeName)
+      else genCont(valName, typeName)
+    }
+    def getEntityByAncestor(ancestor: STraitCall): Option[STraitDef] = {
+      module.entities.find(entity => entity.name == ancestor.name)
+    }
+    def getAncestorPairs: List[(STraitCall, STpeArg)] = {
+      val ancestors: List[STraitCall] = clazz.ancestors
+
+      ancestors.flatMap { (ancestor: STraitCall) =>
+        val optEntity: Option[STraitDef] = getEntityByAncestor(ancestor)
+
+        optEntity match {
+          case Some(entity) => ancestor.tpeSExprs.asInstanceOf[List[STraitCall]] zip entity.tpeArgs
+          case None => List[(STraitCall, STpeArg)]()
+        }
+      }
+    }
+
+    clazz.tpeArgs.map { tpeArg => getAncestorPairs.find(pair => tpeArg.name == pair._1.name) match {
+      case Some((aParam, eParam)) => genImplicitArg(eParam.tparams.isEmpty, eParam.name, aParam.name)
+      case None => genImplicitArg(tpeArg.tparams.isEmpty, tpeArg.name, tpeArg.name)
+    }}
+  }
+
+  def genClassesImplicits(module: SEntityModuleDef) = {
+    val newClasses = module.concreteSClasses.map{clazz =>
+      val elemArgs = genImplicitClassArgs(module, clazz)
+      val classArgs = SClassArgs(clazz.implicitArgs.args ++ elemArgs)
+
+      clazz.copy(args = classArgs)
+    }
+
+    module.copy(concreteSClasses = newClasses)
+  }
 }

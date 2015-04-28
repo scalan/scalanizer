@@ -45,49 +45,11 @@ trait GenScalaAst { self: ScalanPluginCake =>
   def genEntity(entity: STraitDef)(implicit ctx: GenCtx): Tree = genTrait(entity)
 
   def genClass(c: SClassDef)(implicit ctx: GenCtx): Tree = {
-    def genTypeDescr: List[Tree] = {
-      def getEntityByAncestor(ancestor: STraitCall): Option[STraitDef] = {
-        ctx.module.entities.find(entity => entity.name == ancestor.name)
-      }
-      def getAncestorPairs: List[(STraitCall, STpeArg)] = {
-        val ancestors: List[STraitCall] = c.ancestors
-
-        ancestors.flatMap{(ancestor: STraitCall) =>
-          val optEntity: Option[STraitDef] = getEntityByAncestor(ancestor)
-
-          optEntity match {
-            case Some(entity) => ancestor.tpeSExprs.asInstanceOf[List[STraitCall]] zip entity.tpeArgs
-            case None => List[(STraitCall, STpeArg)]()
-          }
-        }
-      }
-      def genElem(eParam: String, aParam: String): ValDef = {
-        val mods = Modifiers(Flag.IMPLICIT, tpnme.EMPTY, Nil)
-        val tname = TermName("elementOf" + eParam)
-        val tpt = tq"Elem[${genTypeByName(aParam)}]"
-        q"$mods val $tname: $tpt"
-      }
-      def genCont(eParam: String, aParam: String): ValDef = {
-        val mods = Modifiers(Flag.IMPLICIT, tpnme.EMPTY, Nil)
-        val tname = TermName("containerOf" + eParam)
-        val tpt = tq"Cont[${genTypeByName(aParam)}]"
-        q"$mods val $tname: $tpt"
-      }
-      def genImplicitVal(isFirstKind: Boolean, valName: String, typeName: String): Tree = {
-        if (isFirstKind) genElem(valName, typeName)
-        else genCont(valName, typeName)
-      }
-
-      c.tpeArgs.map{tpeArg => getAncestorPairs.find(pair => tpeArg.name == pair._1.name) match {
-          case Some((aParam, eParam)) => genImplicitVal(eParam.tparams.isEmpty, eParam.name, aParam.name)
-          case None => genImplicitVal(tpeArg.tparams.isEmpty, tpeArg.name, tpeArg.name)
-      }}
-    }
     val className = TypeName(c.name)
     val classSelf = genSelf(c.selfType)
     val parents = genParents(c.ancestors)
     val repStats = genBody(c.body)
-    val repparamss = (genClassArgs(c.args, c.implicitArgs) ++ List(genTypeDescr)).filter(!_.isEmpty)
+    val repparamss = genClassArgs(c.args, c.implicitArgs)
     val flags = if (c.isAbstract) Flag.ABSTRACT else NoFlags
     val mods = Modifiers(flags, tpnme.EMPTY, c.annotations.map(genAnnotation))
     val tparams = c.tpeArgs.map(genTypeArg)
