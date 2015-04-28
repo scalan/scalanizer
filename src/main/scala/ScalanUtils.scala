@@ -146,7 +146,7 @@ trait ScalanUtils { self: ScalanPluginCake =>
         overFlag = false, valFlag = false,
         name = argPrefix + argSuffix,
         tpe = STraitCall(typePrefix, List(STraitCall(typeSuffix, Nil))),
-        default = None, annotations = Nil)
+        default = None, annotations = Nil, isElemOrCont = true)
     }
     def genElem(valName: String, typeName: String) =
       genImplicit("elementOf", valName, "Elem", typeName)

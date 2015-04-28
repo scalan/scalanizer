@@ -267,7 +267,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
 
   def genClassArg(arg: SClassArg)(implicit ctx: GenCtx): Tree = {
     val tname = TermName(arg.name)
-    val tpt = repTypeExpr(arg.tpe)
+    val tpt = if (arg.isElemOrCont) genTypeExpr(arg.tpe) else repTypeExpr(arg.tpe)
     val valFlag = if (arg.valFlag) Flag.PARAMACCESSOR else NoFlags
     val overFlag = if (arg.overFlag) Flag.OVERRIDE else NoFlags
     val impFlag = if (arg.impFlag) Flag.IMPLICIT else NoFlags

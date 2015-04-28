@@ -211,7 +211,8 @@ package object ScalanAst {
                         name: String,
                         tpe: STpeExpr,
                         default: Option[SExpr],
-                        annotations: List[SArgAnnotation] = Nil)
+                        annotations: List[SArgAnnotation] = Nil,
+                        isElemOrCont: Boolean = false)
     extends SMethodOrClassArg
 
   trait SMethodOrClassArgs {
