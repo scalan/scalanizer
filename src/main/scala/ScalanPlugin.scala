@@ -56,7 +56,7 @@ with ScalanPluginCake { self: ScalanPluginCake =>
           updateSelf _,
           repSynonym _,
           addImports _,
-          //addDefaultElem _,
+          addDefaultElem _,
           checkEntityCompanion _, checkClassCompanion _
         ))
         val metaAst = pipeline(parsedAst)
