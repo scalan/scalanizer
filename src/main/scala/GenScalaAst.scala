@@ -61,25 +61,6 @@ trait GenScalaAst { self: ScalanPluginCake =>
     res
   }
 
-  def genImplicitElem(tpeArgs: List[STpeArg])(implicit ctx: GenCtx): List[Tree] = {
-    def genElem(tpeArg: STpeArg): ValDef = {
-      val mods = Modifiers(Flag.IMPLICIT, tpnme.EMPTY, Nil)
-      val tname = TermName("elementOf" + tpeArg.name)
-      val tpt = tq"Elem[${genTypeByName(tpeArg.name)}]"
-      q"$mods val $tname: $tpt"
-    }
-    def genCont(tpeArg: STpeArg): ValDef = {
-      val mods = Modifiers(Flag.IMPLICIT, tpnme.EMPTY, Nil)
-      val tname = TermName("containerOf" + tpeArg.name)
-      val tpt = tq"Cont[${genTypeByName(tpeArg.name)}]"
-      q"$mods val $tname: $tpt"
-    }
-    val firstKind = firstKindArgs(tpeArgs).map(genElem)
-    val highKind = highKindArgs(tpeArgs).map(genCont)
-
-    firstKind ++ highKind
-  }
-
   def genConcreteClasses(classes: List[SClassDef])(implicit ctx: GenCtx): List[Tree] = {
     classes.map{clazz => genClass(clazz.copy(isAbstract = true))}
   }
@@ -118,7 +99,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
       case Some(tpeRes) => if (ctx.toRep) repTypeExpr(tpeRes) else genTypeExpr(tpeRes)
       case None => EmptyTree
     }
-    val paramss = (genMethodArgs(m.argSections) ++ List(genImplicitElem(m.tpeArgs))).filter(!_.isEmpty)
+    val paramss = genMethodArgs(m.argSections)
     val exprs = m.body match {
       case Some(expr) => genExpr(expr)
       case None => EmptyTree

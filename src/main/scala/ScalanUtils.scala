@@ -188,4 +188,51 @@ trait ScalanUtils { self: ScalanPluginCake =>
 
     module.copy(concreteSClasses = newClasses)
   }
+
+  def genImplicitMethodArgs(method: SMethodDef): SMethodDef = {
+    def genImplicit(tpeArg: STpeArg, valPrefix: String, resPrefix: String) = {
+      SMethodArg(impFlag = true, overFlag = false,
+        name = valPrefix + tpeArg.name,
+        tpe = STraitCall(resPrefix, List(STraitCall(tpeArg.name, Nil))),
+        default = None, annotations = Nil)
+    }
+    def genElem(tpeArg: STpeArg) = genImplicit(tpeArg, "elementOf", "Elem")
+    def genCont(tpeArg: STpeArg) = genImplicit(tpeArg, "containerOf", "Cont")
+
+    def genImplicitVals(tpeArgs: List[STpeArg]): List[SMethodArg] = {
+      tpeArgs.map{tpeArg =>
+        if (tpeArg.tparams.isEmpty) genElem(tpeArg)
+        else genCont(tpeArg)
+      }
+    }
+    val args = method.argSections ++ List(SMethodArgs(genImplicitVals(method.tpeArgs)))
+
+    method.copy(argSections = args)
+  }
+
+  def genMethodsImplicits(module: SEntityModuleDef) = {
+    def genBodyItem(item: SBodyItem): SBodyItem = item match {
+      case m: SMethodDef => genImplicitMethodArgs(m)
+      case _ => item
+    }
+    def genEntity(entity: STraitDef): STraitDef = {
+      val newBodyItems = entity.body.map(genBodyItem)
+      entity.copy(body = newBodyItems)
+    }
+    def genEntities(entities: List[STraitDef]): List[STraitDef] = {
+      entities.map(genEntity)
+    }
+    def genClass(clazz: SClassDef): SClassDef = {
+      val newBodyItems = clazz.body.map(genBodyItem)
+      clazz.copy(body = newBodyItems)
+    }
+    def genClasses(classes: List[SClassDef]): List[SClassDef] = {
+      classes.map(genClass)
+    }
+
+    module.copy(entityOps = genEntity(module.entityOps),
+      entities = genEntities(module.entities),
+      concreteSClasses = genClasses(module.concreteSClasses)
+    )
+  }
 }
