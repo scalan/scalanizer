@@ -133,7 +133,7 @@ trait ScalanUtils { self: ScalanPluginCake =>
       }
     }
 
-    val bodyWithImpElems = module.entityOps.body ++ genImplicitDefs(module.entityOps.tpeArgs)
+    val bodyWithImpElems = genImplicitDefs(module.entityOps.tpeArgs) ++ module.entityOps.body
     val newEntity = module.entityOps.copy(body = bodyWithImpElems)
 
     module.copy(entityOps = newEntity, entities = List(newEntity))
