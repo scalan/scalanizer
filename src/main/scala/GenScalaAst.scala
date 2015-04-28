@@ -8,11 +8,11 @@ trait GenScalaAst { self: ScalanPluginCake =>
   val global: Global
   import global._
 
-  class GenCtx(val module: SEntityModuleDef)
+  case class GenCtx(val module: SEntityModuleDef, val toRep: Boolean = true)
 
   def genScalaAst(module: SEntityModuleDef, orig: Tree): Tree = orig match {
     case q"package $ref { ..$body }" =>
-      implicit val ctx = new GenCtx(module)
+      implicit val ctx = GenCtx(module, true)
       val virtBody = List[Tree](genModule(module))
 
       q"package $ref { ..$virtBody }"
@@ -31,27 +31,9 @@ trait GenScalaAst { self: ScalanPluginCake =>
   }
 
   def genTrait(tr: STraitDef)(implicit ctx: GenCtx): Tree = {
-    def genElem(tpeArg: STpeArg): DefDef = {
-      val mods = Modifiers(Flag.IMPLICIT, tpnme.EMPTY, Nil)
-      val tname = TermName("elementOf" + tpeArg.name)
-      val tpt = tq"Elem[${genTypeByName(tpeArg.name)}]"
-      q"$mods def $tname: $tpt"
-    }
-    def genCont(tpeArg: STpeArg): DefDef = {
-      val mods = Modifiers(Flag.IMPLICIT, tpnme.EMPTY, Nil)
-      val tname = TermName("containerOf" + tpeArg.name)
-      val tpt = tq"Cont[${genTypeByName(tpeArg.name)}]"
-      q"$mods def $tname: $tpt"
-    }
-    def genTypeDescr(tpeArgs: List[STpeArg]): List[Tree] = {
-      tpeArgs.map{arg =>
-        if (arg.tparams.isEmpty) genElem(arg)
-        else genCont(arg)
-      }
-    }
     val entityName = TypeName(tr.name)
     val entitySelf = genSelf(tr.selfType)
-    val repStats = genTypeDescr(tr.tpeArgs) ++ genBody(tr.body)
+    val repStats = genBody(tr.body)
     val entityParents = genParents(tr.ancestors)
     val tparams = tr.tpeArgs.map(genTypeArg)
     val mods = Modifiers(NoFlags, tpnme.EMPTY, tr.annotations.map(genAnnotation))
@@ -150,7 +132,9 @@ trait GenScalaAst { self: ScalanPluginCake =>
   }
 
   def genBodyItem(item: SBodyItem)(implicit ctx: GenCtx): Tree = item match {
-    case m: SMethodDef => genMethod(m)
+    case m: SMethodDef =>
+      if (m.isElemOrCont) genMethod(m)(ctx = ctx.copy(toRep = false))
+      else genMethod(m)
     case v: SValDef => genVal(v)
     case i: SImportStat => genImport(i)
     case t: STpeDef => genTypeDef(t)
@@ -169,7 +153,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     val flags = Flag.PARAM | impFlag | overFlag
     val mods = Modifiers(flags, tpnme.EMPTY, m.annotations.map(genAnnotation))
     val tpt = m.tpeRes match {
-      case Some(tpeRes) => repTypeExpr(tpeRes)
+      case Some(tpeRes) => if (ctx.toRep) repTypeExpr(tpeRes) else genTypeExpr(tpeRes)
       case None => EmptyTree
     }
     val paramss = (genMethodArgs(m.argSections) ++ List(genImplicitElem(m.tpeArgs))).filter(!_.isEmpty)

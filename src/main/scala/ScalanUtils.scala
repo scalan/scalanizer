@@ -113,4 +113,29 @@ trait ScalanUtils { self: ScalanPluginCake =>
   def highKindArgs(tpeArgs: List[STpeArg]): List[STpeArg] = {
     tpeArgs.filter(!_.tparams.isEmpty)
   }
+
+  def genEntityImpicits(module: SEntityModuleDef) = {
+    def genImplicit(tpeArg: STpeArg, methodPrefix: String, resPrefix: String) =
+      SMethodDef(name = methodPrefix + tpeArg.name,
+        tpeArgs = Nil, argSections = Nil,
+        tpeRes = Some(STraitCall(resPrefix, List(STraitCall(tpeArg.name, Nil)))),
+        isImplicit = true, isOverride = false,
+        overloadId = None, annotations = Nil,
+        body = None, isElemOrCont = true)
+
+    def genElem(tpeArg: STpeArg) = genImplicit(tpeArg, "elementOf", "Elem")
+    def genCont(tpeArg: STpeArg) = genImplicit(tpeArg, "containerOf", "Cont")
+
+    def genImplicitDefs(tpeArgs: List[STpeArg]): List[SMethodDef] = {
+      tpeArgs.map{tpeArg =>
+        if (tpeArg.tparams.isEmpty) genElem(tpeArg)
+        else genCont(tpeArg)
+      }
+    }
+
+    val bodyWithImpElems = module.entityOps.body ++ genImplicitDefs(module.entityOps.tpeArgs)
+    val newEntity = module.entityOps.copy(body = bodyWithImpElems)
+
+    module.copy(entityOps = newEntity, entities = List(newEntity))
+  }
 }

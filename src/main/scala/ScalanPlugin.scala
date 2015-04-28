@@ -57,7 +57,8 @@ with ScalanPluginCake { self: ScalanPluginCake =>
           repSynonym _,
           addImports _,
           //addDefaultElem _,
-          checkEntityCompanion _, checkClassCompanion _
+          checkEntityCompanion _, checkClassCompanion _,
+          genEntityImpicits _
         ))
         val enrichedMetaAst = pipeline(metaAst)
 
