@@ -20,7 +20,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
   }
 
   def genModule(module: SEntityModuleDef)(implicit ctx: GenCtx): Tree = {
-    val newstats = genDefaultElem(module) ::
+    val newstats = /*genDefaultElem(module) :: */
       genEntity(module.entityOps) ::
       (genConcreteClasses(module.concreteSClasses) ++ genCompanions(module))
     val newSelf = genModuleSelf(module)
