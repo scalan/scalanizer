@@ -67,7 +67,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
       def getEntityByAncestor(ancestor: STraitCall): Option[STraitDef] = {
         ctx.module.entities.find(entity => entity.name == ancestor.name)
       }
-      def getTypeParamPairs: List[(STraitCall, STpeArg)] = {
+      def getAncestorPairs: List[(STraitCall, STpeArg)] = {
         val ancestors: List[STraitCall] = c.ancestors
 
         ancestors.flatMap{(ancestor: STraitCall) =>
@@ -91,13 +91,15 @@ trait GenScalaAst { self: ScalanPluginCake =>
         val tpt = tq"Cont[${genTypeByName(aParam)}]"
         q"$mods val $tname: $tpt"
       }
-      def genAncestorElems = getTypeParamPairs.map{pair =>
-        val (aParam, eParam) = pair
-        if (eParam.tparams.isEmpty) genElem(eParam.name, aParam.name)
-        else genCont(eParam.name, aParam.name)
+      def genImplicitVal(isFirstKind: Boolean, valName: String, typeName: String): Tree = {
+        if (isFirstKind) genElem(valName, typeName)
+        else genCont(valName, typeName)
       }
 
-      genAncestorElems
+      c.tpeArgs.map{tpeArg => getAncestorPairs.find(pair => tpeArg.name == pair._1.name) match {
+          case Some((aParam, eParam)) => genImplicitVal(eParam.tparams.isEmpty, eParam.name, aParam.name)
+          case None => genImplicitVal(tpeArg.tparams.isEmpty, tpeArg.name, tpeArg.name)
+      }}
     }
     val className = TypeName(c.name)
     val classSelf = genSelf(c.selfType)
