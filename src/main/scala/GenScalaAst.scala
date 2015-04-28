@@ -20,7 +20,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
   }
 
   def genModule(module: SEntityModuleDef)(implicit ctx: GenCtx): Tree = {
-    val newstats = genDefaultElem(module) ::
+    val newstats = /*genDefaultElem(module) :: */
       genEntity(module.entityOps) ::
       (genConcreteClasses(module.concreteSClasses) ++ genCompanions(module))
     val newSelf = genModuleSelf(module)
@@ -134,7 +134,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
       case Some(tpeRes) => repTypeExpr(tpeRes)
       case None => EmptyTree
     }
-    val paramss = genMethodArgs(m.argSections) ++ List(genImplicitElem(m.tpeArgs))
+    val paramss = (genMethodArgs(m.argSections) ++ List(genImplicitElem(m.tpeArgs))).filter(!_.isEmpty)
     val exprs = m.body match {
       case Some(expr) => genExpr(expr)
       case None => EmptyTree
