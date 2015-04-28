@@ -63,6 +63,23 @@ trait GenScalaAst { self: ScalanPluginCake =>
   def genEntity(entity: STraitDef)(implicit ctx: GenCtx): Tree = genTrait(entity)
 
   def genClass(c: SClassDef)(implicit ctx: GenCtx): Tree = {
+    val className = TypeName(c.name)
+    val classSelf = genSelf(c.selfType)
+    val parents = genParents(c.ancestors)
+    val repStats = genBody(c.body)
+    val repparamss = genClassArgs(c.args, c.implicitArgs) ++ List(genImplicitElem(c.tpeArgs))
+    val flags = if (c.isAbstract) Flag.ABSTRACT else NoFlags
+    val mods = Modifiers(flags, tpnme.EMPTY, c.annotations.map(genAnnotation))
+    val tparams = c.tpeArgs.map(genTypeArg)
+    val res = q"""
+            $mods class $className[..$tparams] (...$repparamss)
+            extends ..$parents
+            { $classSelf => ..$repStats }
+            """
+    res
+  }
+
+  def genImplicitElem(tpeArgs: List[STpeArg])(implicit ctx: GenCtx): List[Tree] = {
     def genElem(tpeArg: STpeArg): ValDef = {
       val mods = Modifiers(Flag.IMPLICIT, tpnme.EMPTY, Nil)
       val tname = TermName("elementOf" + tpeArg.name)
@@ -75,26 +92,10 @@ trait GenScalaAst { self: ScalanPluginCake =>
       val tpt = tq"Cont[${genTypeByName(tpeArg.name)}]"
       q"$mods val $tname: $tpt"
     }
-    def genTypeDescr(tpeArgs: List[STpeArg]): List[Tree] = {
-      val firstKind = firstKindArgs(tpeArgs).map(genElem)
-      val highKind = highKindArgs(tpeArgs).map(genCont)
+    val firstKind = firstKindArgs(tpeArgs).map(genElem)
+    val highKind = highKindArgs(tpeArgs).map(genCont)
 
-      firstKind ++ highKind
-    }
-    val className = TypeName(c.name)
-    val classSelf = genSelf(c.selfType)
-    val parents = genParents(c.ancestors)
-    val repStats = genBody(c.body)
-    val repparamss = genClassArgs(c.args, c.implicitArgs) ++ List(genTypeDescr(c.tpeArgs))
-    val flags = if (c.isAbstract) Flag.ABSTRACT else NoFlags
-    val mods = Modifiers(flags, tpnme.EMPTY, c.annotations.map(genAnnotation))
-    val tparams = c.tpeArgs.map(genTypeArg)
-    val res = q"""
-            $mods class $className[..$tparams] (...$repparamss)
-            extends ..$parents
-            { $classSelf => ..$repStats }
-            """
-    res
+    firstKind ++ highKind
   }
 
   def genConcreteClasses(classes: List[SClassDef])(implicit ctx: GenCtx): List[Tree] = {
@@ -133,7 +134,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
       case Some(tpeRes) => repTypeExpr(tpeRes)
       case None => EmptyTree
     }
-    val paramss = genMethodArgs(m.argSections)
+    val paramss = genMethodArgs(m.argSections) ++ List(genImplicitElem(m.tpeArgs))
     val exprs = m.body match {
       case Some(expr) => genExpr(expr)
       case None => EmptyTree
