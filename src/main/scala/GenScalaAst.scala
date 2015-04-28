@@ -44,10 +44,10 @@ trait GenScalaAst { self: ScalanPluginCake =>
       q"$mods def $tname: $tpt"
     }
     def genTypeDescr(tpeArgs: List[STpeArg]): List[Tree] = {
-      val firstKind = firstKindArgs(tpeArgs).map(genElem)
-      val highKind = highKindArgs(tpeArgs).map(genCont)
-
-      firstKind ++ highKind
+      tpeArgs.map{arg =>
+        if (arg.tparams.isEmpty) genElem(arg)
+        else genCont(arg)
+      }
     }
     val entityName = TypeName(tr.name)
     val entitySelf = genSelf(tr.selfType)
@@ -63,11 +63,47 @@ trait GenScalaAst { self: ScalanPluginCake =>
   def genEntity(entity: STraitDef)(implicit ctx: GenCtx): Tree = genTrait(entity)
 
   def genClass(c: SClassDef)(implicit ctx: GenCtx): Tree = {
+    def genTypeDescr: List[Tree] = {
+      def getEntityByAncestor(ancestor: STraitCall): Option[STraitDef] = {
+        ctx.module.entities.find(entity => entity.name == ancestor.name)
+      }
+      def getTypeParamPairs: List[(STraitCall, STpeArg)] = {
+        val ancestors: List[STraitCall] = c.ancestors
+
+        ancestors.flatMap{(ancestor: STraitCall) =>
+          val optEntity: Option[STraitDef] = getEntityByAncestor(ancestor)
+
+          optEntity match {
+            case Some(entity) => ancestor.tpeSExprs.asInstanceOf[List[STraitCall]] zip entity.tpeArgs
+            case None => List[(STraitCall, STpeArg)]()
+          }
+        }
+      }
+      def genElem(eParam: String, aParam: String): ValDef = {
+        val mods = Modifiers(Flag.IMPLICIT, tpnme.EMPTY, Nil)
+        val tname = TermName("elementOf" + eParam)
+        val tpt = tq"Elem[${genTypeByName(aParam)}]"
+        q"$mods val $tname: $tpt"
+      }
+      def genCont(eParam: String, aParam: String): ValDef = {
+        val mods = Modifiers(Flag.IMPLICIT, tpnme.EMPTY, Nil)
+        val tname = TermName("containerOf" + eParam)
+        val tpt = tq"Cont[${genTypeByName(aParam)}]"
+        q"$mods val $tname: $tpt"
+      }
+      def genAncestorElems = getTypeParamPairs.map{pair =>
+        val (aParam, eParam) = pair
+        if (eParam.tparams.isEmpty) genElem(eParam.name, aParam.name)
+        else genCont(eParam.name, aParam.name)
+      }
+
+      genAncestorElems
+    }
     val className = TypeName(c.name)
     val classSelf = genSelf(c.selfType)
     val parents = genParents(c.ancestors)
     val repStats = genBody(c.body)
-    val repparamss = (genClassArgs(c.args, c.implicitArgs) ++ List(genImplicitElem(c.tpeArgs))).filter(!_.isEmpty)
+    val repparamss = (genClassArgs(c.args, c.implicitArgs) ++ List(genTypeDescr)).filter(!_.isEmpty)
     val flags = if (c.isAbstract) Flag.ABSTRACT else NoFlags
     val mods = Modifiers(flags, tpnme.EMPTY, c.annotations.map(genAnnotation))
     val tparams = c.tpeArgs.map(genTypeArg)
