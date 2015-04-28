@@ -181,9 +181,9 @@ trait ScalanUtils { self: ScalanPluginCake =>
   def genClassesImplicits(module: SEntityModuleDef) = {
     val newClasses = module.concreteSClasses.map{clazz =>
       val elemArgs = genImplicitClassArgs(module, clazz)
-      val classArgs = SClassArgs(clazz.implicitArgs.args ++ elemArgs)
+      val newImplicitArgs = SClassArgs(clazz.implicitArgs.args ++ elemArgs)
 
-      clazz.copy(args = classArgs)
+      clazz.copy(implicitArgs = newImplicitArgs)
     }
 
     module.copy(concreteSClasses = newClasses)
