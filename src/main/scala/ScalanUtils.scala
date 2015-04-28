@@ -194,7 +194,7 @@ trait ScalanUtils { self: ScalanPluginCake =>
       SMethodArg(impFlag = true, overFlag = false,
         name = valPrefix + tpeArg.name,
         tpe = STraitCall(resPrefix, List(STraitCall(tpeArg.name, Nil))),
-        default = None, annotations = Nil)
+        default = None, annotations = Nil, isElemOrCont = true)
     }
     def genElem(tpeArg: STpeArg) = genImplicit(tpeArg, "elementOf", "Elem")
     def genCont(tpeArg: STpeArg) = genImplicit(tpeArg, "containerOf", "Cont")

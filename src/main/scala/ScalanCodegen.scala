@@ -1000,7 +1000,7 @@ trait ScalanCodegen extends ScalanParsers with SqlCompiler with ScalanAstExtensi
         }
 
         def reasonToSkipMethod(m: SMethodDef): Option[String] = {
-          (m.explicitArgs.collect { case SMethodArg(_,_, name, STpeFunc(_, _), _, _) => name} match {
+          (m.explicitArgs.collect { case SMethodArg(_,_, name, STpeFunc(_, _), _, _, _) => name} match {
             case Seq() => None
             case nonEmpty => Some(s"Method has function arguments ${nonEmpty.mkString(", ")}")
           }).orElse {
