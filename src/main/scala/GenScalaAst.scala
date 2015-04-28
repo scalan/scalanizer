@@ -99,7 +99,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
       case Some(tpeRes) => if (ctx.toRep) repTypeExpr(tpeRes) else genTypeExpr(tpeRes)
       case None => EmptyTree
     }
-    val paramss = genMethodArgs(m.argSections)
+    val paramss = genMethodArgs(m.argSections).filter(!_.isEmpty)
     val exprs = m.body match {
       case Some(expr) => genExpr(expr)
       case None => EmptyTree
