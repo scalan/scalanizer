@@ -1,7 +1,7 @@
 package scalan.plugin
 
 import scala.tools.nsc._
-import ScalanAst._
+import scalan.meta.ScalanAst._
 import scala.tools.nsc.util.BatchSourceFile
 
 trait GenScalaAst { self: ScalanPluginCake =>

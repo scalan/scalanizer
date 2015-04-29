@@ -1,6 +1,6 @@
 package scalan.plugin
 
-import ScalanAst._
+import scalan.meta.ScalanAst._
 import scala.annotation.tailrec
 import scalan.util.{ScalaNameUtil, StringUtil}
 

@@ -1,8 +1,8 @@
 package scalan.plugin
 
 import java.io.File
+import scalan.meta.ScalanAst._
 import scalan.util.FileUtil
-import ScalanAst._
 
 trait ScalanUtils { self: ScalanPluginCake =>
   /** Imports scalan._ and other packages needed by Scalan and further transformations. */

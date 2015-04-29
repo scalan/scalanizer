@@ -1,6 +1,6 @@
 package scalan.plugin
 
-import ScalanAst._
+import scalan.meta.ScalanAst._
 
 /**
  * Created by slesarenko on 23/02/15.

@@ -9,7 +9,7 @@ import scala.tools.nsc._
 import scala.language.implicitConversions
 import scala.reflect.internal.util.RangePosition
 import scala.reflect.internal.util.OffsetPosition
-import ScalanAst._
+import scalan.meta.ScalanAst._
 
 trait ScalanParsers {
   //val settings = new Settings

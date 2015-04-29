@@ -4,7 +4,7 @@ import java.io.{ByteArrayOutputStream, ObjectOutputStream}
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.{PluginComponent, Plugin}
 import scala.reflect.internal.util.BatchSourceFile
-import ScalanAst._
+import scalan.meta.ScalanAst._
 
 object ScalanPluginConfig {
   var save: Boolean = true
