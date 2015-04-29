@@ -327,7 +327,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case SIf(c, t, e) => q"IF (${genExpr(c)}) THEN {${genExpr(t)}} ELSE {${genExpr(e)}}"
     case SAscr(expr, tpt) => q"${genExpr(expr)}: ${repTypeExpr(tpt)}"
     case constr: SContr => genConstr(constr)
-    case SFunc(params, res) => q"(..${params.map(genExpr)}) => ${genExpr(res)}"
+    case SFunc(params, res) => q"fun { (..${params.map(genExpr)}) => ${genExpr(res)} }"
     case SThis(tname) => q"${TypeName(tname)}.this"
     case SSuper(name, qual, field) => q"${TypeName(name)}.super[${TypeName(qual)}].${TermName(field)}"
     case SAnnotated(expr, annot) => q"${genExpr(expr)}: @${TypeName(annot)}"
