@@ -140,6 +140,7 @@ package object ScalanAst {
   case class SDefaultExpr(expr: String) extends SExpr
   //case class SExternalExpr(ext: AnyRef) extends SExpr
   case class SAnnotated(expr: SExpr, annot: String) extends SExpr
+  case class STuple(exprs: List[SExpr]) extends SExpr
 
   // SBodyItem universe ----------------------------------------------------------------------
   abstract class SBodyItem extends SExpr

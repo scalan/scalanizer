@@ -398,6 +398,8 @@ trait ScalanParsers {
     case q"$expr.$tname" => SSelect(parseExpr(expr), tname)
     case Apply(Select(New(name), termNames.CONSTRUCTOR), args) =>
       SContr(name.toString(), args.map(parseExpr))
+    case Apply(Select(Ident(TermName("scala")), TermName(tuple)), args) if tuple.startsWith("Tuple") =>
+      STuple(args.map(parseExpr))
     case q"$expr[..$tpts](..$exprs)" => SApply(parseExpr(expr), tpts.map(tpeExpr), exprs.map(parseExpr))
     case Block(init, last) => SBlock(init.map(parseExpr), parseExpr(last))
     case q"$mods val $tname: $tpt = $expr" =>
