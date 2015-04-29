@@ -4,7 +4,7 @@ package scalan.plugin
  */
 
 import scalan.meta.ScalanAst._
-import SqlAST._
+import scalan.meta.SqlAST._
 
 trait SqlCompiler extends SqlParser {
   case class Scope(var ctx: Context, outer: Option[Scope], nesting: Int, name: String) {

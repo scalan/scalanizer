@@ -5,7 +5,7 @@ import scala.util.parsing.combinator.PackratParsers
 import scala.util.parsing.combinator.lexical.StdLexical
 import scala.util.parsing.combinator.syntactical.StandardTokenParsers
 import scala.util.parsing.input.CharArrayReader.EofCh
-import SqlAST._
+import scalan.meta.SqlAST._
 
 /**
  * Created by knizhnik on 1/13/15.
