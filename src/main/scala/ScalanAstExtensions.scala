@@ -6,7 +6,7 @@ import ScalanAst._
  * Created by slesarenko on 23/02/15.
  */
 trait ScalanAstExtensions {
-  import scalan.plugin.PrintExtensions._
+  import scalan.meta.PrintExtensions._
 
   implicit class SMethodOrClassArgsOps(as: SMethodOrClassArgs) {
     def argNames = as.args.map(a => a.name)

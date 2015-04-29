@@ -5,7 +5,7 @@ import scala.annotation.tailrec
 import scalan.util.{ScalaNameUtil, StringUtil}
 
 trait ScalanCodegen extends ScalanParsers with SqlCompiler with ScalanAstExtensions { ctx: ScalanPluginCake =>
-  import PrintExtensions._
+  import scalan.meta.PrintExtensions._
 
   abstract class TemplateData(val module: SEntityModuleDef, val entity: STraitOrClassDef) {
     val name = entity.name
