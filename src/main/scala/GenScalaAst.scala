@@ -323,7 +323,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
         val inval = q"in.${TermName("_" + acc._1.toString())}"
         (acc._1 + 1, q"val ${TermName(param.name)}: $tres = $inval" :: acc._2)
       }
-      val body = q"{ ..$vals; ${genExpr(func.res)} }"
+      val body = q"{ ..${vals.reverse}; ${genExpr(func.res)} }"
       q"fun { (in: Rep[$tAst]) => $body }"
     }
   }
