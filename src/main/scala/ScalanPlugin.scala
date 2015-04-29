@@ -5,6 +5,7 @@ import scala.tools.nsc._
 import scala.tools.nsc.plugins.{PluginComponent, Plugin}
 import scala.reflect.internal.util.BatchSourceFile
 import scalan.meta.ScalanAst._
+import scalan.meta.{SqlParser, SqlCompiler}
 
 object ScalanPluginConfig {
   var save: Boolean = true

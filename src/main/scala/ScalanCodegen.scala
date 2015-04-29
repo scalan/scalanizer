@@ -1,6 +1,7 @@
 package scalan.plugin
 
 import scalan.meta.ScalanAst._
+import scalan.meta.SqlCompiler
 import scala.annotation.tailrec
 import scalan.util.{ScalaNameUtil, StringUtil}
 
