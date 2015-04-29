@@ -19,7 +19,8 @@ object ScalanBuild extends Build {
   ) settings (
     libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _ % "provided"),
     libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _ % "provided"),
-    jarName in assembly := name.value + "_" + scalaVersion.value + "-" + version.value + "-assembly.jar",
-    assemblyOption in assembly ~= { _.copy(includeScala = false) }
+    libraryDependencies ++= Seq("com.huawei.scalan" %% "common" % "0.2.8-SNAPSHOT"),
+    jarName in assembly := name.value + "_" + scalaVersion.value + "-" + version.value + ".jar",
+    assemblyOption in assembly ~= { _.copy(includeScala = false, includeDependency = true) }
   )
 }

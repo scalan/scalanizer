@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="SBT: com.huawei.scalan:common_2.11:0.2.8-SNAPSHOT:jar">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.ivy2/local/com.huawei.scalan/common_2.11/0.2.8-SNAPSHOT/jars/common_2.11.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/.ivy2/local/com.huawei.scalan/common_2.11/0.2.8-SNAPSHOT/docs/common_2.11-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.ivy2/local/com.huawei.scalan/common_2.11/0.2.8-SNAPSHOT/srcs/common_2.11-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

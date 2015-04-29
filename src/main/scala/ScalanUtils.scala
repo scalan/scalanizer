@@ -1,6 +1,7 @@
 package scalan.plugin
 
 import java.io.File
+import scalan.util.FileUtil
 import ScalanAst._
 
 trait ScalanUtils { self: ScalanPluginCake =>

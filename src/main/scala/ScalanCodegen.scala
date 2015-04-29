@@ -1,8 +1,8 @@
 package scalan.plugin
 
 import ScalanAst._
-
 import scala.annotation.tailrec
+import scalan.util.{ScalaNameUtil, StringUtil}
 
 trait ScalanCodegen extends ScalanParsers with SqlCompiler with ScalanAstExtensions { ctx: ScalanPluginCake =>
   import PrintExtensions._
