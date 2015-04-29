@@ -4,8 +4,9 @@ package scalan.plugin
  */
 
 import scalan.meta.ScalanAst._
+import SqlAST._
 
-trait SqlCompiler extends SqlAST with SqlParser {
+trait SqlCompiler extends SqlParser {
   case class Scope(var ctx: Context, outer: Option[Scope], nesting: Int, name: String) {
     def lookup(col: ColumnRef): Binding = {
       ctx.resolve(col.table, col.name) match {

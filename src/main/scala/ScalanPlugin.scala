@@ -30,7 +30,7 @@ object ScalanPluginConfig {
 
 trait ScalanPluginCake extends ScalanParsers with ScalanUtils
 with ScalanCodegen with ScalanAstExtensions
-with SqlCompiler with SqlAST with SqlParser
+with SqlCompiler with SqlParser
 with GenScalaAst
 
 class ScalanPluginComponent(val global: Global) extends PluginComponent
