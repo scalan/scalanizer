@@ -309,6 +309,25 @@ trait GenScalaAst { self: ScalanPluginCake =>
       throw new IllegalArgumentException(s"genConstr($constr)")
   }
 
+  def genFunc(func: SFunc)(implicit ctx: GenCtx): Tree = {
+    if (func.params.length == 1) {
+      q"fun { ${genVal(func.params.head)} => ${genExpr(func.res)} }"
+    } else {
+      val t: List[STpeExpr] = func.params.map(_.tpe.getOrElse(STpeEmpty()))
+      val tAst = genTuples(t)
+      val (_, vals) = func.params.foldLeft((1, List[Tree]())) { (acc, param) =>
+        val tres = param.tpe match {
+          case Some(tpe) => repTypeExpr(tpe)
+          case None => TypeTree()
+        }
+        val inval = q"in.${TermName("_" + acc._1.toString())}"
+        (acc._1 + 1, q"val ${TermName(param.name)}: $tres = $inval" :: acc._2)
+      }
+      val body = q"{ ..$vals; ${genExpr(func.res)} }"
+      q"fun { (in: Rep[$tAst]) => $body }"
+    }
+  }
+
   def genExpr(expr: SExpr)(implicit ctx: GenCtx): Tree = expr match {
     case SEmpty() => q""
     case SConst(c: Any) => q"toRep(${global.Literal(global.Constant(c))})"
@@ -327,7 +346,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
     case SIf(c, t, e) => q"IF (${genExpr(c)}) THEN {${genExpr(t)}} ELSE {${genExpr(e)}}"
     case SAscr(expr, tpt) => q"${genExpr(expr)}: ${repTypeExpr(tpt)}"
     case constr: SContr => genConstr(constr)
-    case SFunc(params, res) => q"fun { (..${params.map(genExpr)}) => ${genExpr(res)} }"
+    case func: SFunc => genFunc(func)
     case SThis(tname) => q"${TypeName(tname)}.this"
     case SSuper(name, qual, field) => q"${TypeName(name)}.super[${TypeName(qual)}].${TermName(field)}"
     case SAnnotated(expr, annot) => q"${genExpr(expr)}: @${TypeName(annot)}"

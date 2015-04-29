@@ -132,7 +132,7 @@ package object ScalanAst {
   case class SBlock(init: List[SExpr], last: SExpr) extends SExpr
   case class SIf(cond: SExpr, th: SExpr, el: SExpr) extends SExpr
   case class SAscr(expr: SExpr, pt: STpeExpr) extends SExpr
-  case class SFunc(params: List[SExpr], res: SExpr) extends SExpr
+  case class SFunc(params: List[SValDef], res: SExpr) extends SExpr
   case class SContr(name: String, args: List[SExpr]) extends SExpr
   case class SThis(typeName: String) extends SExpr
   case class SSuper(name: String, qual: String, field: String) extends SExpr

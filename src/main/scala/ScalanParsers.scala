@@ -406,7 +406,7 @@ trait ScalanParsers {
       SValDef(tname, optTpeExpr(tpt), mods.isLazy, mods.isImplicit, parseExpr(expr))
     case q"if ($cond) $th else $el" => SIf(parseExpr(cond), parseExpr(th), parseExpr(el))
     case q"$expr: $tpt" => SAscr(parseExpr(expr), tpeExpr(tpt))
-    case q"(..$params) => $expr" => SFunc(params.map(parseExpr), parseExpr(expr))
+    case q"(..$params) => $expr" => SFunc(params.map(param => parseExpr(param).asInstanceOf[SValDef]), parseExpr(expr))
     case q"$tpname.this" => SThis(tpname)
     case q"$expr: @$annot" => SAnnotated(parseExpr(expr), annot.toString)
     case q"$expr[..$tpts]" => STypeApply(parseExpr(expr), tpts.map(tpeExpr))
