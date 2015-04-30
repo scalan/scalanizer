@@ -13,7 +13,7 @@ object ScalanPluginConfig {
   var debug: Boolean = false
   val files = List[String](
     "Segms.scala"
-    //, "Knds.scala"
+    , "Knds.scala"
   )
   val baseContextTrait = "ScalanDsl"
   val seqContextTrait = "ScalanSeq"
