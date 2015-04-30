@@ -29,10 +29,7 @@ object ScalanPluginConfig {
   )
 }
 
-trait ScalanPluginCake extends ScalanParsers with ScalanUtils
-with ScalanCodegen with ScalanAstExtensions
-with SqlCompiler with SqlParser
-with GenScalaAst
+trait ScalanPluginCake extends ScalanParsers with ScalanUtils with GenScalaAst
 
 class ScalanPluginComponent(val global: Global) extends PluginComponent
 with ScalanPluginCake { self: ScalanPluginCake =>
@@ -64,7 +61,7 @@ with ScalanPluginCake { self: ScalanPluginCake =>
         val enrichedMetaAst = pipeline(metaAst)
 
         /** Boilerplate generation */
-        val entityGen = new EntityFileGenerator(enrichedMetaAst)
+        val entityGen = new ScalanCodegen.EntityFileGenerator(enrichedMetaAst)
         val implCode = entityGen.getImplFile
         val implCodeFile = new BatchSourceFile("<impl>", implCode)
         val boilerplate = newUnitParser(new CompilationUnit(implCodeFile)).parse()
