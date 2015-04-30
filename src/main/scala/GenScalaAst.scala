@@ -2,7 +2,6 @@ package scalan.plugin
 
 import scala.tools.nsc._
 import scalan.meta.ScalanAst._
-import scala.tools.nsc.util.BatchSourceFile
 
 trait GenScalaAst { self: ScalanPluginCake =>
   val global: Global

@@ -6,7 +6,7 @@ import scala.tools.nsc.plugins.{PluginComponent, Plugin}
 import scala.reflect.internal.util.BatchSourceFile
 import scalan.meta.ScalanAst._
 
-trait ScalanPluginCake extends ScalanParsers with ScalanUtils with GenScalaAst
+trait ScalanPluginCake extends ScalanParsers with Enricher with GenScalaAst
 
 class ScalanPluginComponent(val global: Global) extends PluginComponent
 with ScalanPluginCake { self: ScalanPluginCake =>
