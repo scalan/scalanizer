@@ -38,7 +38,8 @@ with ScalanPluginCake { self: ScalanPluginCake =>
         val enrichedMetaAst = pipeline(metaAst)
 
         /** Boilerplate generation */
-        val entityGen = new ScalanCodegen.EntityFileGenerator(enrichedMetaAst)
+        val entityGen = new scalan.meta.ScalanCodegen.EntityFileGenerator(
+          enrichedMetaAst, ScalanPluginConfig.codegenConfig)
         val implCode = entityGen.getImplFile
         val implCodeFile = new BatchSourceFile("<impl>", implCode)
         val boilerplate = newUnitParser(new CompilationUnit(implCodeFile)).parse()
