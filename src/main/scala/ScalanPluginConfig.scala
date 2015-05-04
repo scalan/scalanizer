@@ -24,7 +24,8 @@ object ScalanPluginConfig {
     entityTypeSynonyms = Map[String, String](
       "RepSegm" -> "Segm"
       ,"RKind" -> "Kind"
-    )
+    ),
+    isAlreadyRep = false
   )
 }
 
