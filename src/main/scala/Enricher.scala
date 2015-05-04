@@ -4,7 +4,7 @@ import java.io.File
 import scalan.meta.ScalanAst._
 import scalan.util.FileUtil
 
-trait Enricher { self: ScalanPluginCake =>
+trait Enricher {
   /** Imports scalan._ and other packages needed by Scalan and further transformations. */
   def addImports(module: SEntityModuleDef) = {
     module.copy(imports = List(

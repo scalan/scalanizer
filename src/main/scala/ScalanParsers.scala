@@ -3,7 +3,7 @@ package scalan.plugin
 //import java.io.File
 
 //import scala.reflect.{ClassTag,classTag}
-import scala.tools.nsc._
+//import scala.tools.nsc._
 //import scala.tools.nsc.Settings
 //import scala.tools.nsc.reporters.StoreReporter
 import scala.language.implicitConversions
@@ -12,14 +12,11 @@ import scala.reflect.internal.util.OffsetPosition
 import scalan.meta.ScalanAst._
 
 trait ScalanParsers {
-  //val settings = new Settings
-  //settings.embeddedDefaults(getClass.getClassLoader)
-  //settings.usejavacp.value = true
-  //val reporter = new StoreReporter
-  //val compiler: Global = new Global(settings, reporter)
-  val global: Global
 
-  import global._
+  type Compiler <: scala.tools.nsc.Global
+  val compiler: Compiler
+  import compiler._
+
   implicit def nameToString(name: Name): String = name.toString
 
   implicit class OptionListOps[A](opt: Option[List[A]]) {

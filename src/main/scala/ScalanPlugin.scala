@@ -6,12 +6,12 @@ import scala.tools.nsc.plugins.{PluginComponent, Plugin}
 import scala.reflect.internal.util.BatchSourceFile
 import scalan.meta.ScalanAst._
 
-trait ScalanPluginCake extends ScalanParsers with Enricher with GenScalaAst
+class ScalanPluginComponent(val global: Global)
+  extends PluginComponent with ScalanParsers with Enricher with GenScalaAst {
 
-class ScalanPluginComponent(val global: Global) extends PluginComponent
-with ScalanPluginCake { self: ScalanPluginCake =>
-  import global._
-  val compiler: Global = global
+  type Compiler = global.type
+  val compiler: Compiler = global
+  import compiler._
 
   val phaseName: String = "scalan"
   override def description: String = "Code virtualization and specialization"

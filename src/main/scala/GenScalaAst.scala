@@ -1,11 +1,12 @@
 package scalan.plugin
 
-import scala.tools.nsc._
 import scalan.meta.ScalanAst._
 
-trait GenScalaAst { self: ScalanPluginCake =>
-  val global: Global
-  import global._
+trait GenScalaAst {
+
+  type Compiler <: scala.tools.nsc.Global
+  val compiler: Compiler
+  import compiler._
 
   case class GenCtx(val module: SEntityModuleDef, val toRep: Boolean = true)
 
@@ -329,7 +330,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
 
   def genExpr(expr: SExpr)(implicit ctx: GenCtx): Tree = expr match {
     case SEmpty() => q""
-    case SConst(c: Any) => q"toRep(${global.Literal(global.Constant(c))})"
+    case SConst(c: Any) => q"toRep(${compiler.Literal(compiler.Constant(c))})"
     case SIdent(name: String) => Ident(TermName(name))
     case SAssign(left, right) => q"${genExpr(left)} = ${genExpr(right)}"
     case SSelect(expr: SExpr, tname: String) => q"${genExpr(expr)}.${TermName(tname)}"
@@ -357,7 +358,7 @@ trait GenScalaAst { self: ScalanPluginCake =>
 
   def genAnnotation(annot: SAnnotation)(implicit ctx: GenCtx): Tree = {
     def genAnnotExpr(expr: SExpr): Tree = expr match {
-      case SConst(c: Any) => global.Literal(global.Constant(c))
+      case SConst(c: Any) => compiler.Literal(compiler.Constant(c))
       case SIdent(name: String) => Ident(TermName(name))
       case SAssign(left, right) => q"${genAnnotExpr(left)} = ${genAnnotExpr(right)}"
       case unknown => throw new NotImplementedError(s"genAnnotExpr($unknown)")
