@@ -5,6 +5,7 @@ import scala.tools.nsc._
 import scala.tools.nsc.plugins.{PluginComponent, Plugin}
 import scala.reflect.internal.util.BatchSourceFile
 import scalan.meta.ScalanAst._
+import scalan.meta.ScalanParsers
 
 class ScalanPluginComponent(val global: Global)
   extends PluginComponent with ScalanParsers with Enricher with GenScalaAst {
