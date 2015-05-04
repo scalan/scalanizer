@@ -25,7 +25,7 @@ class ScalanPluginComponent(val global: Global)
       val unitName = unit.source.file.name
 
       if (ScalanPluginConfig.codegenConfig.entityFiles.contains(unitName)) try {
-        val metaAst = parse(unit.body)
+        val metaAst = parse(unitName, unit.body)
         /** Transformations of Scalan AST */
         val pipeline = scala.Function.chain(Seq(
           addAncestors _,
