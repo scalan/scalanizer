@@ -334,13 +334,13 @@ trait GenScalaAst {
     case SIdent(name: String) => Ident(TermName(name))
     case SAssign(left, right) => q"${genExpr(left)} = ${genExpr(right)}"
     case SSelect(expr: SExpr, tname: String) => q"${genExpr(expr)}.${TermName(tname)}"
-    case SApply(fun, tpts, args) =>
+    case SApply(fun, tpts, argss) =>
       val typeArgs = tpts.map(genTypeExpr)
-      val valArgs = args.map(genExpr)
+      val valArgss = argss.map(_.map(genExpr))
       fun match {
         case SSelect(SIdent(pkg), name) if pkg == "scala" && name.startsWith("Tuple") =>
-          q"Tuple[..$typeArgs](..$valArgs)"
-        case _ => q"${genExpr(fun)}[..$typeArgs](..$valArgs)"
+          q"Tuple[..$typeArgs](...$valArgss)"
+        case _ => q"${genExpr(fun)}[..$typeArgs](...$valArgss)"
       }
     case SBlock(init: List[SExpr], last) => Block(init.map(genExpr), genExpr(last))
     case SIf(c, t, e) => q"IF (${genExpr(c)}) THEN {${genExpr(t)}} ELSE {${genExpr(e)}}"

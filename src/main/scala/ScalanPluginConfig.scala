@@ -13,6 +13,7 @@ object ScalanPluginConfig {
       "Segms.scala"
       ,"Knds.scala"
       ,"Coprods.scala"
+      ,"Mnds.scala"
     ),
     baseContextTrait = "ScalanDsl",
     seqContextTrait = "ScalanSeq",
