@@ -11,7 +11,8 @@ object ScalanPluginConfig {
     srcPath = "/",
     entityFiles = List[String](
       "Segms.scala"
-      , "Knds.scala"
+      ,"Knds.scala"
+      ,"Coprods.scala"
     ),
     baseContextTrait = "ScalanDsl",
     seqContextTrait = "ScalanSeq",
@@ -24,6 +25,7 @@ object ScalanPluginConfig {
     entityTypeSynonyms = Map[String, String](
       "RepSegm" -> "Segm"
       ,"RKind" -> "Kind"
+      ,"RCoproduct" -> "Coproduct"
     ),
     isAlreadyRep = false
   )

@@ -163,7 +163,8 @@ class ScalanPlugin(val global: Global) extends Plugin {
 object ScalanPluginState {
   var emap = scala.collection.mutable.Map(
     "Segms" -> Set("SegmsDsl", "SegmsDslSeq", "SegmsDslExp")
-    , "Knds" -> Set("KndsDsl", "KndsDslSeq", "KndsDslExp")
+    ,"Knds" -> Set("KndsDsl", "KndsDslSeq", "KndsDslExp")
+    ,"Coprods" -> Set("CoprodsDsl", "CoprodsDslSeq", "CoprodsDslExp")
   )
 }
 
