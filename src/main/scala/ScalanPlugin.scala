@@ -166,6 +166,7 @@ object ScalanPluginState {
     ,"Knds" -> Set("KndsDsl", "KndsDslSeq", "KndsDslExp")
     ,"Coprods" -> Set("CoprodsDsl", "CoprodsDslSeq", "CoprodsDslExp")
     ,"Mnds" -> Set("MndsDsl", "MndsDslSeq", "MndsDslExp")
+    ,"Fres" -> Set("FresDsl", "FresDslSeq", "FresDslExp")
   )
 }
 

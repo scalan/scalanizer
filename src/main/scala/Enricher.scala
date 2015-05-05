@@ -124,8 +124,8 @@ trait Enricher {
         overloadId = None, annotations = Nil,
         body = None, isElemOrCont = true)
 
-    def genElem(tpeArg: STpeArg) = genImplicit(tpeArg, "elementOf", "Elem")
-    def genCont(tpeArg: STpeArg) = genImplicit(tpeArg, "containerOf", "Cont")
+    def genElem(tpeArg: STpeArg) = genImplicit(tpeArg, "e", "Elem")
+    def genCont(tpeArg: STpeArg) = genImplicit(tpeArg, "c", "Cont")
 
     def genImplicitDefs(tpeArgs: List[STpeArg]): List[SMethodDef] = {
       tpeArgs.map{tpeArg =>
@@ -150,9 +150,9 @@ trait Enricher {
         default = None, annotations = Nil, isElemOrCont = true)
     }
     def genElem(valName: String, typeName: String) =
-      genImplicit("elementOf", valName, "Elem", typeName)
+      genImplicit("e", valName, "Elem", typeName)
     def genCont(valName: String, typeName: String) =
-      genImplicit("containerOf", valName, "Cont", typeName)
+      genImplicit("c", valName, "Cont", typeName)
     def genImplicitArg(isFirstKind: Boolean, valName: String, typeName: String): SClassArg = {
       if (isFirstKind) genElem(valName, typeName)
       else genCont(valName, typeName)
@@ -197,8 +197,8 @@ trait Enricher {
         tpe = STraitCall(resPrefix, List(STraitCall(tpeArg.name, Nil))),
         default = None, annotations = Nil, isElemOrCont = true)
     }
-    def genElem(tpeArg: STpeArg) = genImplicit(tpeArg, "elementOf", "Elem")
-    def genCont(tpeArg: STpeArg) = genImplicit(tpeArg, "containerOf", "Cont")
+    def genElem(tpeArg: STpeArg) = genImplicit(tpeArg, "e", "Elem")
+    def genCont(tpeArg: STpeArg) = genImplicit(tpeArg, "c", "Cont")
 
     def genImplicitVals(tpeArgs: List[STpeArg]): List[SMethodArg] = {
       tpeArgs.map{tpeArg =>

@@ -14,6 +14,7 @@ object ScalanPluginConfig {
       ,"Knds.scala"
       ,"Coprods.scala"
       ,"Mnds.scala"
+      ,"Fres.scala"
     ),
     baseContextTrait = "ScalanDsl",
     seqContextTrait = "ScalanSeq",
@@ -23,11 +24,7 @@ object ScalanPluginConfig {
       "scala.reflect._",
       "scalan.common.Default"
     ),
-    entityTypeSynonyms = Map[String, String](
-      "RepSegm" -> "Segm"
-      ,"RKind" -> "Kind"
-      ,"RCoproduct" -> "Coproduct"
-    ),
+    entityTypeSynonyms = Map[String, String](),
     isAlreadyRep = false
   )
 }
