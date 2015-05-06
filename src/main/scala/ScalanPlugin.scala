@@ -161,13 +161,15 @@ class ScalanPlugin(val global: Global) extends Plugin {
 }
 
 object ScalanPluginState {
-  var emap = scala.collection.mutable.Map(
-    "Segms" -> Set("SegmsDsl", "SegmsDslSeq", "SegmsDslExp")
-    ,"Knds" -> Set("KndsDsl", "KndsDslSeq", "KndsDslExp")
-    ,"Coprods" -> Set("CoprodsDsl", "CoprodsDslSeq", "CoprodsDslExp")
-    ,"Mnds" -> Set("MndsDsl", "MndsDslSeq", "MndsDslExp")
-    ,"Fres" -> Set("FresDsl", "FresDslSeq", "FresDslExp")
-  )
+  var emap = scala.collection.mutable.Map[String, Set[String]]()
+
+  ScalanPluginConfig.codegenConfig.entityFiles.foreach { file =>
+    val fileNameParts = file.split('.')
+    if (!fileNameParts.isEmpty) {
+      val moduleName = fileNameParts.head
+      emap(moduleName) = Set(moduleName + "Dsl", moduleName + "DslSeq", moduleName + "DslExp")
+    }
+  }
 }
 
 object ScalanPlugin {
