@@ -2,7 +2,7 @@ package scalan.plugin
 
 import scalan.meta.ScalanAst._
 
-trait GenScalaAst {
+trait Backend {
 
   type Compiler <: scala.tools.nsc.Global
   val compiler: Compiler

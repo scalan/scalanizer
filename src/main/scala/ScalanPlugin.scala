@@ -8,7 +8,7 @@ import scalan.meta.ScalanAst._
 import scalan.meta.{CodegenConfig, ScalanParsers}
 
 class ScalanPluginComponent(val global: Global)
-  extends PluginComponent with ScalanParsers with Enricher with GenScalaAst {
+  extends PluginComponent with ScalanParsers with Enricher with Backend {
 
   type Compiler = global.type
   val compiler: Compiler = global
