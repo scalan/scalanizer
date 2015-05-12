@@ -15,6 +15,7 @@ object ScalanPluginConfig {
       ,"Coprods.scala"
       ,"Mnds.scala"
       ,"Fres.scala"
+      ,"Patterns.scala"
     ),
     baseContextTrait = "ScalanDsl",
     seqContextTrait = "ScalanSeq",

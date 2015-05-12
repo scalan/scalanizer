@@ -352,6 +352,7 @@ trait Backend {
     case SAnnotated(expr, annot) => q"${genExpr(expr)}: @${TypeName(annot)}"
     case STypeApply(fun, tpts) => q"${genExpr(fun)}[..${tpts.map(genTypeExpr)}]"
     case STuple(exprs) => q"Tuple(..${exprs.map(genExpr)})"
+    case SMatch(selector, cases) if !cases.isEmpty => genCase(selector, cases.head, cases.tail)
     case bi: SBodyItem => genBodyItem(bi)
     case unknown => throw new NotImplementedError(s"genExpr($unknown)")
   }
@@ -365,5 +366,19 @@ trait Backend {
     }
     val args = annot.args.map(genAnnotExpr)
     Apply(Select(New(Ident(annot.annotationClass)), nme.CONSTRUCTOR), args)
+  }
+
+  def genCase(sel: SExpr, current: SCase, rest: List[SCase])(implicit ctx: GenCtx): Tree = {
+    current.pat match {
+      case const: SConst =>
+        val cond = q"${genExpr(sel)} == ${genExpr(const)}"
+        val thenexpr = genExpr(current.body)
+        val elseexpr = rest match {
+          case Nil => q"{}"
+          case x::xs => genCase(sel, x, xs)
+        }
+        q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
+      case SIdent("_") => genExpr(current.body)
+    }
   }
 }
