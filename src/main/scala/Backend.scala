@@ -369,16 +369,23 @@ trait Backend {
   }
 
   def genCase(sel: SExpr, current: SCase, rest: List[SCase])(implicit ctx: GenCtx): Tree = {
+    lazy val thenexpr = genExpr(current.body)
+    lazy val elseexpr = rest match {
+      case Nil => q"{}"
+      case x::xs => genCase(sel, x, xs)
+    }
+
     current.pat match {
       case const: SConst =>
         val cond = q"${genExpr(sel)} == ${genExpr(const)}"
-        val thenexpr = genExpr(current.body)
-        val elseexpr = rest match {
-          case Nil => q"{}"
-          case x::xs => genCase(sel, x, xs)
-        }
+        q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
+      case SAscr(SIdent("_"), tpe) =>
+        val cond = q"${genExpr(sel)}.isInstanceOf[${repTypeExpr(tpe)}]"
         q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
       case SIdent("_") => genExpr(current.body)
+      case SBind(name,SAscr(SIdent("_"), tpe)) =>
+        val cond = q"${genExpr(sel)}.isInstanceOf[${repTypeExpr(tpe)}]"
+        q"IF ($cond) THEN {val ${TermName(name)} = ${genExpr(sel)};$thenexpr} ELSE {$elseexpr}"
     }
   }
 }
