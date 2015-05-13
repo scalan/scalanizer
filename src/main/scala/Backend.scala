@@ -374,6 +374,11 @@ trait Backend {
       val cond = q"${genExpr(sel)} == ${genExpr(expr)}"
       q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
     }
+    def typeCheck(tpe: STpeExpr): Tree = {
+      val cond = q"${genExpr(sel)}.isInstanceOf[${repTypeExpr(tpe)}]"
+      q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
+    }
+
     def genPattern(pat: SPattern): Tree = pat match {
       case SWildcardPattern() => genExpr(caze.body)
       case SConstPattern(const @ SConst(_)) => eqCheck(const)
@@ -382,10 +387,7 @@ trait Backend {
       case SAltPattern(alts) =>
         val cases: List[SCase] = alts.map(altpat => caze.copy(pat = altpat))
         genRestCases(sel, cases, elseexpr)
-
-      //      case SAscr(SIdent("_"), tpe) =>
-      //        val cond = q"${genExpr(sel)}.isInstanceOf[${repTypeExpr(tpe)}]"
-      //        q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
+      case STypedPattern(tpe) => typeCheck(tpe)
       //      case SBind(name,SAscr(SIdent("_"), tpe)) =>
       //        val cond = q"${genExpr(sel)}.isInstanceOf[${repTypeExpr(tpe)}]"
       //        q"IF ($cond) THEN {val ${TermName(name)} = ${genExpr(sel)};$thenexpr} ELSE {$elseexpr}"
