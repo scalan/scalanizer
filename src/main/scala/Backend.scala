@@ -383,6 +383,7 @@ trait Backend {
       case SWildcardPattern() => genExpr(current.body)
       case SConstPattern(const @ SConst(_)) => eqCheck(const)
       case SStableIdPattern(id @ SIdent(_)) => eqCheck(id)
+      case SSelPattern(sel, name) => eqCheck(SSelect(sel, name))
 //      case SAscr(SIdent("_"), tpe) =>
 //        val cond = q"${genExpr(sel)}.isInstanceOf[${repTypeExpr(tpe)}]"
 //        q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
