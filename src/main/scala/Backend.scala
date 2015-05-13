@@ -374,18 +374,21 @@ trait Backend {
       case Nil => q"{}"
       case x::xs => genCase(sel, x, xs)
     }
+    def eqCheck(expr: SExpr): Tree = {
+      val cond = q"${genExpr(sel)} == ${genExpr(expr)}"
+      q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
+    }
 
     current.pat match {
-      case const: SConst =>
-        val cond = q"${genExpr(sel)} == ${genExpr(const)}"
-        q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
-      case SAscr(SIdent("_"), tpe) =>
-        val cond = q"${genExpr(sel)}.isInstanceOf[${repTypeExpr(tpe)}]"
-        q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
-      case SIdent("_") => genExpr(current.body)
-      case SBind(name,SAscr(SIdent("_"), tpe)) =>
-        val cond = q"${genExpr(sel)}.isInstanceOf[${repTypeExpr(tpe)}]"
-        q"IF ($cond) THEN {val ${TermName(name)} = ${genExpr(sel)};$thenexpr} ELSE {$elseexpr}"
+      case SWildcardPattern() => genExpr(current.body)
+      case SConstPattern(const @ SConst(_)) => eqCheck(const)
+      case SStableIdPattern(id @ SIdent(_)) => eqCheck(id)
+//      case SAscr(SIdent("_"), tpe) =>
+//        val cond = q"${genExpr(sel)}.isInstanceOf[${repTypeExpr(tpe)}]"
+//        q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
+//      case SBind(name,SAscr(SIdent("_"), tpe)) =>
+//        val cond = q"${genExpr(sel)}.isInstanceOf[${repTypeExpr(tpe)}]"
+//        q"IF ($cond) THEN {val ${TermName(name)} = ${genExpr(sel)};$thenexpr} ELSE {$elseexpr}"
     }
   }
 }
