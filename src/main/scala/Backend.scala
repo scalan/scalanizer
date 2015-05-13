@@ -352,7 +352,7 @@ trait Backend {
     case SAnnotated(expr, annot) => q"${genExpr(expr)}: @${TypeName(annot)}"
     case STypeApply(fun, tpts) => q"${genExpr(fun)}[..${tpts.map(genTypeExpr)}]"
     case STuple(exprs) => q"Tuple(..${exprs.map(genExpr)})"
-    case SMatch(selector, cases) if !cases.isEmpty => genCase(selector, cases.head, cases.tail)
+    case SMatch(selector, cases) if !cases.isEmpty => genCases(selector, cases.head, cases.tail)
     case bi: SBodyItem => genBodyItem(bi)
     case unknown => throw new NotImplementedError(s"genExpr($unknown)")
   }
@@ -368,28 +368,39 @@ trait Backend {
     Apply(Select(New(Ident(annot.annotationClass)), nme.CONSTRUCTOR), args)
   }
 
-  def genCase(sel: SExpr, current: SCase, rest: List[SCase])(implicit ctx: GenCtx): Tree = {
-    lazy val thenexpr = genExpr(current.body)
-    lazy val elseexpr = rest match {
-      case Nil => q"{}"
-      case x::xs => genCase(sel, x, xs)
-    }
+  def genCase(sel: SExpr, caze: SCase, elseexpr: Tree)(implicit ctx: GenCtx): Tree = {
+    lazy val thenexpr = genExpr(caze.body)
     def eqCheck(expr: SExpr): Tree = {
       val cond = q"${genExpr(sel)} == ${genExpr(expr)}"
       q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
     }
-
-    current.pat match {
-      case SWildcardPattern() => genExpr(current.body)
+    def genPattern(pat: SPattern): Tree = pat match {
+      case SWildcardPattern() => genExpr(caze.body)
       case SConstPattern(const @ SConst(_)) => eqCheck(const)
       case SStableIdPattern(id @ SIdent(_)) => eqCheck(id)
       case SSelPattern(sel, name) => eqCheck(SSelect(sel, name))
-//      case SAscr(SIdent("_"), tpe) =>
-//        val cond = q"${genExpr(sel)}.isInstanceOf[${repTypeExpr(tpe)}]"
-//        q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
-//      case SBind(name,SAscr(SIdent("_"), tpe)) =>
-//        val cond = q"${genExpr(sel)}.isInstanceOf[${repTypeExpr(tpe)}]"
-//        q"IF ($cond) THEN {val ${TermName(name)} = ${genExpr(sel)};$thenexpr} ELSE {$elseexpr}"
+      case SAltPattern(alts) =>
+        val cases: List[SCase] = alts.map(altpat => caze.copy(pat = altpat))
+        genRestCases(sel, cases, elseexpr)
+
+      //      case SAscr(SIdent("_"), tpe) =>
+      //        val cond = q"${genExpr(sel)}.isInstanceOf[${repTypeExpr(tpe)}]"
+      //        q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
+      //      case SBind(name,SAscr(SIdent("_"), tpe)) =>
+      //        val cond = q"${genExpr(sel)}.isInstanceOf[${repTypeExpr(tpe)}]"
+      //        q"IF ($cond) THEN {val ${TermName(name)} = ${genExpr(sel)};$thenexpr} ELSE {$elseexpr}"
     }
+
+    genPattern(caze.pat)
+  }
+
+  def genRestCases(sel: SExpr, rest: List[SCase], elseTree: Tree)
+                  (implicit ctx: GenCtx): Tree = rest match {
+    case Nil => elseTree
+    case x::xs => genCase(sel, x, genRestCases(sel, xs, elseTree))
+  }
+
+  def genCases(sel: SExpr, current: SCase, rest: List[SCase])(implicit ctx: GenCtx): Tree = {
+    genCase(sel, current, genRestCases(sel, rest, q"{}"))
   }
 }
