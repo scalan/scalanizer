@@ -394,8 +394,23 @@ trait Backend {
         case Nil =>
           val cond = q"$rsel.isInstanceOf[$f] && {$castedVal; $f.unapply($castedName)}"
           q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
-        case arg :: Nil => throw new NotImplementedError("Pattern extractor for one argument")
-        case _ => throw new NotImplementedError("Pattern extractor for multiple arguments")
+        case a :: Nil =>
+          val cond = q"$rsel.isInstanceOf[$f]"
+          val (binded, innerCond) = a match {
+            case SBindPattern(name, SWildcardPattern()) =>
+              (q"val ${TermName(name)} = optionName.get", q"toRep(true)")
+            case _ => throw new NotImplementedError(s"extractor for one arg: $a")
+          }
+          val texpr = q"""
+            lazy val restPatterns = $elseexpr
+            val $castedName: $f = (($rsel.asInstanceOf[$f]): $f)
+            val optionName = $f.unapply($castedName)
+            IF (!(optionName.isEmpty)) THEN {
+              $binded
+              IF ($innerCond) THEN {$thenexpr} ELSE {restPatterns}
+            } ELSE {restPatterns}
+          """
+          q"IF ($cond) THEN {$texpr} ELSE {$elseexpr}"
       }
     }
 
