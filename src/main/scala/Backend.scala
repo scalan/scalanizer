@@ -387,16 +387,16 @@ trait Backend {
     }
     def extractor(fun: SExpr, args: List[SPattern]): Tree = {
       val f = genExpr(fun)
-      val (cond, texpr) = args match {
+      val castedName = TermName("deadbeef")
+      val castedVal = q"val $castedName: $f = (($rsel.asInstanceOf[$f]): $f)"
+
+      args match {
         case Nil =>
-          val cond = q"""
-          $rsel.isInstanceOf[$f] && {val deadbeef: $f = (($rsel.asInstanceOf[$f]): $f); $f.unapply(deadbeef)}
-          """
-          (cond, thenexpr)
+          val cond = q"$rsel.isInstanceOf[$f] && {$castedVal; $f.unapply($castedName)}"
+          q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
         case arg :: Nil => throw new NotImplementedError("Pattern extractor for one argument")
         case _ => throw new NotImplementedError("Pattern extractor for multiple arguments")
       }
-      q"IF ($cond) THEN {$texpr} ELSE {$elseexpr}"
     }
 
     def genPattern(pat: SPattern): Tree = pat match {
