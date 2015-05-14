@@ -385,7 +385,7 @@ trait Backend {
       val cond = q"$rsel.isInstanceOf[$rtpe]"
       q"IF ($cond) THEN {val ${TermName(name)}: $rtpe = (($rsel.asInstanceOf[$rtpe]): $rtpe);$thenexpr} ELSE {$elseexpr}"
     }
-    def extractor(fun: SExpr, args: List[SExpr]): Tree = {
+    def extractor(fun: SExpr, args: List[SPattern]): Tree = {
       val f = genExpr(fun)
       val (cond, texpr) = args match {
         case Nil =>
@@ -393,7 +393,8 @@ trait Backend {
           $rsel.isInstanceOf[$f] && {val deadbeef: $f = (($rsel.asInstanceOf[$f]): $f); $f.unapply(deadbeef)}
           """
           (cond, thenexpr)
-        case _ => throw new NotImplementedError("Pattern extractor")
+        case arg :: Nil => throw new NotImplementedError("Pattern extractor for one argument")
+        case _ => throw new NotImplementedError("Pattern extractor for multiple arguments")
       }
       q"IF ($cond) THEN {$texpr} ELSE {$elseexpr}"
     }
