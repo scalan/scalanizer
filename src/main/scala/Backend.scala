@@ -396,9 +396,12 @@ trait Backend {
           q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
         case a :: Nil =>
           val cond = q"$rsel.isInstanceOf[$f]"
-          val (binded, innerCond) = a match {
+          val innerThen = a match {
             case SBindPattern(name, SWildcardPattern()) =>
-              (q"val ${TermName(name)} = optionName.get", q"toRep(true)")
+              q"""
+                 val ${TermName(name)} = optionName.get;
+                 $thenexpr
+               """
             case _ => throw new NotImplementedError(s"extractor for one arg: $a")
           }
           val texpr = q"""
@@ -406,11 +409,11 @@ trait Backend {
             val $castedName: $f = (($rsel.asInstanceOf[$f]): $f)
             val optionName = $f.unapply($castedName)
             IF (!(optionName.isEmpty)) THEN {
-              $binded
-              IF ($innerCond) THEN {$thenexpr} ELSE {restPatterns}
+              $innerThen
             } ELSE {restPatterns}
           """
           q"IF ($cond) THEN {$texpr} ELSE {$elseexpr}"
+        case _ => throw new NotImplementedError("extractor common case")
       }
     }
 
