@@ -369,20 +369,33 @@ trait Backend {
   }
 
   def genCase(sel: SExpr, caze: SCase, elseexpr: Tree)(implicit ctx: GenCtx): Tree = {
+    lazy val rsel = genExpr(sel)
     lazy val thenexpr = genExpr(caze.body)
+
     def eqCheck(expr: SExpr): Tree = {
-      val cond = q"${genExpr(sel)} == ${genExpr(expr)}"
+      val cond = q"$rsel == ${genExpr(expr)}"
       q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
     }
     def typeCheck(tpe: STpeExpr): Tree = {
-      val cond = q"${genExpr(sel)}.isInstanceOf[${repTypeExpr(tpe)}]"
+      val cond = q"$rsel.isInstanceOf[${repTypeExpr(tpe)}]"
       q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
     }
     def typeCheckAndBind(name: String, tpe: STpeExpr): Tree = {
       val rtpe = repTypeExpr(tpe)
-      val rsel = genExpr(sel)
       val cond = q"$rsel.isInstanceOf[$rtpe]"
       q"IF ($cond) THEN {val ${TermName(name)}: $rtpe = (($rsel.asInstanceOf[$rtpe]): $rtpe);$thenexpr} ELSE {$elseexpr}"
+    }
+    def extractor(fun: SExpr, args: List[SExpr]): Tree = {
+      val f = genExpr(fun)
+      val (cond, texpr) = args match {
+        case Nil =>
+          val cond = q"""
+          $rsel.isInstanceOf[$f] && {val deadbeef: $f = (($rsel.asInstanceOf[$f]): $f); $f.unapply(deadbeef)}
+          """
+          (cond, thenexpr)
+        case _ => throw new NotImplementedError("Pattern extractor")
+      }
+      q"IF ($cond) THEN {$texpr} ELSE {$elseexpr}"
     }
 
     def genPattern(pat: SPattern): Tree = pat match {
@@ -395,6 +408,7 @@ trait Backend {
         genRestCases(sel, cases, elseexpr)
       case STypedPattern(tpe) => typeCheck(tpe)
       case SBindPattern(name, STypedPattern(tpe)) => typeCheckAndBind(name, tpe)
+      case SApplyPattern(fun, args) => extractor(fun, args)
     }
 
     genPattern(caze.pat)
