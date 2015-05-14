@@ -372,6 +372,9 @@ trait Backend {
     lazy val rsel = genExpr(sel)
     lazy val thenexpr = genExpr(caze.body)
 
+    def addAlias(name: String): Tree = {
+      q"{val ${TermName(name)} = $rsel; $thenexpr}"
+    }
     def eqCheck(expr: SExpr): Tree = {
       val cond = q"$rsel == ${genExpr(expr)}"
       q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
@@ -418,7 +421,8 @@ trait Backend {
     }
 
     def genPattern(pat: SPattern): Tree = pat match {
-      case SWildcardPattern() => genExpr(caze.body)
+      case SWildcardPattern() => thenexpr
+      case SBindPattern(name, SWildcardPattern()) => addAlias(name)
       case SConstPattern(const @ SConst(_)) => eqCheck(const)
       case SStableIdPattern(id @ SIdent(_)) => eqCheck(id)
       case SSelPattern(sel, name) => eqCheck(SSelect(sel, name))
