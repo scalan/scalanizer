@@ -102,22 +102,27 @@ trait PatternMatching {
 
   def extractor(fun: SExpr, pats: List[SPattern])
                (implicit matchCase: SCase, state: MatchingState) = {
+    val optName = "opt42"
     val fakeCases = pats.map(pat => SCase(pat, SEmpty(), SEmpty()))
     val initState = MatchingState(
-      selector = state.selector, // TODO: Shift selector
+      selector = getSel(optName, pats.length),
       condExpr = SEmpty(),
       thenExpr = matchCase.body,
       elseExpr = state.get,
       forAll = true
     )
-    val accumState = fakeCases.foldRight(initState){
-      (mcase: SCase, st: MatchingState) => updateMatchingState(mcase, st)
+    val (_, accumState) = fakeCases.foldRight((pats.length, initState)){
+      (mcase: SCase, st: (Int, MatchingState)) => {
+        val (off, s) = st
+        val currSelector = getSel(optName, off)
+        val updatedState = updateMatchingState(mcase, s.copy(selector = currSelector))
+        (off - 1, updatedState)
+      }
     }
 
     state.copy(
       condExpr = isInstance(state.selector, convStableIdToType(fun)), // isInstanceOf[CaseClass]
       thenExpr = {
-        val optName = "opt42"
         val opt = makeAlias(optName, unapplyFrom(fun, state.selector))
         val checkOpt = checkNotEmpty(optName, accumState.get, accumState.elseExpr)
         SBlock(List(opt), checkOpt) // val o = CaseClass.unapply(selector); if (!o.isEmpty) {...}
@@ -155,5 +160,11 @@ trait PatternMatching {
 
   def convStableIdToType(stableId: SExpr): STpeExpr = stableId match {
     case SIdent(name) => STraitCall(name, List())
+  }
+
+  def getSel(optName: String, offset: Int): SExpr = {
+    val optVal = SApply(SSelect(SIdent(optName), "get"), List(), Nil) // opt42.get
+
+    SApply(SSelect(optVal, "_" + offset.toString), List(), Nil) // opt42.get._offset
   }
 }
