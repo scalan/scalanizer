@@ -32,8 +32,8 @@ trait PatternMatching {
       case SStableIdPattern(id @ SIdent(_)) => eqCheck(id)
       case SSelPattern(sel, name) => eqCheck(SSelect(sel, name))
       case SBindPattern(name, SWildcardPattern()) => bindVal(name)
+      case STypedPattern(tpe) => typeCheck(tpe)
 //      case SAltPattern(alts) => throw new NotImplementedError("Alternative pattern is not supported.")
-//      case STypedPattern(tpe) => typeCheck(tpe)
 //      case SBindPattern(name, STypedPattern(tpe)) => typeCheckAndBind(name, tpe)
 //      case SApplyPattern(fun, args) => extractor(fun, args)
       case _ => throw new NotImplementedError(s"updateMatchingState: matchCase = $matchCase")
@@ -65,6 +65,15 @@ trait PatternMatching {
     )
   }
 
+  def typeCheck(tpe: STpeExpr)(implicit matchCase: SCase, state: MatchingState) = {
+    MatchingState(
+      selector = state.selector,
+      condExpr = isInstance(state.selector, tpe),
+      thenExpr = matchCase.body,
+      elseExpr = state.get
+    )
+  }
+
   def isEqual(left: SExpr, right: SExpr) = {
     SApply(SSelect(left, "=="), List(), List(List(right)))
   }
@@ -77,5 +86,9 @@ trait PatternMatching {
     val alias = makeAlias(name, target)
 
     SBlock(List(alias), to)
+  }
+
+  def isInstance(expr: SExpr, tpe: STpeExpr): SExpr = {
+    STypeApply(SSelect(expr, "isInstanceOf"), List(tpe))
   }
 }
