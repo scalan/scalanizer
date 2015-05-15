@@ -57,12 +57,10 @@ trait PatternMatching {
   }
 
   def bindVal(name: String)(implicit matchCase: SCase, state: MatchingState) = {
-    val alias = makeAlias(name, state.selector)
-
     MatchingState(
       selector = state.selector,
       condExpr = SEmpty(),
-      thenExpr = SBlock(List(alias), matchCase.body),
+      thenExpr = injectAlias(name, state.selector, matchCase.body),
       elseExpr = SEmpty()
     )
   }
@@ -73,5 +71,11 @@ trait PatternMatching {
 
   def makeAlias(name:String, right: SExpr) = {
     SValDef(name, None, false, false, right)
+  }
+
+  def injectAlias(name: String, target: SExpr, to: SExpr) = {
+    val alias = makeAlias(name, target)
+
+    SBlock(List(alias), to)
   }
 }
