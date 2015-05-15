@@ -2,7 +2,7 @@ package scalan.plugin
 
 import scalan.meta.ScalanAst._
 
-trait Backend {
+trait Backend extends PatternMatching {
 
   type Compiler <: scala.tools.nsc.Global
   val compiler: Compiler
@@ -352,7 +352,7 @@ trait Backend {
     case SAnnotated(expr, annot) => q"${genExpr(expr)}: @${TypeName(annot)}"
     case STypeApply(fun, tpts) => q"${genExpr(fun)}[..${tpts.map(genTypeExpr)}]"
     case STuple(exprs) => q"Tuple(..${exprs.map(genExpr)})"
-    case SMatch(selector, cases) if !cases.isEmpty => genCases(selector, cases.head, cases.tail)
+    case m: SMatch => genExpr(transformPatternMatching(m))
     case bi: SBodyItem => genBodyItem(bi)
     case unknown => throw new NotImplementedError(s"genExpr($unknown)")
   }
@@ -366,84 +366,5 @@ trait Backend {
     }
     val args = annot.args.map(genAnnotExpr)
     Apply(Select(New(Ident(annot.annotationClass)), nme.CONSTRUCTOR), args)
-  }
-
-  def genCase(sel: SExpr, caze: SCase, elseexpr: Tree)(implicit ctx: GenCtx): Tree = {
-    lazy val rsel = genExpr(sel)
-    lazy val thenexpr = genExpr(caze.body)
-
-    def addAlias(name: String): Tree = {
-      q"{val ${TermName(name)} = $rsel; $thenexpr}"
-    }
-    def eqCheck(expr: SExpr): Tree = {
-      val cond = q"$rsel == ${genExpr(expr)}"
-      q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
-    }
-    def typeCheck(tpe: STpeExpr): Tree = {
-      val cond = q"$rsel.isInstanceOf[${repTypeExpr(tpe)}]"
-      q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
-    }
-    def typeCheckAndBind(name: String, tpe: STpeExpr): Tree = {
-      val rtpe = repTypeExpr(tpe)
-      val cond = q"$rsel.isInstanceOf[$rtpe]"
-      q"IF ($cond) THEN {val ${TermName(name)}: $rtpe = (($rsel.asInstanceOf[$rtpe]): $rtpe);$thenexpr} ELSE {$elseexpr}"
-    }
-    def extractor(fun: SExpr, args: List[SPattern]): Tree = {
-      val f = genExpr(fun)
-      val castedName = TermName("deadbeef")
-      val castedVal = q"val $castedName: $f = (($rsel.asInstanceOf[$f]): $f)"
-
-      args match {
-        case Nil =>
-          val cond = q"$rsel.isInstanceOf[$f] && {$castedVal; $f.unapply($castedName)}"
-          q"IF ($cond) THEN {$thenexpr} ELSE {$elseexpr}"
-        case a :: Nil =>
-          val cond = q"$rsel.isInstanceOf[$f]"
-          val innerThen = a match {
-            case SBindPattern(name, SWildcardPattern()) =>
-              q"""
-                 val ${TermName(name)} = optionName.get;
-                 $thenexpr
-               """
-            case _ => throw new NotImplementedError(s"extractor for one arg: $a")
-          }
-          val texpr = q"""
-            lazy val restPatterns = $elseexpr
-            val $castedName: $f = (($rsel.asInstanceOf[$f]): $f)
-            val optionName = $f.unapply($castedName)
-            IF (!(optionName.isEmpty)) THEN {
-              $innerThen
-            } ELSE {restPatterns}
-          """
-          q"IF ($cond) THEN {$texpr} ELSE {$elseexpr}"
-        case _ => throw new NotImplementedError("extractor common case")
-      }
-    }
-
-    def genPattern(pat: SPattern): Tree = pat match {
-      case SWildcardPattern() => thenexpr
-      case SBindPattern(name, SWildcardPattern()) => addAlias(name)
-      case SConstPattern(const @ SConst(_)) => eqCheck(const)
-      case SStableIdPattern(id @ SIdent(_)) => eqCheck(id)
-      case SSelPattern(sel, name) => eqCheck(SSelect(sel, name))
-      case SAltPattern(alts) =>
-        val cases: List[SCase] = alts.map(altpat => caze.copy(pat = altpat))
-        genRestCases(sel, cases, elseexpr)
-      case STypedPattern(tpe) => typeCheck(tpe)
-      case SBindPattern(name, STypedPattern(tpe)) => typeCheckAndBind(name, tpe)
-      case SApplyPattern(fun, args) => extractor(fun, args)
-    }
-
-    genPattern(caze.pat)
-  }
-
-  def genRestCases(sel: SExpr, rest: List[SCase], elseTree: Tree)
-                  (implicit ctx: GenCtx): Tree = rest match {
-    case Nil => elseTree
-    case x::xs => genCase(sel, x, genRestCases(sel, xs, elseTree))
-  }
-
-  def genCases(sel: SExpr, current: SCase, rest: List[SCase])(implicit ctx: GenCtx): Tree = {
-    genCase(sel, current, genRestCases(sel, rest, q"{}"))
   }
 }
