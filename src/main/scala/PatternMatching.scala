@@ -62,22 +62,23 @@ trait PatternMatching {
     checkAndInject(isInstance(state.selector, tpe), name)
   }
 
-  def checkCond(cond: SExpr)(implicit matchCase: SCase, state: MatchingState) = {
-    if (state.forAll)
-      state.copy(condExpr = cond, thenExpr = state.get)
-    else {
-      state.copy(condExpr = cond, thenExpr = matchCase.body, elseExpr = state.get)
-    }
+  def checkCond(condExpr: SExpr)(implicit matchCase: SCase, state: MatchingState) = {
+    updateState(condExpr, (s: SExpr) => s)
   }
 
   def checkAndInject(condExpr: SExpr, name: String)
                     (implicit matchCase: SCase, state: MatchingState) = {
     def injectTo(target: SExpr) = injectAlias(name, state.selector, target)
 
+    updateState(condExpr, injectTo)
+  }
+
+  def updateState(condExpr: SExpr, thenfun: SExpr => SExpr)
+                 (implicit matchCase: SCase, state: MatchingState) = {
     if (state.forAll)
-      state.copy(condExpr = condExpr, thenExpr = injectTo(state.get))
+      state.copy(condExpr = condExpr, thenExpr = thenfun(state.get))
     else
-      state.copy(condExpr = condExpr, thenExpr = injectTo(matchCase.body), elseExpr = state.get)
+      state.copy(condExpr = condExpr, thenExpr = thenfun(matchCase.body), elseExpr = state.get)
   }
 
   def alternatives(alts: List[SPattern])(implicit matchCase: SCase, state: MatchingState) = {
