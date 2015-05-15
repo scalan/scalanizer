@@ -34,7 +34,7 @@ trait PatternMatching {
       case SBindPattern(name, SWildcardPattern()) => bindVal(name)
       case STypedPattern(tpe) => typeCheck(tpe)
       case SBindPattern(name, STypedPattern(tpe)) => typeCheckAndBind(name, tpe)
-//      case SAltPattern(alts) => throw new NotImplementedError("Alternative pattern is not supported.")
+      case SAltPattern(alts) => alternatives(alts)
 //      case SApplyPattern(fun, args) => extractor(fun, args)
       case _ => throw new NotImplementedError(s"updateMatchingState: matchCase = $matchCase")
     }
@@ -82,6 +82,21 @@ trait PatternMatching {
       thenExpr = injectAlias(name, state.selector, matchCase.body),
       elseExpr = state.get
     )
+  }
+
+  def alternatives(alts: List[SPattern])(implicit matchCase: SCase, state: MatchingState) = {
+    val fakeCases = alts.map(alt => matchCase.copy(pat = alt))
+    val initState = MatchingState(
+      selector = state.selector,
+      condExpr = SEmpty(),
+      thenExpr = state.get,
+      elseExpr = SEmpty()
+    )
+    val finalState = fakeCases.foldRight(initState){
+      (mcase: SCase, st: MatchingState) => updateMatchingState(mcase, st)
+    }
+
+    finalState
   }
 
   def isEqual(left: SExpr, right: SExpr) = {
