@@ -42,10 +42,7 @@ trait PatternMatching {
   }
 
   def skipPattern(implicit matchCase: SCase, state: MatchingState) = {
-    if (state.forAll)
-      state.copy(condExpr = SEmpty(), thenExpr = state.get)
-    else
-      state.copy(condExpr = SEmpty(), thenExpr = matchCase.body)
+    checkCond(SEmpty())
   }
 
   def eqCheck(eqExpr: SExpr)(implicit matchCase: SCase, state: MatchingState) = {
@@ -53,16 +50,16 @@ trait PatternMatching {
   }
 
   def bindVal(name: String)(implicit matchCase: SCase, state: MatchingState) = {
-    def injectTo(target: SExpr) = injectAlias(name, state.selector, target)
-
-    if (state.forAll)
-      state.copy(condExpr = SEmpty(), thenExpr = injectTo(state.get))
-    else
-      state.copy(condExpr = SEmpty(), thenExpr = injectTo(matchCase.body))
+    checkAndInject(SEmpty(), name)
   }
 
   def typeCheck(tpe: STpeExpr)(implicit matchCase: SCase, state: MatchingState) = {
     checkCond(isInstance(state.selector, tpe))
+  }
+
+  def typeCheckAndBind(name: String, tpe: STpeExpr)
+                      (implicit matchCase: SCase, state: MatchingState) = {
+    checkAndInject(isInstance(state.selector, tpe), name)
   }
 
   def checkCond(cond: SExpr)(implicit matchCase: SCase, state: MatchingState) = {
@@ -73,14 +70,14 @@ trait PatternMatching {
     }
   }
 
-  def typeCheckAndBind(name: String, tpe: STpeExpr)
-                      (implicit matchCase: SCase, state: MatchingState) = {
-    MatchingState(
-      selector = state.selector,
-      condExpr = isInstance(state.selector, tpe),
-      thenExpr = injectAlias(name, state.selector, matchCase.body),
-      elseExpr = state.get
-    )
+  def checkAndInject(condExpr: SExpr, name: String)
+                    (implicit matchCase: SCase, state: MatchingState) = {
+    def injectTo(target: SExpr) = injectAlias(name, state.selector, target)
+
+    if (state.forAll)
+      state.copy(condExpr = condExpr, thenExpr = injectTo(state.get))
+    else
+      state.copy(condExpr = condExpr, thenExpr = injectTo(matchCase.body), elseExpr = state.get)
   }
 
   def alternatives(alts: List[SPattern])(implicit matchCase: SCase, state: MatchingState) = {
