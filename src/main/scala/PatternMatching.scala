@@ -49,12 +49,7 @@ trait PatternMatching {
   }
 
   def eqCheck(eqExpr: SExpr)(implicit matchCase: SCase, state: MatchingState) = {
-    val condExpr = isEqual(state.selector, eqExpr)
-
-    if (state.forAll)
-      state.copy(condExpr = condExpr, thenExpr = state.get)
-    else
-      state.copy(condExpr = condExpr, thenExpr = matchCase.body, elseExpr = state.get)
+    checkCond(isEqual(state.selector, eqExpr))
   }
 
   def bindVal(name: String)(implicit matchCase: SCase, state: MatchingState) = {
@@ -67,12 +62,15 @@ trait PatternMatching {
   }
 
   def typeCheck(tpe: STpeExpr)(implicit matchCase: SCase, state: MatchingState) = {
-    MatchingState(
-      selector = state.selector,
-      condExpr = isInstance(state.selector, tpe),
-      thenExpr = matchCase.body,
-      elseExpr = state.get
-    )
+    checkCond(isInstance(state.selector, tpe))
+  }
+
+  def checkCond(cond: SExpr)(implicit matchCase: SCase, state: MatchingState) = {
+    if (state.forAll)
+      state.copy(condExpr = cond, thenExpr = state.get)
+    else {
+      state.copy(condExpr = cond, thenExpr = matchCase.body, elseExpr = state.get)
+    }
   }
 
   def typeCheckAndBind(name: String, tpe: STpeExpr)
