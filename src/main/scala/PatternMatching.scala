@@ -5,7 +5,8 @@ import scalan.meta.ScalanAst._
 trait PatternMatching {
 
   case class MatchingState(selector: SExpr,
-                            condExpr: SExpr, thenExpr: SExpr, elseExpr: SExpr) {
+                            condExpr: SExpr, thenExpr: SExpr, elseExpr: SExpr,
+                            forAll: Boolean = false) {
     def get: SExpr = condExpr match {
       case SEmpty() => thenExpr
       case _ => SIf(condExpr, thenExpr, elseExpr)
@@ -35,7 +36,7 @@ trait PatternMatching {
       case STypedPattern(tpe) => typeCheck(tpe)
       case SBindPattern(name, STypedPattern(tpe)) => typeCheckAndBind(name, tpe)
       case SAltPattern(alts) => alternatives(alts)
-//      case SApplyPattern(fun, args) => extractor(fun, args)
+      case SApplyPattern(fun, args) => extractor(fun, args)
       case _ => throw new NotImplementedError(s"updateMatchingState: matchCase = $matchCase")
     }
   }
@@ -48,12 +49,12 @@ trait PatternMatching {
   }
 
   def eqCheck(eqExpr: SExpr)(implicit matchCase: SCase, state: MatchingState) = {
-    MatchingState(
-      selector = state.selector,
-      condExpr = isEqual(state.selector, eqExpr),
-      thenExpr = matchCase.body,
-      elseExpr = state.get
-    )
+    val condExpr = isEqual(state.selector, eqExpr)
+
+    if (state.forAll)
+      state.copy(condExpr = condExpr, thenExpr = state.get)
+    else
+      state.copy(condExpr = condExpr, thenExpr = matchCase.body, elseExpr = state.get)
   }
 
   def bindVal(name: String)(implicit matchCase: SCase, state: MatchingState) = {
@@ -99,6 +100,31 @@ trait PatternMatching {
     finalState
   }
 
+  def extractor(fun: SExpr, pats: List[SPattern])
+               (implicit matchCase: SCase, state: MatchingState) = {
+    val fakeCases = pats.map(pat => SCase(pat, SEmpty(), SEmpty()))
+    val initState = MatchingState(
+      selector = state.selector, // TODO: Shift selector
+      condExpr = SEmpty(),
+      thenExpr = matchCase.body,
+      elseExpr = state.get,
+      forAll = true
+    )
+    val accumState = fakeCases.foldRight(initState){
+      (mcase: SCase, st: MatchingState) => updateMatchingState(mcase, st)
+    }
+
+    state.copy(
+      condExpr = isInstance(state.selector, convStableIdToType(fun)), // isInstanceOf[CaseClass]
+      thenExpr = {
+        val optName = "opt42"
+        val opt = makeAlias(optName, unapplyFrom(fun, state.selector))
+        val checkOpt = checkNotEmpty(optName, accumState.get, accumState.elseExpr)
+        SBlock(List(opt), checkOpt) // val o = CaseClass.unapply(selector); if (!o.isEmpty) {...}
+      }
+    )
+  }
+
   def isEqual(left: SExpr, right: SExpr) = {
     SApply(SSelect(left, "=="), List(), List(List(right)))
   }
@@ -115,5 +141,19 @@ trait PatternMatching {
 
   def isInstance(expr: SExpr, tpe: STpeExpr): SExpr = {
     STypeApply(SSelect(expr, "isInstanceOf"), List(tpe))
+  }
+
+  def unapplyFrom(stableId: SExpr, param: SExpr) = {
+    SApply(SSelect(stableId, "unapply"), List(), List(List(param)))
+  }
+
+  def checkNotEmpty(stableId: String, thenexpr: SExpr, elseexpr: SExpr) = {
+    val isEmpty = SApply(SSelect(SIdent(stableId), "isEmpty"), List(), Nil)
+
+    SIf(isEmpty, elseexpr, thenexpr)
+  }
+
+  def convStableIdToType(stableId: SExpr): STpeExpr = stableId match {
+    case SIdent(name) => STraitCall(name, List())
   }
 }
