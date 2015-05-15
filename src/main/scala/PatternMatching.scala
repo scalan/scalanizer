@@ -28,7 +28,7 @@ trait PatternMatching {
 
   def updateMatchingState(implicit matchCase: SCase, state: MatchingState): MatchingState = {
     matchCase.pat match {
-      case SWildcardPattern() => getCaseBody
+      case SWildcardPattern() => skipPattern
       case SLiteralPattern(const @ SConst(_)) => eqCheck(const)
       case SStableIdPattern(id @ SIdent(_)) => eqCheck(id)
       case SSelPattern(sel, name) => eqCheck(SSelect(sel, name))
@@ -41,11 +41,11 @@ trait PatternMatching {
     }
   }
 
-  def getCaseBody(implicit matchCase: SCase, state: MatchingState) = {
-    MatchingState(
-      selector = state.selector,
-      condExpr = SEmpty(), thenExpr = matchCase.body, elseExpr = SEmpty()
-    )
+  def skipPattern(implicit matchCase: SCase, state: MatchingState) = {
+    if (state.forAll)
+      state.copy(condExpr = SEmpty(), thenExpr = state.get)
+    else
+      state.copy(condExpr = SEmpty(), thenExpr = matchCase.body)
   }
 
   def eqCheck(eqExpr: SExpr)(implicit matchCase: SCase, state: MatchingState) = {
