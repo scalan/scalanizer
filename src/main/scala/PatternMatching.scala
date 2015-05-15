@@ -58,12 +58,12 @@ trait PatternMatching {
   }
 
   def bindVal(name: String)(implicit matchCase: SCase, state: MatchingState) = {
-    MatchingState(
-      selector = state.selector,
-      condExpr = SEmpty(),
-      thenExpr = injectAlias(name, state.selector, matchCase.body),
-      elseExpr = SEmpty()
-    )
+    def injectTo(target: SExpr) = injectAlias(name, state.selector, target)
+
+    if (state.forAll)
+      state.copy(condExpr = SEmpty(), thenExpr = injectTo(state.get))
+    else
+      state.copy(condExpr = SEmpty(), thenExpr = injectTo(matchCase.body))
   }
 
   def typeCheck(tpe: STpeExpr)(implicit matchCase: SCase, state: MatchingState) = {
