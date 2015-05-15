@@ -25,13 +25,13 @@ trait PatternMatching {
     finalState.get
   }
 
-  def updateMatchingState(matchCase: SCase, state: MatchingState): MatchingState = {
+  def updateMatchingState(implicit matchCase: SCase, state: MatchingState): MatchingState = {
     matchCase.pat match {
-      case SWildcardPattern() => getCaseBody(matchCase, state)
-//      case SBindPattern(name, SWildcardPattern()) => addAlias(name)
-      case SLiteralPattern(const @ SConst(_)) => eqCheck(matchCase, state, const)
-      case SStableIdPattern(id @ SIdent(_)) => eqCheck(matchCase, state, id)
-      case SSelPattern(sel, name) => eqCheck(matchCase, state, SSelect(sel, name))
+      case SWildcardPattern() => getCaseBody
+      case SLiteralPattern(const @ SConst(_)) => eqCheck(const)
+      case SStableIdPattern(id @ SIdent(_)) => eqCheck(id)
+      case SSelPattern(sel, name) => eqCheck(SSelect(sel, name))
+      case SBindPattern(name, SWildcardPattern()) => bindVal(name)
 //      case SAltPattern(alts) => throw new NotImplementedError("Alternative pattern is not supported.")
 //      case STypedPattern(tpe) => typeCheck(tpe)
 //      case SBindPattern(name, STypedPattern(tpe)) => typeCheckAndBind(name, tpe)
@@ -40,14 +40,14 @@ trait PatternMatching {
     }
   }
 
-  def getCaseBody(matchCase: SCase, state: MatchingState): MatchingState = {
+  def getCaseBody(implicit matchCase: SCase, state: MatchingState) = {
     MatchingState(
       selector = state.selector,
       condExpr = SEmpty(), thenExpr = matchCase.body, elseExpr = SEmpty()
     )
   }
 
-  def eqCheck(matchCase: SCase, state: MatchingState, eqExpr: SExpr): MatchingState = {
+  def eqCheck(eqExpr: SExpr)(implicit matchCase: SCase, state: MatchingState) = {
     MatchingState(
       selector = state.selector,
       condExpr = isEqual(state.selector, eqExpr),
@@ -56,7 +56,22 @@ trait PatternMatching {
     )
   }
 
-  def isEqual(left: SExpr, right: SExpr): SExpr = {
+  def bindVal(name: String)(implicit matchCase: SCase, state: MatchingState) = {
+    val alias = makeAlias(name, state.selector)
+
+    MatchingState(
+      selector = state.selector,
+      condExpr = SEmpty(),
+      thenExpr = SBlock(List(alias), matchCase.body),
+      elseExpr = SEmpty()
+    )
+  }
+
+  def isEqual(left: SExpr, right: SExpr) = {
     SApply(SSelect(left, "=="), List(), List(List(right)))
+  }
+
+  def makeAlias(name:String, right: SExpr) = {
+    SValDef(name, None, false, false, right)
   }
 }
