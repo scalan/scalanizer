@@ -16,7 +16,7 @@ trait PatternMatching {
   def transformPatternMatching(patternMatch: SMatch): SExpr = {
     val initState = MatchingState(
       selector = patternMatch.selector,
-      condExpr = SEmpty(), thenExpr = SEmpty(), elseExpr = SEmpty()
+      condExpr = SEmpty(), thenExpr = throwException("match is not exhaustive"), elseExpr = SEmpty()
     )
 
     val finalState = patternMatch.cases.foldRight(initState){
@@ -162,5 +162,9 @@ trait PatternMatching {
     val optVal = SApply(SSelect(SIdent(optName), "get"), List(), Nil) // opt42.get
 
     SApply(SSelect(optVal, "_" + offset.toString), List(), Nil) // opt42.get._offset
+  }
+
+  def throwException(msg: String): SExpr = {
+    SApply(SIdent("THROW"), List(), List(List(SConst(msg))))
   }
 }
