@@ -78,7 +78,7 @@ trait PatternMatching {
     if (state.forAll)
       state.copy(condExpr = condExpr, thenExpr = thenfun(state.get))
     else
-      state.copy(condExpr = condExpr, thenExpr = thenfun(matchCase.body), elseExpr = state.get)
+      state.copy(condExpr = condExpr, thenExpr = thenfun(guardedCase(matchCase, state.get)), elseExpr = state.get)
   }
 
   def alternatives(alts: List[SPattern])(implicit matchCase: SCase, state: MatchingState) = {
@@ -103,7 +103,7 @@ trait PatternMatching {
     val initState = MatchingState(
       selector = getSel(optName, pats.length),
       condExpr = SEmpty(),
-      thenExpr = matchCase.body,
+      thenExpr = guardedCase(matchCase, state.get),
       elseExpr = state.get,
       forAll = true
     )
@@ -166,5 +166,11 @@ trait PatternMatching {
 
   def throwException(msg: String): SExpr = {
     SApply(SIdent("THROW"), List(), List(List(SConst(msg))))
+  }
+
+  def guardedCase(caze: SCase, otherwise: SExpr): SExpr = {
+    MatchingState(selector = SEmpty(),
+      condExpr = caze.guard, thenExpr = caze.body, elseExpr = otherwise
+    ).get
   }
 }
