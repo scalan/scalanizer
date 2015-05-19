@@ -101,19 +101,18 @@ trait PatternMatching {
     val optName = "opt42"
     val fakeCases = pats.map(pat => SCase(pat, SEmpty(), SEmpty()))
     val initState = MatchingState(
-      selector = getSel(optName, pats.length),
+      selector = getSel(optName, pats.length, pats.length),
       condExpr = SEmpty(),
       thenExpr = guardedCase(matchCase, state.get),
       elseExpr = state.get,
       forAll = true
     )
-    val (_, accumState) = fakeCases.foldRight((pats.length, initState)){
-      (mcase: SCase, st: (Int, MatchingState)) => {
-        val (off, s) = st
-        val currSelector = getSel(optName, off)
+    val (accumState, _, _) = fakeCases.foldRight(
+      (initState, pats.length, pats.length)){(mcase, st) =>
+        val (s, max, offset) = st
+        val currSelector = getSel(optName, max, offset)
         val updatedState = updateMatchingState(mcase, s.copy(selector = currSelector))
-        (off - 1, updatedState)
-      }
+        (updatedState, max, offset - 1)
     }
 
     state.copy(
@@ -158,10 +157,13 @@ trait PatternMatching {
     case SIdent(name) => STraitCall(name, List())
   }
 
-  def getSel(optName: String, offset: Int): SExpr = {
+  def getSel(optName: String, max: Int, offset: Int): SExpr = {
     val optVal = SApply(SSelect(SIdent(optName), "get"), List(), Nil) // opt42.get
 
-    SApply(SSelect(optVal, "_" + offset.toString), List(), Nil) // opt42.get._offset
+    if (max > 1)
+      SApply(SSelect(optVal, "_" + offset.toString), List(), Nil) // opt42.get._offset
+    else
+      optVal
   }
 
   def throwException(msg: String): SExpr = {
