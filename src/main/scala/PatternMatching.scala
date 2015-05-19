@@ -114,7 +114,6 @@ trait PatternMatching {
         val updatedState = updateMatchingState(mcase, s.copy(selector = currSelector))
         (updatedState, max, offset - 1)
     }
-
     state.copy(
       condExpr = isInstance(state.selector, convStableIdToType(fun)), // isInstanceOf[CaseClass]
       thenExpr = if (pats.isEmpty) {
@@ -123,7 +122,8 @@ trait PatternMatching {
         val opt = makeAlias(optName, unapplyFrom(fun, state.selector))
         val checkOpt = checkNotEmpty(optName, accumState.get, accumState.elseExpr)
         SBlock(List(opt), checkOpt) // val o = CaseClass.unapply(selector); if (!o.isEmpty) {...}
-      }
+      },
+      elseExpr = accumState.elseExpr
     )
   }
 
