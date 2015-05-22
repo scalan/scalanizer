@@ -10,12 +10,13 @@ object ScalanPluginConfig {
     name = "Scalan Plugin",
     srcPath = "/",
     entityFiles = List[String](
-//      "Segms.scala"
+      "Segms.scala"
 //      ,"Knds.scala"
 //      ,"Coprods.scala"
 //      ,"Mnds.scala"
 //      ,"Fres.scala"
-      "Patterns.scala"
+//        ,"Patterns.scala"
+//        ,"ForComprehensions.scala"
     ),
     baseContextTrait = "ScalanDsl",
     seqContextTrait = "ScalanSeq",
