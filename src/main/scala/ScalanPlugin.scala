@@ -154,8 +154,8 @@ class ScalanPlugin(val global: Global) extends Plugin {
 
   /** A description of the plugin's options */
   override val optionsHelp = Some(
-    "  -P:"+ name +":save     Save META boilerplate and staged version to source files.\n"+
-    "  -P:"+ name +":read     Read META boilerplate and staged version from source files.\n"+
+    "  -P:"+ name +":save     Save META boilerplate and virtualized code to a file.\n"+
+    "  -P:"+ name +":read     Read META boilerplate and virtualized code from a file.\n"+
     "  -P:"+ name +":debug    Print debug information: final AST and etc.\n"
   )
 }
