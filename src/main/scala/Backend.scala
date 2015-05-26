@@ -233,6 +233,7 @@ trait Backend extends PatternMatching {
     case STpeSelectFromTT(qualifier, name) => tq"${genTypeExpr(qualifier)}#${TypeName(name)}"
     case STpeAnnotated(tpt, annot) => tq"${genTypeExpr(tpt)} @${TypeName(annot)}"
     case STpeExistential(tpt, defns) => tq"${genTypeExpr(tpt)} forSome { ..${defns.map(genBodyItem)} }"
+    case _ => throw new NotImplementedError(s"genTypeExpr($tpeExpr)")
   }
 
   def repTypeExpr(tpeExpr: STpeExpr)(implicit ctx: GenCtx) = tpeExpr match {

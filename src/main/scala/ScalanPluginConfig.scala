@@ -11,10 +11,10 @@ object ScalanPluginConfig {
     srcPath = "/",
     entityFiles = List[String](
       "Segms.scala"
-//      ,"Knds.scala"
-//      ,"Coprods.scala"
-//      ,"Mnds.scala"
-//      ,"Fres.scala"
+      ,"Knds.scala"
+      ,"Coprods.scala"
+      ,"Mnds.scala"
+      ,"Fres.scala"
 //        ,"Patterns.scala"
 //        ,"ForComprehensions.scala"
     ),
