@@ -65,7 +65,7 @@ class ScalanPluginComponent(val global: Global)
           unit.body = combineAst(unit.body, stagedAst)
         }
       } catch {
-        case e: Exception => print(s"Error: failed to parse ${unitName} due to " + e)
+        case e: Exception => print(s"Error: failed to parse ${unitName} due to " + e.printStackTrace())
       }
     }
   }
