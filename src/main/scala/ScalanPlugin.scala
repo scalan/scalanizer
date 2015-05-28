@@ -55,7 +55,7 @@ class ScalanPluginComponent(val global: Global)
         val pickledAst = serializeAst(metaAst)
 
         /** Staged Ast is package which contains virtualized Tree + boilerplate */
-        val stagedAst = getStagedAst(virtAst, boilerplate, extensions, pickledAst)
+        val stagedAst = getStagedAst(metaAst, virtAst, boilerplate, extensions, pickledAst)
 
         if (ScalanPluginConfig.save) {
           saveImplCode(unit.source.file.file, showCode(stagedAst))
@@ -70,7 +70,8 @@ class ScalanPluginComponent(val global: Global)
     }
   }
 
-  def getStagedAst(cake: Tree, impl: Tree, exts: List[Tree], serial: Tree): Tree = {
+  def getStagedAst(module: SEntityModuleDef,
+                   cake: Tree, impl: Tree, exts: List[Tree], serial: Tree): Tree = {
     val implContent = impl match {
       case PackageDef(_, topstats) => topstats.flatMap{ _ match {
         case PackageDef(Ident(TermName("impl")), stats) => stats
@@ -81,7 +82,9 @@ class ScalanPluginComponent(val global: Global)
         val body = implContent ++ cakeContent ++ exts ++ List(serial)
         val stagedObj = q"object StagedEvaluation {..$body}"
 
-        PackageDef(pkgName, List(stagedObj))
+        PackageDef(pkgName,
+          List(PackageDef(Ident(TermName("implOf"+module.name)), List(stagedObj)))
+        )
     }
   }
 
