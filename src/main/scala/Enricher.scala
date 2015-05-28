@@ -37,9 +37,17 @@ trait Enricher {
   /** Puts the module to the cake. For example, trait Segments is transformed to
     * trait Segments {self: SegmentsDsl => ... } */
   def updateSelf(module: SEntityModuleDef) = {
+    val components = module.selfType match {
+      case Some(selfTypeDef) => selfTypeDef.components.map{(c: STpeExpr) => c match {
+        case tr: STraitCall => tr.copy(name = c.name + "Dsl")
+        case _ => c
+      }}
+      case _ => List(STraitCall(module.name + "Dsl", List()))
+    }
+
     module.copy(selfType = Some(SSelfTypeDef(
       name = "self",
-      components = List(STraitCall(module.name + "Dsl", List()))
+      components = components
     )))
   }
 
