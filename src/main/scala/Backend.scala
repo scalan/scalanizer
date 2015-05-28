@@ -196,6 +196,7 @@ trait Backend extends PatternMatching {
       val tpt = TypeName(ancestor.name)
       val tpts = ancestor.tpeSExprs.map(_ match {
         case tpe: STraitCall => genTypeExpr(tpe)
+        case tpe: STpeTuple => genTypeExpr(tpe)
         case inval => throw new IllegalArgumentException(s"genParents($inval)")
       })
 

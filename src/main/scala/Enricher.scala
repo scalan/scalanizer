@@ -160,21 +160,24 @@ trait Enricher {
     def getEntityByAncestor(ancestor: STraitCall): Option[STraitDef] = {
       module.entities.find(entity => entity.name == ancestor.name)
     }
-    def getAncestorPairs: List[(STraitCall, STpeArg)] = {
+    lazy val ancestorPairs: List[(STpeExpr, STpeArg)] = {
       val ancestors: List[STraitCall] = clazz.ancestors
 
       ancestors.flatMap { (ancestor: STraitCall) =>
         val optEntity: Option[STraitDef] = getEntityByAncestor(ancestor)
 
         optEntity match {
-          case Some(entity) => ancestor.tpeSExprs.asInstanceOf[List[STraitCall]] zip entity.tpeArgs
-          case None => List[(STraitCall, STpeArg)]()
+          case Some(entity) => ancestor.tpeSExprs zip entity.tpeArgs
+          case None => List[(STpeExpr, STpeArg)]()
         }
       }
     }
 
-    clazz.tpeArgs.map { tpeArg => getAncestorPairs.find(pair => tpeArg.name == pair._1.name) match {
-      case Some((aParam, eParam)) => genImplicitArg(eParam.tparams.isEmpty, eParam.name, aParam.name)
+    clazz.tpeArgs.map { tpeArg => ancestorPairs.find(pair => tpeArg.name == pair._1.name) match {
+      case Some((aParam, eParam)) => aParam match {
+        case _: STraitCall => genImplicitArg(eParam.tparams.isEmpty, eParam.name, aParam.name)
+        case _ => throw new NotImplementedError(s"genImplicitClassArgs: $eParam")
+      }
       case None => genImplicitArg(tpeArg.tparams.isEmpty, tpeArg.name, tpeArg.name)
     }}
   }
