@@ -206,7 +206,11 @@ trait Backend extends PatternMatching {
   }
 
   def genModuleSelf(module: SEntityModuleDef)(implicit ctx: GenCtx): Tree = {
-    val selfType = genTypeByName(module.name + "Dsl")
+    val tpeName = module.selfType match {
+      case Some(st) if !st.components.isEmpty => st.components.head.name
+      case _ => module.name + "Dsl"
+    }
+    val selfType = genTypeByName(tpeName)
     val res = q"val self: $selfType"
 
     res
