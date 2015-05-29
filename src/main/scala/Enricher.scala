@@ -22,8 +22,15 @@ trait Enricher {
     )))
   }
 
+  /** Extends the module by Base from Scalan */
+  def addModuleAncestors(module: SEntityModuleDef) = {
+    val newAncestors = STraitCall(name = "Base", tpeSExprs = List()) :: module.ancestors
+
+    module.copy(ancestors = newAncestors)
+  }
+
   /** Extends the entiry T by Reifiable[T] */
-  def addAncestors(module: SEntityModuleDef) = {
+  def addEntityAncestors(module: SEntityModuleDef) = {
     val newAncestors = STraitCall(
       name = "Reifiable",
       tpeSExprs = List(STraitCall(module.entityOps.name,

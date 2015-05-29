@@ -25,7 +25,8 @@ trait Backend extends PatternMatching {
       (genConcreteClasses(module.concreteSClasses) ++ genCompanions(module))
     val newSelf = genModuleSelf(module)
     val name = TypeName(module.name)
-    val res = q"trait $name extends Base { $newSelf => ..$newstats }"
+    val moduleParents = genParents(module.ancestors)
+    val res = q"trait $name extends ..$moduleParents { $newSelf => ..$newstats }"
 
     res
   }
