@@ -7,9 +7,7 @@ import scalan.util.FileUtil
 trait Enricher {
   /** Imports scalan._ and other packages needed by Scalan and further transformations. */
   def addImports(module: SEntityModuleDef) = {
-    module.copy(imports = List(
-      SImportStat("scalan._")
-    ))
+    module.copy(imports = SImportStat("scalan._") :: module.imports)
   }
 
   /** Introduces a synonym for a module. */
