@@ -10,7 +10,7 @@ object ScalanPluginConfig {
     name = "Scalan Plugin",
     srcPath = "/",
     entityFiles = List[String](
-      "Monoids.scala"
+      "NumMonoids.scala"
       ,"Collections.scala"
       ,"Vectors.scala"
       ,"Matrices.scala"
