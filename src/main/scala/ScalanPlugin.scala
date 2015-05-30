@@ -103,26 +103,7 @@ class ScalanPluginComponent(val global: Global)
   }
 
   def getExtensions(module: SEntityModuleDef): List[Tree] = {
-    def getModuleSelfTypeName(module: SEntityModuleDef): String = module.selfType match {
-      case Some(selfType) if !selfType.components.isEmpty => selfType.components.head.name
-      case _ => module.name
-    }
-    val extNames = ScalanPluginState.extMap(module.name)
-    val parentSuffix = Map("Dsl" -> "Abs", "DslSeq" -> "Seq", "DslExp" -> "Exp")
-    val extInfo = extNames.map { extName =>
-      val extSuffix = extName.stripPrefix(module.name)
-      val selfTypeName = getModuleSelfTypeName(module)
-      (extName, module.name + parentSuffix(extSuffix), selfTypeName + extSuffix)
-    }
-
-    extInfo.map(info => {
-      val (extName, parentName, selfTypeName) = info
-      val extTree = TypeName(extName)
-      val parentTree = TypeName(parentName)
-      val selfType = TypeName(selfTypeName)
-
-      q"trait $extTree extends $parentTree { self: $selfType => }" : Tree
-    }).toList
+    genExtensions(module).map(extTrait => genTrait(extTrait)(GenCtx(module, false)))
   }
 
   def serializeAst(module: SEntityModuleDef): Tree = {

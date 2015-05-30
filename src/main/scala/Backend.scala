@@ -202,7 +202,7 @@ trait Backend extends PatternMatching {
   }
 
   def genSelf(selfType: Option[SSelfTypeDef])(implicit ctx: GenCtx) = selfType match {
-    case Some(selfDef: SSelfTypeDef) => q"val ${selfDef.name}: ${genTypeByName(selfDef.tpe)}"
+    case Some(selfDef: SSelfTypeDef) => q"val self: ${genTypeByName(selfDef.tpe)}"
     case None => noSelfType
   }
 

@@ -57,20 +57,22 @@ trait Enricher {
     module.copy(entityOps = newEntity, entities = List(newEntity))
   }
 
+  def selfComponentsWithSuffix(module: SEntityModuleDef, suffix: String): List[STpeExpr] = {
+    module.selfType match {
+      case Some(selfTypeDef) => selfTypeDef.components.map{(c: STpeExpr) => c match {
+        case tr: STraitCall => tr.copy(name = c.name + suffix)
+        case _ => c
+      }}
+      case _ => List(STraitCall(module.name + suffix, List()))
+    }
+  }
+
   /** Puts the module to the cake. For example, trait Segments is transformed to
     * trait Segments {self: SegmentsDsl => ... } */
   def updateSelf(module: SEntityModuleDef) = {
-    val components = module.selfType match {
-      case Some(selfTypeDef) => selfTypeDef.components.map{(c: STpeExpr) => c match {
-        case tr: STraitCall => tr.copy(name = c.name + "Dsl")
-        case _ => c
-      }}
-      case _ => List(STraitCall(module.name + "Dsl", List()))
-    }
-
     module.copy(selfType = Some(SSelfTypeDef(
       name = "self",
-      components = components
+      components = selfComponentsWithSuffix(module, "Dsl")
     )))
   }
 
@@ -269,5 +271,32 @@ trait Enricher {
       entities = genEntities(module.entities),
       concreteSClasses = genClasses(module.concreteSClasses)
     )
+  }
+
+  def genExtensions(module: SEntityModuleDef): List[STraitDef] = {
+    val boilerplateSuffix = Map("Dsl" -> "Abs", "DslSeq" -> "Seq", "DslExp" -> "Exp")
+    val extensions = ScalanPluginState.extMap(module.name)
+
+    (extensions map {extName =>
+      val extSuffix = extName.stripPrefix(module.name)
+      val selfType: SSelfTypeDef = SSelfTypeDef(
+        name = "self",
+        components = selfComponentsWithSuffix(module, extSuffix)
+      )
+      val boilerplate = STraitCall(module.name + boilerplateSuffix(extSuffix), Nil)
+      val ancestors: List[STraitCall] = module.ancestors map {
+        ancestor => ancestor.copy(name = ancestor.name + extSuffix)
+      }
+
+      STraitDef(
+        name = extName,
+        tpeArgs = Nil,
+        ancestors = boilerplate :: ancestors,
+        body = Nil,
+        selfType = Some(selfType),
+        companion = None,
+        annotations = Nil
+      )
+    }).toList
   }
 }
