@@ -5,6 +5,15 @@ import scalan.meta.ScalanAst._
 import scalan.util.FileUtil
 
 trait Enricher {
+  /** Module parent is replaced by the parent with its extension. */
+  def composeParentWithExt(module: SEntityModuleDef) = {
+    val parentsWithExts = module.ancestors.map{ancestor =>
+      ancestor.copy(name = ancestor.name + "Dsl")
+    }
+
+    module.copy(ancestors = parentsWithExts)
+  }
+
   /** Imports scalan._ and other packages needed by Scalan and further transformations. */
   def addImports(module: SEntityModuleDef) = {
     val usedModules = ScalanPluginState.usageMap.getOrElse(module.name, List())
