@@ -183,6 +183,15 @@ object ScalanPluginState {
       extMap(moduleName) = Set(moduleName + "Dsl", moduleName + "DslSeq", moduleName + "DslExp")
     }
   }
+
+  /** Mapping between modules and another modules used by them. */
+  val usageMap = Map[String, List[String]](
+    "Collections" -> List("Monoids"),
+    "Vectors" -> List("Monoids", "Collections", "LinearAlgebra"),
+    "Matrices" -> List("Monoids", "Collections", "Vectors", "LinearAlgebra"),
+    "LinearAlgebra" -> List("Monoids", "Collections", "Vectors", "Matrices"),
+    "LinearAlgebraExample" -> List("Monoids", "Collections", "Vectors", "Matrices", "LinearAlgebra")
+  )
 }
 
 object ScalanPlugin {
