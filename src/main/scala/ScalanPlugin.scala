@@ -190,7 +190,7 @@ object ScalanPluginState {
     "Vectors" -> List("NumMonoids", "Collections", "LinearAlgebra"),
     "Matrices" -> List("NumMonoids", "Collections", "Vectors", "LinearAlgebra"),
     "LinearAlgebra" -> List("NumMonoids", "Collections", "Vectors", "Matrices"),
-    "LinearAlgebraExample" -> List("NumMonoids", "Collections", "Vectors", "Matrices", "LinearAlgebra")
+    "LinearAlgebraExamples" -> List("NumMonoids", "Collections", "Vectors", "Matrices", "LinearAlgebra")
   )
 
   /** Mapping of module name to the package where it is defined. */
