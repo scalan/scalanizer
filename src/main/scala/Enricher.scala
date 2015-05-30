@@ -7,7 +7,16 @@ import scalan.util.FileUtil
 trait Enricher {
   /** Imports scalan._ and other packages needed by Scalan and further transformations. */
   def addImports(module: SEntityModuleDef) = {
-    module.copy(imports = SImportStat("scalan._") :: module.imports)
+    val usedModules = ScalanPluginState.usageMap.getOrElse(module.name, List())
+    val usedImports = usedModules.map{moduleName =>
+      val pkgOfModule = ScalanPluginState.pkgOfModule.get(moduleName) match {
+        case Some(pkgName) => pkgName + "."
+        case _ => ""
+      }
+      SImportStat(pkgOfModule + "implOf"+moduleName+".StagedEvaluation._")
+    }
+
+    module.copy(imports = SImportStat("scalan._") :: usedImports)
   }
 
   /** Introduces a synonym for a module. */

@@ -192,6 +192,16 @@ object ScalanPluginState {
     "LinearAlgebra" -> List("Monoids", "Collections", "Vectors", "Matrices"),
     "LinearAlgebraExample" -> List("Monoids", "Collections", "Vectors", "Matrices", "LinearAlgebra")
   )
+
+  /** Mapping of module name to the package where it is defined. */
+  val pkgOfModule = Map[String, String](
+    "Monoids" -> "paradise",
+    "Collections" -> "paradise.collections",
+    "Vectors" -> "paradise.linalgebra",
+    "Matrices" -> "paradise.linalgebra",
+    "LinearAlgebra" -> "paradise.linalgebra",
+    "LinearAlgebraExamples" -> "paradise"
+  )
 }
 
 object ScalanPlugin {
