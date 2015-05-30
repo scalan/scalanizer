@@ -171,7 +171,7 @@ class ScalanPlugin(val global: Global) extends Plugin {
 }
 
 object ScalanPluginState {
-  var emap = scala.collection.mutable.Map[String, Set[String]]()
+  val emap = scala.collection.mutable.Map[String, Set[String]]()
 
   ScalanPluginConfig.codegenConfig.entityFiles.foreach { file =>
     val fileNameParts = file.split('.')
