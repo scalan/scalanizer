@@ -186,6 +186,7 @@ object ScalanPluginState {
 
   /** Mapping between modules and another modules used by them. */
   val usageMap = Map[String, List[String]](
+    "NumMonoids" -> List("Numers"),
     "Collections" -> List("NumMonoids"),
     "Vectors" -> List("NumMonoids", "Collections", "LinearAlgebra"),
     "Matrices" -> List("NumMonoids", "Collections", "Vectors", "LinearAlgebra"),
@@ -195,6 +196,7 @@ object ScalanPluginState {
 
   /** Mapping of module name to the package where it is defined. */
   val pkgOfModule = Map[String, String](
+    "Numers" -> "paradise",
     "NumMonoids" -> "paradise",
     "Collections" -> "paradise.collections",
     "Vectors" -> "paradise.linalgebra",
