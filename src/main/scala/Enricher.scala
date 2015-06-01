@@ -260,16 +260,22 @@ trait Enricher {
       case m: SMethodDef => genImplicitMethodArgs(m)
       case _ => item
     }
+    def genCompanion(companion: Option[STraitOrClassDef]) = companion match {
+      case Some(t : STraitDef) => Some(t.copy(body = t.body.map(genBodyItem)))
+      case Some(c : SClassDef) => Some(c.copy(body = c.body.map(genBodyItem)))
+      case Some(unsupported) => throw new NotImplementedError(s"genCompanion: $unsupported")
+      case None => None
+    }
     def genEntity(entity: STraitDef): STraitDef = {
       val newBodyItems = entity.body.map(genBodyItem)
-      entity.copy(body = newBodyItems)
+      entity.copy(body = newBodyItems, companion = genCompanion(entity.companion))
     }
     def genEntities(entities: List[STraitDef]): List[STraitDef] = {
       entities.map(genEntity)
     }
     def genClass(clazz: SClassDef): SClassDef = {
       val newBodyItems = clazz.body.map(genBodyItem)
-      clazz.copy(body = newBodyItems)
+      clazz.copy(body = newBodyItems, companion = genCompanion(clazz.companion))
     }
     def genClasses(classes: List[SClassDef]): List[SClassDef] = {
       classes.map(genClass)
