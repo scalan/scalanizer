@@ -100,13 +100,21 @@ trait Enricher {
     selfType = None,
     companion = None
   )
+  
+  def convertCompanion(comp: STraitOrClassDef): STraitOrClassDef = comp match {
+    case obj: SObjectDef =>
+      STraitDef(name = obj.name + "Companion",
+        tpeArgs = obj.tpeArgs, ancestors = obj.ancestors, body = obj.body, selfType = obj.selfType,
+        companion = obj.companion, annotations = obj.annotations)
+    case _ => comp
+  }
 
   /** Checks that the entity has a companion. If the entity doesn't have it
     * then the method adds the companion. */
   def checkEntityCompanion(module: SEntityModuleDef) = {
     val entity = module.entityOps
     val newCompanion = entity.companion match {
-      case c @ Some(_) => c
+      case Some(comp) => Some(convertCompanion(comp))
       case None => Some(createCompanion(entity.name))
     }
     val newEntity = entity.copy(companion = newCompanion)
@@ -118,7 +126,7 @@ trait Enricher {
   def checkClassCompanion(module: SEntityModuleDef) = {
     val newClasses = module.concreteSClasses.map{ clazz =>
       val newCompanion = clazz.companion match {
-        case c @ Some(_) => c
+        case Some(comp) => Some(convertCompanion(comp))
         case None => Some(createCompanion(clazz.name))
       }
 

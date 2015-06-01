@@ -71,7 +71,11 @@ trait Backend extends PatternMatching {
   }
 
   def genCompanion(comp: Option[STraitOrClassDef])(implicit ctx: GenCtx): Tree = comp match {
-    case Some(c) => q"trait ${TypeName(c.name)}"
+    case Some(comp) => comp match {
+      case t: STraitDef => genTrait(t)
+      case c: SClassDef => genClass(c)
+      case _ => throw new NotImplementedError(s"genCompanion: $comp")
+    }
     case None => EmptyTree
   }
 
