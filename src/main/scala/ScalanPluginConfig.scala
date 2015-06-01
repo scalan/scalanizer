@@ -28,5 +28,9 @@ object ScalanPluginConfig {
     entityTypeSynonyms = Map[String, String](),
     isAlreadyRep = false
   )
+  val typeClasses = List[String](
+    "Numer", "DoubleNumer"
+    , "NumMonoid", "PlusMonoid"
+  )
 }
 

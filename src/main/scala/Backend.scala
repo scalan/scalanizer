@@ -243,7 +243,10 @@ trait Backend extends PatternMatching {
     case STraitCall(name: String, tpeSExprs: List[STpeExpr]) =>
       val targs = tpeSExprs.map(genTypeExpr)
       val appliedType = tq"${TypeName(name)}[..$targs]"
-      tq"Rep[$appliedType]"
+      if (ScalanPluginConfig.typeClasses.contains(name))
+        appliedType
+      else
+        tq"Rep[$appliedType]"
     case STpeTuple(_) => tq"Rep[${genTypeExpr(tpeExpr)}]"
     case STpeFunc(_, _) => tq"Rep[${genTypeExpr(tpeExpr)}]"
     case unknown => throw new NotImplementedError(s"repTypeExp($unknown)")
