@@ -299,4 +299,48 @@ trait Enricher {
       )
     }).toList
   }
+
+  /** ClassTags are removed because they can be extracted from Elems. */
+  def filterClassTags(module: SEntityModuleDef) = {
+    def filterClassTagInClassArgs(classArgs: SClassArgs) = {
+      val args = classArgs.args.filter{carg => carg.tpe match {
+        case tc: STraitCall if tc.name == "ClassTag" => false
+        case _ => true
+      }}
+      classArgs.copy(args = args)
+    }
+    def filerClassTagInMethodArgs(methodArgs: SMethodArgs) = {
+      val args = methodArgs.args.filter{marg => marg.tpe match {
+        case tc: STraitCall if tc.name == "ClassTag" => false
+        case _ => true
+      }}
+      methodArgs.copy(args = args)
+    }
+    def filterClassTagInMethod(m: SMethodDef): SMethodDef = {
+      val argSections = m.argSections.map(filerClassTagInMethodArgs)
+      val body = m.body.map(_ match {
+        case methodDef: SMethodDef => filterClassTagInMethod(methodDef)
+        case item => item
+      })
+
+      m.copy(argSections = argSections, body = body)
+    }
+    def filterClassTagInBody(blist: List[SBodyItem]) = {
+      blist.map{_ match {
+        case m: SMethodDef => filterClassTagInMethod(m)
+        case item => item
+      }}
+    }
+    val entityOps = module.entityOps.copy(body = filterClassTagInBody(module.entityOps.body))
+    val entities = module.entities.map{entity => entity.copy(body = filterClassTagInBody(entity.body))}
+    val concreteSClasses = module.concreteSClasses.map{clazz =>
+      clazz.copy(
+        args = filterClassTagInClassArgs(clazz.args),
+        implicitArgs = filterClassTagInClassArgs(clazz.implicitArgs),
+        body = filterClassTagInBody(clazz.body)
+      )
+    }
+
+    module.copy(entityOps = entityOps, entities = entities, concreteSClasses = concreteSClasses)
+  }
 }
