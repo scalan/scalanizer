@@ -329,6 +329,9 @@ trait Enricher {
       blist.map{_ match {
         case m: SMethodDef => filterClassTagInMethod(m)
         case item => item
+      }}.filter{_ match {
+        case SMethodDef(_,_,_,Some(STraitCall("ClassTag", _)),true,_,_,_,_,_) => false
+        case _ => true
       }}
     }
     val entityOps = module.entityOps.copy(body = filterClassTagInBody(module.entityOps.body))
