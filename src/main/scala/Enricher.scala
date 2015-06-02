@@ -259,7 +259,7 @@ trait Enricher {
     }
     val args = method.argSections ++ List(SMethodArgs(genImplicitVals(method.tpeArgs)))
 
-    method.copy(argSections = args)
+    method.copy(argSections = joinImplicitArgs(args))
   }
 
   def genMethodsImplicits(module: SEntityModuleDef) = {
@@ -366,5 +366,15 @@ trait Enricher {
     }
 
     module.copy(entityOps = entityOps, entities = entities, concreteSClasses = concreteSClasses)
+  }
+  /** According to scala docs, a method or constructor can have only one implicit parameter list,
+    * and it must be the last parameter list given. */
+  def joinImplicitArgs(argSections: List[SMethodArgs]): List[SMethodArgs] = {
+    val cleanArgs = argSections.map(_.args)
+    val (imp, nonImp) = cleanArgs.partition{_ match {
+      case (m: SMethodArg) :: _ => m.impFlag
+      case _ => false
+    }}
+    (nonImp ++ List(imp.flatten)).map(args => SMethodArgs(args))
   }
 }
