@@ -165,8 +165,8 @@ trait Enricher {
         overloadId = None, annotations = Nil,
         body = None, isElemOrCont = true)
 
-    def genElem(tpeArg: STpeArg) = genImplicit(tpeArg, "e", "Elem")
-    def genCont(tpeArg: STpeArg) = genImplicit(tpeArg, "c", "Cont")
+    def genElem(tpeArg: STpeArg) = genImplicit(tpeArg, "ee", "Elem")
+    def genCont(tpeArg: STpeArg) = genImplicit(tpeArg, "ce", "Cont")
 
     def genImplicitDefs(tpeArgs: List[STpeArg]): List[SMethodDef] = {
       tpeArgs.map{tpeArg =>
@@ -183,18 +183,18 @@ trait Enricher {
 
   def genImplicitClassArgs(module: SEntityModuleDef, clazz: SClassDef): List[SClassArg] = {
     def genImplicit(argPrefix: String, argSuffix: String,
-                    typePrefix: String, typeSuffix: String) = {
+                    typePrefix: String, typeSuffix: STpeExpr) = {
       SClassArg(impFlag = true,
         overFlag = false, valFlag = false,
         name = argPrefix + argSuffix,
-        tpe = STraitCall(typePrefix, List(STraitCall(typeSuffix, Nil))),
+        tpe = STraitCall(typePrefix, List(typeSuffix)),
         default = None, annotations = Nil, isElemOrCont = true)
     }
-    def genElem(valName: String, typeName: String) =
+    def genElem(valName: String, typeName: STpeExpr) =
       genImplicit("e", valName, "Elem", typeName)
-    def genCont(valName: String, typeName: String) =
+    def genCont(valName: String, typeName: STpeExpr) =
       genImplicit("c", valName, "Cont", typeName)
-    def genImplicitArg(isFirstKind: Boolean, valName: String, typeName: String): SClassArg = {
+    def genImplicitArg(isFirstKind: Boolean, valName: String, typeName: STpeExpr): SClassArg = {
       if (isFirstKind) genElem(valName, typeName)
       else genCont(valName, typeName)
     }
@@ -213,14 +213,21 @@ trait Enricher {
         }
       }
     }
-
-    clazz.tpeArgs.map { tpeArg => ancestorPairs.find(pair => tpeArg.name == pair._1.name) match {
-      case Some((aParam, eParam)) => aParam match {
-        case _: STraitCall => genImplicitArg(eParam.tparams.isEmpty, eParam.name, aParam.name)
-        case _ => throw new NotImplementedError(s"genImplicitClassArgs: $eParam")
-      }
-      case None => genImplicitArg(tpeArg.tparams.isEmpty, tpeArg.name, tpeArg.name)
+    def tpeArg2Expr(tpeArg: STpeArg): STpeExpr = STraitCall(tpeArg.name, Nil)
+    val classImplicits = clazz.tpeArgs.map { tpeArg =>
+      ancestorPairs.find(pair => tpeArg2Expr(tpeArg) == pair._1) match {
+        case Some((aParam, eParam)) => aParam match {
+          case _: STraitCall => genImplicitArg(eParam.tparams.isEmpty, "e"+eParam.name, aParam)
+          case _ => throw new NotImplementedError(s"genImplicitClassArgs: $eParam")
+        }
+        case None => genImplicitArg(tpeArg.tparams.isEmpty, "c"+tpeArg.name, tpeArg2Expr(tpeArg))
     }}
+    val entityImplicits = ancestorPairs.map{pair =>
+      val (ancestorParam, entityParam) = pair
+      genImplicitArg(entityParam.tparams.isEmpty, "e"+entityParam.name, ancestorParam)
+    }
+
+    (entityImplicits ++ classImplicits).distinct
   }
 
   def genClassesImplicits(module: SEntityModuleDef) = {
@@ -241,8 +248,8 @@ trait Enricher {
         tpe = STraitCall(resPrefix, List(STraitCall(tpeArg.name, Nil))),
         default = None, annotations = Nil, isElemOrCont = true)
     }
-    def genElem(tpeArg: STpeArg) = genImplicit(tpeArg, "e", "Elem")
-    def genCont(tpeArg: STpeArg) = genImplicit(tpeArg, "c", "Cont")
+    def genElem(tpeArg: STpeArg) = genImplicit(tpeArg, "em", "Elem")
+    def genCont(tpeArg: STpeArg) = genImplicit(tpeArg, "cm", "Cont")
 
     def genImplicitVals(tpeArgs: List[STpeArg]): List[SMethodArg] = {
       tpeArgs.map{tpeArg =>

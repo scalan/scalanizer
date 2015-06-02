@@ -15,7 +15,7 @@ object ScalanPluginConfig {
       ,"Collections.scala"
       ,"Vectors.scala"
       ,"Matrices.scala"
-      , "LinearAlgebraExamples.scala"
+      ,"LinearAlgebraExamples.scala"
     ),
     baseContextTrait = "ScalanDsl",
     seqContextTrait = "ScalanSeq",
