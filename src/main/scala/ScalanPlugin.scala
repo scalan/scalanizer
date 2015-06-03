@@ -174,7 +174,7 @@ object ScalanPluginState {
     "Vectors" -> List("NumMonoids", "Collections", "LinearAlgebra"),
     "Matrices" -> List("NumMonoids", "Collections", "Vectors", "LinearAlgebra"),
     "LinearAlgebra" -> List("NumMonoids", "Collections", "Vectors", "Matrices"),
-    "LinearAlgebraExamples" -> List("NumMonoids", "Collections", "Vectors", "Matrices", "LinearAlgebra")
+    "LinearAlgebraOps" -> List("Numers", "NumMonoids", "Vectors", "Matrices", "LinearAlgebra")
   )
 
   /** Mapping of module name to the package where it is defined. */
@@ -185,7 +185,7 @@ object ScalanPluginState {
     "Vectors" -> "paradise.linalgebra",
     "Matrices" -> "paradise.linalgebra",
     "LinearAlgebra" -> "paradise.linalgebra",
-    "LinearAlgebraExamples" -> "paradise"
+    "LinearAlgebraOps" -> "paradise.linalgebra"
   )
 }
 
