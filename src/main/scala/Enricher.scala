@@ -231,11 +231,28 @@ trait Enricher {
   }
 
   def genClassesImplicits(module: SEntityModuleDef) = {
+    def unpackElem(classArg: SClassArg): Option[STpeExpr] = classArg.tpe match {
+      case STraitCall("Elem", List(prim @ STpePrimitive(_,_))) => Some(prim)
+      case _ => None
+    }
+    /** The function checks that the Elem is already defined somewhere in scope. */
+    def isElemAlreadyDefined(classArg: SClassArg): Boolean = unpackElem(classArg) match {
+      case Some(_) => true
+      case None => false
+    }
+    def convertElemValToMethod(classArg: SClassArg): SMethodDef = {
+      SMethodDef(name = classArg.name, tpeArgs = Nil, argSections = Nil,
+        tpeRes = Some(classArg.tpe),
+        isImplicit = false, isOverride = false, overloadId = None, annotations = Nil,
+        body = Some(STypeApply(SIdent("element"), unpackElem(classArg).toList)),
+        isElemOrCont = true)
+    }
     val newClasses = module.concreteSClasses.map{clazz =>
-      val elemArgs = genImplicitClassArgs(module, clazz)
+      val (definedElems, elemArgs) = genImplicitClassArgs(module, clazz) partition isElemAlreadyDefined
       val newImplicitArgs = SClassArgs(clazz.implicitArgs.args ++ elemArgs)
+      val newBody = definedElems.map(convertElemValToMethod) ++ clazz.body
 
-      clazz.copy(implicitArgs = newImplicitArgs)
+      clazz.copy(implicitArgs = newImplicitArgs, body = newBody)
     }
 
     module.copy(concreteSClasses = newClasses)
