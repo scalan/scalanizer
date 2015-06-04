@@ -8,7 +8,7 @@ import scalan.meta.ScalanAst._
 import scalan.meta.{CodegenConfig, ScalanParsers}
 
 class ScalanPluginComponent(val global: Global)
-  extends PluginComponent with ScalanParsers with Enricher with Backend {
+  extends PluginComponent with ScalanParsers with Enricher with HotSpots with Backend {
 
   type Compiler = global.type
   val compiler: Compiler = global
@@ -23,7 +23,6 @@ class ScalanPluginComponent(val global: Global)
   def newPhase(prev: Phase) = new StdPhase(prev) {
     def apply(unit: CompilationUnit): Unit = {
       val unitName = unit.source.file.name
-
       if (ScalanPluginConfig.codegenConfig.entityFiles.contains(unitName)) try {
         val metaAst = parse(unitName, unit.body)
         /** Transformations of Scalan AST */
@@ -66,6 +65,8 @@ class ScalanPluginComponent(val global: Global)
         if (!ScalanPluginConfig.read) {
           unit.body = combineAst(unit.body, stagedAst)
         }
+//        unit.body = transformHotSpots(metaAst.name, unit.body)
+//        print(showCode(unit.body))
       } catch {
         case e: Exception => print(s"Error: failed to parse ${unitName} due to " + e.printStackTrace())
       }
