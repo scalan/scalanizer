@@ -170,20 +170,20 @@ object ScalanPluginState {
   /** Mapping between modules and another modules used by them. */
   val usageMap = Map[String, List[String]](
     "NumMonoids" -> List("Numers"),
-    "Collections" -> List("NumMonoids"),
-    "Vectors" -> List("NumMonoids", "Collections", "LinearAlgebra"),
-    "Matrices" -> List("NumMonoids", "Collections", "Vectors", "LinearAlgebra"),
-    "LinearAlgebra" -> List("NumMonoids", "Collections", "Vectors", "Matrices"),
-    "LinearAlgebraOps" -> List("Numers", "NumMonoids", "Vectors", "Matrices", "LinearAlgebra")
+    "Cols" -> List("NumMonoids"),
+    "Vecs" -> List("NumMonoids", "Cols", "LinearAlgebra"),
+    "Matrs" -> List("NumMonoids", "Cols", "Vecs", "LinearAlgebra"),
+    "LinearAlgebra" -> List("NumMonoids", "Cols", "Vecs", "Matrs"),
+    "LinearAlgebraOps" -> List("Numers", "NumMonoids", "Vecs", "Matrs", "LinearAlgebra")
   )
 
   /** Mapping of module name to the package where it is defined. */
   val pkgOfModule = Map[String, String](
     "Numers" -> "paradise",
     "NumMonoids" -> "paradise",
-    "Collections" -> "paradise.collections",
-    "Vectors" -> "paradise.linalgebra",
-    "Matrices" -> "paradise.linalgebra",
+    "Cols" -> "paradise.collections",
+    "Vecs" -> "paradise.linalgebra",
+    "Matrs" -> "paradise.linalgebra",
     "LinearAlgebra" -> "paradise.linalgebra",
     "LinearAlgebraOps" -> "paradise.linalgebra"
   )
