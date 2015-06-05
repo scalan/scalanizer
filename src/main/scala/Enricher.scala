@@ -14,16 +14,18 @@ trait Enricher {
     module.copy(ancestors = parentsWithExts)
   }
 
+  def getImportByName(name: String): SImportStat = {
+    val pkgOfModule = ScalanPluginState.pkgOfModule.get(name) match {
+      case Some(pkgName) => pkgName + "."
+      case _ => ""
+    }
+    SImportStat(pkgOfModule + "implOf"+name+".StagedEvaluation._")
+  }
+
   /** Imports scalan._ and other packages needed by Scalan and further transformations. */
   def addImports(module: SEntityModuleDef) = {
     val usedModules = ScalanPluginState.usageMap.getOrElse(module.name, List())
-    val usedImports = usedModules.map{moduleName =>
-      val pkgOfModule = ScalanPluginState.pkgOfModule.get(moduleName) match {
-        case Some(pkgName) => pkgName + "."
-        case _ => ""
-      }
-      SImportStat(pkgOfModule + "implOf"+moduleName+".StagedEvaluation._")
-    }
+    val usedImports = usedModules.map(getImportByName)
 
     module.copy(imports = SImportStat("scalan._") :: usedImports)
   }

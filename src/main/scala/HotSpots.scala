@@ -1,6 +1,6 @@
 package scalan.plugin
 
-trait HotSpots {
+trait HotSpots extends Enricher with Backend {
 
   type Compiler <: scala.tools.nsc.Global
   val compiler: Compiler
@@ -64,13 +64,15 @@ trait HotSpots {
       }))
       """
     }
+    implicit val ctx = GenCtx(null, false)
+    val cakeImport = genImport(getImportByName(cakeName))
     q"""
       object HotSpotManager {
         import scalan.ScalanCommunityDslExp
         import scalan.compilation.lms.{CommunityLmsBackend, CoreBridge}
         import scalan.compilation.lms.scalac.CommunityLmsCompilerScala
         import scalan.primitives.EffectfulCompiler
-        import paradise.linalgebra.${TermName("implOf"+cakeName)}.StagedEvaluation._
+        $cakeImport
 
         lazy val scalanContext = new Scalan
         def getScalanContext = scalanContext
