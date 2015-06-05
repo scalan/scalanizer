@@ -9,6 +9,9 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
   val compiler: Compiler
   import compiler._
 
+  /** Mapping of a module to its hot spots. */
+  val hotSpots = scala.collection.mutable.Map[String, List[HotSpotMethod]]()
+
   case class HotSpotMethod(name: String, path: String, vparamss: List[List[ValDef]], res: Tree)
   {
     def identss: List[List[Ident]] = vparamss.map(_.map{v => Ident(v.name)})
@@ -30,8 +33,6 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
     }
   }
 
-  var hotSpots: List[HotSpotMethod] = Nil
-
   def transformHotSpots(module: SEntityModuleDef, unitBody: Tree): Tree = {
     val hotSpotTransformer = new Transformer {
       def isHotSpot(annotations: List[Tree]): Boolean = {
@@ -47,7 +48,7 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
           val params = vparamss.map(_.map{v => Ident(v.name)})
           val kernelInvoke = q"$packageName.HotSpotKernels.$kernelName(...$params)"
 
-          hotSpots = HotSpotMethod(name, "LA", vparamss, tpt) :: hotSpots
+          hotSpots(module.name) = HotSpotMethod(name, "LA", vparamss, tpt) :: hotSpots.getOrElse(module.name, Nil)
           method.copy(rhs = kernelInvoke)
         case _ => super.transform(tree)
       }
@@ -57,7 +58,7 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
   }
 
   def getHotSpotKernels(module: SEntityModuleDef) = {
-    val kernels = hotSpots.map { method =>
+    val kernels = hotSpots.getOrElse(module.name, Nil).map { method =>
       q"""
         lazy val ${TermName(method.name + "Kernel")} = {
           val ctx = HotSpotManager.getScalanContext
@@ -82,7 +83,7 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
 
   def getHotSpotManager(module: SEntityModuleDef) = {
     val cakeName = getCakeName(module)
-    val wrappers = hotSpots.map { method =>
+    val wrappers = hotSpots.getOrElse(module.name, Nil).map { method =>
       q"""
       lazy val ${TermName(method.name + "Wrapper")} = ${method.toLambda}
       """
