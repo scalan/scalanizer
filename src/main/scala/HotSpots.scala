@@ -19,10 +19,14 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
 
       SValDef(vd.name, tpeRes, isLazy, isImplicit, parseExpr(vd.rhs))
     })
-    def toLambda = {
-      implicit val ctx = GenCtx(null, true)
+    def toLambda: Tree = {
       val body = q"${TermName(path)}.${TermName(name)}(...${identss})"
-      genFunc(SFunc(sparamss.flatten, parseExpr(body)))
+      genFunc(SFunc(sparamss.flatten, parseExpr(body)))(GenCtx(null, true))
+    }
+    def typeExpr: Tree = {
+      val argTpeExprs = sparamss.map(_.map(_.tpe.getOrElse(STpeEmpty()))).flatten
+      val domainTpeExpr = if (argTpeExprs.length == 1) argTpeExprs.head else STpeTuple(argTpeExprs)
+      genTypeExpr(STpeFunc(domainTpeExpr, tpeExpr(res)))(GenCtx(null, false))
     }
   }
 
@@ -54,16 +58,16 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
 
   def getHotSpotKernels = {
     val hotSpotNames = List("ddmvm")
-    val kernels = hotSpotNames.map{hotSpotName =>
+    val kernels = hotSpots.map { method =>
       q"""
-        lazy val ${TermName(hotSpotName + "Kernel")} = {
+        lazy val ${TermName(method.name + "Kernel")} = {
           val ctx = HotSpotManager.getScalanContext
           val compilerOutput = ctx.buildExecutable(
             new File("./"),
-            ${Literal(Constant(hotSpotName))},
-            ctx.${TermName(hotSpotName + "Wrapper")}, GraphVizConfig.default)(ctx.defaultCompilerConfig)
+            ${Literal(Constant(method.name))},
+            ctx.${TermName(method.name + "Wrapper")}, GraphVizConfig.default)(ctx.defaultCompilerConfig)
           val (cls, method) = ctx.loadMethod(compilerOutput)
-          val instance = cls.newInstance().asInstanceOf[((Array[Array[Double]], Array[Double])) => Array[Double]]
+          val instance = cls.newInstance().asInstanceOf[${method.typeExpr}]
           instance
         }
        """
