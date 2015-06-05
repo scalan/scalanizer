@@ -6,6 +6,12 @@ trait HotSpots extends Enricher with Backend {
   val compiler: Compiler
   import compiler._
 
+  case class HotSpotMethod(name: String,
+    path: String,
+    vparamss: List[List[ValDef]],
+    res: Tree
+  )
+
   def transformHotSpots(moduleName: String, unitBody: Tree): Tree = {
     val hotSpotTransformer = new Transformer {
       def isHotSpot(annotations: List[Tree]): Boolean = {
@@ -15,7 +21,7 @@ trait HotSpots extends Enricher with Backend {
         })
       }
       override def transform(tree: Tree): Tree = tree match {
-        case method @ DefDef(_, TermName(name), _, vparamss, _,_)  if isHotSpot(method.mods.annotations) =>
+        case method @ DefDef(_, TermName(name), _, vparamss,tpt,_)  if isHotSpot(method.mods.annotations) =>
           val kernelName = TermName(name + "Kernel")
           val packageName = TermName("implOf" + moduleName)
           val params = vparamss.map(_.map{v => Ident(v.name)})
@@ -56,11 +62,11 @@ trait HotSpots extends Enricher with Backend {
 
   def getHotSpotManager = {
     val cakeName = "LinearAlgebra"
-    val hotSpotNames = List("ddmvm")
-    val wrappers = hotSpotNames.map { hotSpotName =>
+    val hotSpots = List(HotSpotMethod("ddmvm", "LA", Nil, EmptyTree))
+    val wrappers = hotSpots.map { method =>
       q"""
-      lazy val ${TermName(hotSpotName + "Wrapper")} = fun(((in: Rep[scala.Tuple2[Array[Array[Double]], Array[Double]]]) => {
-        LA.${TermName(hotSpotName)}(in._1, in._2)
+      lazy val ${TermName(method.name + "Wrapper")} = fun(((in: Rep[scala.Tuple2[Array[Array[Double]], Array[Double]]]) => {
+        ${TermName(method.path)}.${TermName(method.name)}(in._1, in._2)
       }))
       """
     }
