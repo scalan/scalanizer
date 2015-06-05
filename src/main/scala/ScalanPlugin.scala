@@ -56,11 +56,11 @@ class ScalanPluginComponent(val global: Global)
         val pickledAst = serializeAst(metaAst)
 
         /** Accelerated original Scala AST by replacing of hot spots by optimized kernels. */
-        val accelAst = transformHotSpots(metaAst.name, unit.body)
+        val accelAst = transformHotSpots(metaAst, unit.body)
 
         /** Staged Ast is package which contains virtualized Tree + boilerplate */
         val stagedAst = getStagedAst(metaAst, virtAst, boilerplate, extensions, pickledAst,
-          getHotSpotKernels, getHotSpotManager)
+          getHotSpotKernels(metaAst), getHotSpotManager(metaAst))
 
         if (ScalanPluginConfig.save) {
           saveImplCode(unit.source.file.file, showCode(stagedAst))

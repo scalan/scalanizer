@@ -32,7 +32,7 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
 
   var hotSpots: List[HotSpotMethod] = Nil
 
-  def transformHotSpots(moduleName: String, unitBody: Tree): Tree = {
+  def transformHotSpots(module: SEntityModuleDef, unitBody: Tree): Tree = {
     val hotSpotTransformer = new Transformer {
       def isHotSpot(annotations: List[Tree]): Boolean = {
         annotations.exists(annotation => annotation match {
@@ -43,7 +43,7 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
       override def transform(tree: Tree): Tree = tree match {
         case method @ DefDef(_, TermName(name), _, vparamss,tpt,_)  if isHotSpot(method.mods.annotations) =>
           val kernelName = TermName(name + "Kernel")
-          val packageName = TermName("implOf" + moduleName)
+          val packageName = TermName("implOf" + module.name)
           val params = vparamss.map(_.map{v => Ident(v.name)})
           val kernelInvoke = q"$packageName.HotSpotKernels.$kernelName(...$params)"
 
@@ -56,8 +56,7 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
     hotSpotTransformer.transform(unitBody)
   }
 
-  def getHotSpotKernels = {
-    val hotSpotNames = List("ddmvm")
+  def getHotSpotKernels(module: SEntityModuleDef) = {
     val kernels = hotSpots.map { method =>
       q"""
         lazy val ${TermName(method.name + "Kernel")} = {
@@ -81,8 +80,8 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
     """
   }
 
-  def getHotSpotManager = {
-    val cakeName = "LinearAlgebra"
+  def getHotSpotManager(module: SEntityModuleDef) = {
+    val cakeName = getCakeName(module)
     val wrappers = hotSpots.map { method =>
       q"""
       lazy val ${TermName(method.name + "Wrapper")} = ${method.toLambda}
@@ -109,5 +108,10 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
         }
       }
     """
+  }
+
+  def getCakeName(module: SEntityModuleDef) = module.selfType match {
+    case Some(SSelfTypeDef(_, List(STraitCall(name, _)))) => name
+    case _ => module.name
   }
 }
