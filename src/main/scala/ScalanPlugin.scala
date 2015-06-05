@@ -55,18 +55,21 @@ class ScalanPluginComponent(val global: Global)
         /** Prepare Virtualized AST for passing to run-time. */
         val pickledAst = serializeAst(metaAst)
 
+        /** Accelerated original Scala AST by replacing of hot spots by optimized kernels. */
+        val accelAst = transformHotSpots(metaAst.name, unit.body)
+
         /** Staged Ast is package which contains virtualized Tree + boilerplate */
-        val stagedAst = getStagedAst(metaAst, virtAst, boilerplate, extensions, pickledAst)
+        val stagedAst = getStagedAst(metaAst, virtAst, boilerplate, extensions, pickledAst,
+          getHotSpotKernels, getHotSpotManager)
 
         if (ScalanPluginConfig.save) {
           saveImplCode(unit.source.file.file, showCode(stagedAst))
         }
 
+        unit.body = accelAst
         if (!ScalanPluginConfig.read) {
           unit.body = combineAst(unit.body, stagedAst)
         }
-//        unit.body = transformHotSpots(metaAst.name, unit.body)
-//        print(showCode(unit.body))
       } catch {
         case e: Exception => print(s"Error: failed to parse ${unitName} due to " + e.printStackTrace())
       }
@@ -74,7 +77,8 @@ class ScalanPluginComponent(val global: Global)
   }
 
   def getStagedAst(module: SEntityModuleDef,
-                   cake: Tree, impl: Tree, exts: List[Tree], serial: Tree): Tree = {
+                   cake: Tree, impl: Tree, exts: List[Tree], serial: Tree,
+                   hotSpotKernels: Tree, hotSpotManager: Tree): Tree = {
     val implContent = impl match {
       case PackageDef(_, topstats) => topstats.flatMap{ _ match {
         case PackageDef(Ident(TermName("impl")), stats) => stats
@@ -86,7 +90,7 @@ class ScalanPluginComponent(val global: Global)
         val stagedObj = q"object StagedEvaluation {..$body}"
 
         PackageDef(pkgName,
-          List(PackageDef(Ident(TermName("implOf"+module.name)), List(stagedObj)))
+          List(PackageDef(Ident(TermName("implOf"+module.name)), List(stagedObj, hotSpotKernels, hotSpotManager)))
         )
     }
   }
