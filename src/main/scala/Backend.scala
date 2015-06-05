@@ -343,8 +343,9 @@ trait Backend extends PatternMatching {
     case SConst(c: Any) => q"toRep(${compiler.Literal(compiler.Constant(c))})"
     case SIdent(name: String) => Ident(TermName(name))
     case SAssign(left, right) => q"${genExpr(left)} = ${genExpr(right)}"
-    case SApply(SSelect(SAscr(expr, STraitCall("Array", _)), method), _, argss) => genBasisArray(expr, method, argss)
-    case SSelect(SAscr(expr, STraitCall("Array", _)), method) => genBasisArray(expr, method, List(List()))
+    case SApply(SSelect(SAscr(obj, STraitCall("Array", _)), method), _, argss) => genBasisArray(obj, method, argss)
+    case SSelect(SAscr(obj, STraitCall("Array", _)), method) => genBasisArray(obj, method, List(List()))
+    case SApply(SSelect(obj @ SIdent("Array"), method), _, argss) => genBasisArray(obj, method, argss)
     case SSelect(expr: SExpr, tname: String) => q"${genExpr(expr)}.${TermName(tname)}"
     case SApply(fun, tpts, argss) =>
       val typeArgs = tpts.map(genTypeExpr)
@@ -380,9 +381,9 @@ trait Backend extends PatternMatching {
     Apply(Select(New(Ident(annot.annotationClass)), nme.CONSTRUCTOR), args)
   }
 
-  def genBasisArray(expr: SExpr, method: String, argss: List[List[SExpr]])
+  def genBasisArray(obj: SExpr, method: String, argss: List[List[SExpr]])
                    (implicit ctx: GenCtx): Tree = {
-    val constArgs = genExpr(expr) :: argss.flatten.map(genExpr)
+    val constArgs = genExpr(obj) :: argss.flatten.map(genExpr)
     method match {
       case "map" => q"array_map(..${constArgs.take(2)})"
       case "length" => q"array_length(..${constArgs.take(1)})"
@@ -391,6 +392,9 @@ trait Backend extends PatternMatching {
         val plus = Literal(Constant("+"))
         val SSelect(monoidName, _) = argss.head.head
         q"array_reduce(..${constArgs.take(1)})(RepMonoid(opName = $plus, zero = ${genExpr(monoidName)}.zero, append = ${genExpr(monoidName)}.append, isCommutative = true))"
+      case "range" =>
+        val List(_,_,end,_) = constArgs
+        q"SArray.rangeFrom0($end)"
     }
   }
 }
