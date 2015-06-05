@@ -30,21 +30,26 @@ trait HotSpots {
   }
 
   def getHotSpotKernels = {
+    val hotSpotNames = List("ddmvm")
+    val kernels = hotSpotNames.map{hotSpotName =>
+      q"""
+        lazy val ${TermName(hotSpotName + "Kernel")} = {
+          val ctx = HotSpotManager.getScalanContext
+          val compilerOutput = ctx.buildExecutable(
+            new File("./"),
+            ${Literal(Constant(hotSpotName))},
+            ctx.${TermName(hotSpotName + "Wrapper")}, GraphVizConfig.default)(ctx.defaultCompilerConfig)
+          val (cls, method) = ctx.loadMethod(compilerOutput)
+          val instance = cls.newInstance().asInstanceOf[((Array[Array[Double]], Array[Double])) => Array[Double]]
+          instance
+        }
+       """
+    }
     q"""
       object HotSpotKernels {
         import java.io.File
         import scalan.compilation.GraphVizConfig
-
-        lazy val ddmvmKernel = {
-          val ctx = HotSpotManager.getScalanContext
-          val compilerOutput = ctx.buildExecutable(
-            new File("./"),
-            "ddmvm",
-             ctx.ddmvmWrapper, GraphVizConfig.default)(ctx.defaultCompilerConfig)
-          val (cls, method) = ctx.loadMethod(compilerOutput)
-          val instance = cls.newInstance().asInstanceOf[((Array[Array[Double]], Array[Double])) => Array[Double]]
-               instance
-        }
+        ..$kernels
       }
     """
   }
