@@ -389,7 +389,8 @@ trait Backend extends PatternMatching {
       case "apply" => q"array_apply(..${constArgs.take(2)})"
       case "reduce" =>
         val plus = Literal(Constant("+"))
-        q"array_reduce(..${constArgs.take(1)})(RepMonoid(opName = $plus, zero = m.zero, append = m.append, isCommutative = true))"
+        val SSelect(monoidName, _) = argss.head.head
+        q"array_reduce(..${constArgs.take(1)})(RepMonoid(opName = $plus, zero = ${genExpr(monoidName)}.zero, append = ${genExpr(monoidName)}.append, isCommutative = true))"
     }
   }
 }
