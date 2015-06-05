@@ -343,6 +343,8 @@ trait Backend extends PatternMatching {
     case SConst(c: Any) => q"toRep(${compiler.Literal(compiler.Constant(c))})"
     case SIdent(name: String) => Ident(TermName(name))
     case SAssign(left, right) => q"${genExpr(left)} = ${genExpr(right)}"
+    case SApply(SSelect(SAscr(expr, STraitCall("Array", _)), method), _, argss) => genBasisArray(expr, method, argss)
+    case SSelect(SAscr(expr, STraitCall("Array", _)), method) => genBasisArray(expr, method, List(List()))
     case SSelect(expr: SExpr, tname: String) => q"${genExpr(expr)}.${TermName(tname)}"
     case SApply(fun, tpts, argss) =>
       val typeArgs = tpts.map(genTypeExpr)
@@ -376,5 +378,18 @@ trait Backend extends PatternMatching {
     }
     val args = annot.args.map(genAnnotExpr)
     Apply(Select(New(Ident(annot.annotationClass)), nme.CONSTRUCTOR), args)
+  }
+
+  def genBasisArray(expr: SExpr, method: String, argss: List[List[SExpr]])
+                   (implicit ctx: GenCtx): Tree = {
+    val constArgs = genExpr(expr) :: argss.flatten.map(genExpr)
+    method match {
+      case "map" => q"array_map(..${constArgs.take(2)})"
+      case "length" => q"array_length(..${constArgs.take(1)})"
+      case "apply" => q"array_apply(..${constArgs.take(2)})"
+      case "reduce" =>
+        val plus = Literal(Constant("+"))
+        q"array_reduce(..${constArgs.take(1)})(RepMonoid(opName = $plus, zero = m.zero, append = m.append, isCommutative = true))"
+    }
   }
 }
