@@ -1,16 +1,30 @@
 package scalan.plugin
 
-trait HotSpots extends Enricher with Backend {
+import scalan.meta.ScalanAst._
+import scalan.meta.ScalanParsers
+
+trait HotSpots extends Enricher with Backend with ScalanParsers {
 
   type Compiler <: scala.tools.nsc.Global
   val compiler: Compiler
   import compiler._
 
-  case class HotSpotMethod(name: String,
-    path: String,
-    vparamss: List[List[ValDef]],
-    res: Tree
-  )
+  case class HotSpotMethod(name: String, path: String, vparamss: List[List[ValDef]], res: Tree)
+  {
+    def identss: List[List[Ident]] = vparamss.map(_.map{v => Ident(v.name)})
+    def sparamss: List[List[SValDef]] = vparamss.map(_.map{vd =>
+      val tpeRes = optTpeExpr(vd.tpt)
+      val isImplicit = vd.mods.isImplicit
+      val isLazy = vd.mods.isLazy
+
+      SValDef(vd.name, tpeRes, isLazy, isImplicit, parseExpr(vd.rhs))
+    })
+    def toLambda = {
+      implicit val ctx = GenCtx(null, true)
+      val body = q"${TermName(path)}.${TermName(name)}(...${identss})"
+      genFunc(SFunc(sparamss.flatten, parseExpr(body)))
+    }
+  }
 
   var hotSpots: List[HotSpotMethod] = Nil
 
@@ -67,9 +81,7 @@ trait HotSpots extends Enricher with Backend {
     val cakeName = "LinearAlgebra"
     val wrappers = hotSpots.map { method =>
       q"""
-      lazy val ${TermName(method.name + "Wrapper")} = fun(((in: Rep[scala.Tuple2[Array[Array[Double]], Array[Double]]]) => {
-        ${TermName(method.path)}.${TermName(method.name)}(in._1, in._2)
-      }))
+      lazy val ${TermName(method.name + "Wrapper")} = ${method.toLambda}
       """
     }
     implicit val ctx = GenCtx(null, false)
