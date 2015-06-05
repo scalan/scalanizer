@@ -55,23 +55,30 @@ trait HotSpots {
   }
 
   def getHotSpotManager = {
+    val cakeName = "LinearAlgebra"
+    val hotSpotNames = List("ddmvm")
+    val wrappers = hotSpotNames.map { hotSpotName =>
+      q"""
+      lazy val ${TermName(hotSpotName + "Wrapper")} = fun(((in: Rep[scala.Tuple2[Array[Array[Double]], Array[Double]]]) => {
+        LA.${TermName(hotSpotName)}(in._1, in._2)
+      }))
+      """
+    }
     q"""
       object HotSpotManager {
         import scalan.ScalanCommunityDslExp
         import scalan.compilation.lms.{CommunityLmsBackend, CoreBridge}
         import scalan.compilation.lms.scalac.CommunityLmsCompilerScala
         import scalan.primitives.EffectfulCompiler
-        import paradise.linalgebra.implOfLinearAlgebra.StagedEvaluation.LinearAlgebraDslExp
+        import paradise.linalgebra.${TermName("implOf"+cakeName)}.StagedEvaluation._
 
         lazy val scalanContext = new Scalan
         def getScalanContext = scalanContext
 
-        class Scalan extends LinearAlgebraDslExp with CommunityLmsCompilerScala with CoreBridge
+        class Scalan extends ${TypeName(cakeName+"DslExp")} with CommunityLmsCompilerScala with CoreBridge
           with ScalanCommunityDslExp with EffectfulCompiler {
 
-          lazy val ddmvmWrapper = fun(((in: Rep[scala.Tuple2[Array[Array[Double]], Array[Double]]]) => {
-            LA.ddmvm(in._1, in._2)
-          }))
+          ..$wrappers
           val lms = new CommunityLmsBackend
         }
       }
