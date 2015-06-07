@@ -11,8 +11,8 @@ object ScalanBuild extends Build {
     organization := "com.huawei"
   )
 
-  lazy val ScalanPlugin = Project(
-    id   = "scalan-plugin",
+  lazy val scalanizer = Project(
+    id   = "scalanizer",
     base = file(".")
   ) settings (
     sharedSettings ++ assemblySettings : _*
