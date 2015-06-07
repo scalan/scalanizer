@@ -9,10 +9,16 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
   val compiler: Compiler
   import compiler._
 
+  object Kernels extends Enumeration {
+    type Kernel = Value
+    val ScalaKernel, CppKernel = Value
+  }
+  import Kernels._
+
   /** Mapping of a module to its hot spots. */
   val hotSpots = scala.collection.mutable.Map[String, List[HotSpotMethod]]()
 
-  case class HotSpotMethod(name: String, path: String, vparamss: List[List[ValDef]], res: Tree)
+  case class HotSpotMethod(name: String, path: String, vparamss: List[List[ValDef]], res: Tree, kernel: Kernel)
   {
     def identss: List[List[Ident]] = vparamss.map(_.map{v => Ident(v.name)})
     def sparamss: List[List[SValDef]] = vparamss.map(_.map{vd =>
@@ -37,7 +43,7 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
     val hotSpotTransformer = new Transformer {
       def isHotSpot(annotations: List[Tree]): Boolean = {
         annotations.exists(annotation => annotation match {
-          case Apply(Select(New(Ident(TypeName("HotSpot"))), termNames.CONSTRUCTOR), List()) => true
+          case Apply(Select(New(Ident(TypeName("HotSpot"))), termNames.CONSTRUCTOR), _) => true
           case _ => false
         })
       }
@@ -48,7 +54,8 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
           val params = vparamss.map(_.map{v => Ident(v.name)})
           val kernelInvoke = q"$packageName.HotSpotKernels.$kernelName(...$params)"
 
-          hotSpots(module.name) = HotSpotMethod(name, "LA", vparamss, tpt) :: hotSpots.getOrElse(module.name, Nil)
+          hotSpots(module.name) = HotSpotMethod(name, "LA", vparamss, tpt, getKernel(method.mods.annotations)) ::
+                                  hotSpots.getOrElse(module.name, Nil)
           method.copy(rhs = kernelInvoke)
         case _ => super.transform(tree)
       }
@@ -114,5 +121,17 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
   def getCakeName(module: SEntityModuleDef) = module.selfType match {
     case Some(SSelfTypeDef(_, List(STraitCall(name, _)))) => name
     case _ => module.name
+  }
+
+  def getKernel(annotations: List[Tree]): Kernel = {
+    val annotArgs = annotations.collectFirst {
+      case Apply(Select(New(Ident(TypeName("HotSpot"))), termNames.CONSTRUCTOR), args) => args
+    }
+
+    annotArgs match {
+      case Some(List(Ident(TermName("CppKernel")))) => CppKernel
+      case Some(List(Ident(TermName("ScalaKernel")))) => ScalaKernel
+      case _ => ScalaKernel
+    }
   }
 }
