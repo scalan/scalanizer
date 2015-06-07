@@ -1,5 +1,6 @@
 package scalan.plugin
 
+import scalan.compilation.KernelTypes
 import scalan.meta.ScalanAst._
 import scalan.meta.ScalanParsers
 
@@ -9,16 +10,12 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
   val compiler: Compiler
   import compiler._
 
-  object Kernels extends Enumeration {
-    type Kernel = Value
-    val ScalaKernel, CppKernel = Value
-  }
-  import Kernels._
+  import KernelTypes._
 
   /** Mapping of a module to its hot spots. */
   val hotSpots = scala.collection.mutable.Map[String, List[HotSpotMethod]]()
 
-  case class HotSpotMethod(name: String, path: String, vparamss: List[List[ValDef]], res: Tree, kernel: Kernel)
+  case class HotSpotMethod(name: String, path: String, vparamss: List[List[ValDef]], res: Tree, kernel: KernelType)
   {
     def identss: List[List[Ident]] = vparamss.map(_.map{v => Ident(v.name)})
     def sparamss: List[List[SValDef]] = vparamss.map(_.map{vd =>
@@ -140,7 +137,7 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
     case _ => module.name
   }
 
-  def getKernel(annotations: List[Tree]): Kernel = {
+  def getKernel(annotations: List[Tree]): KernelType = {
     val annotArgs = annotations.collectFirst {
       case Apply(Select(New(Ident(TypeName("HotSpot"))), termNames.CONSTRUCTOR), args) => args
     }

@@ -20,6 +20,7 @@ object ScalanBuild extends Build {
     libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-reflect" % _ % "provided"),
     libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _ % "provided"),
     libraryDependencies ++= Seq("com.huawei.scalan" %% "common" % "0.2.9-SNAPSHOT"),
+    libraryDependencies ++= Seq("com.huawei.scalan" %% "core" % "0.2.9-SNAPSHOT"),
     libraryDependencies ++= Seq("com.huawei.scalan" %% "meta" % "0.2.9-SNAPSHOT"),
     jarName in assembly := name.value + "_" + scalaVersion.value + "-" + version.value + "-fat.jar",
     assemblyOption in assembly ~= { _.copy(includeScala = false, includeDependency = true) }
