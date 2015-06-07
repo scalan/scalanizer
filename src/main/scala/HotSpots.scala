@@ -66,9 +66,13 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
 
   def getHotSpotKernels(module: SEntityModuleDef) = {
     val kernels = hotSpots.getOrElse(module.name, Nil).map { method =>
+      val scalanContextGetter = method.kernel match {
+        case CppKernel => "getScalanContextUni"
+        case _ => "getScalanContext"
+      }
       q"""
         lazy val ${TermName(method.name + "Kernel")} = {
-          val ctx = HotSpotManager.getScalanContext
+          val ctx = HotSpotManager.${TermName(scalanContextGetter)}
           val compilerOutput = ctx.buildExecutable(
             new File("./"),
             ${Literal(Constant(method.name))},
@@ -91,10 +95,10 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
   def getHotSpotManager(module: SEntityModuleDef) = {
     val cakeName = getCakeName(module)
     val wrappers = hotSpots.getOrElse(module.name, Nil).map { method =>
-      q"""
-      lazy val ${TermName(method.name + "Wrapper")} = ${method.toLambda}
-      """
-    }
+      (method, q"lazy val ${TermName(method.name + "Wrapper")} = ${method.toLambda}")
+    }.partition{w => w._1.kernel == ScalaKernel}
+    val ScalaWrappers = wrappers._1.map(_._2)
+    val CppWrappers = wrappers._2.map(_._2)
     implicit val ctx = GenCtx(null, false)
     val cakeImport = genImport(getImportByName(cakeName))
     q"""
@@ -111,7 +115,20 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
         class Scalan extends ${TypeName(cakeName+"DslExp")} with CommunityLmsCompilerScala with CoreBridge
           with ScalanCommunityDslExp with EffectfulCompiler {
 
-          ..$wrappers
+          ..$ScalaWrappers
+          val lms = new CommunityLmsBackend
+        }
+
+        import scalan.CommunityMethodMappingDSL
+        import scalan.compilation.lms.uni.LmsCompilerUni
+
+        lazy val scalanContextUni = new ScalanUni
+        def getScalanContextUni = scalanContextUni
+
+        class ScalanUni extends ${TypeName(cakeName+"DslExp")} with LmsCompilerUni with CoreBridge
+          with ScalanCommunityDslExp with EffectfulCompiler with CommunityMethodMappingDSL {
+
+          ..$CppWrappers
           val lms = new CommunityLmsBackend
         }
       }
