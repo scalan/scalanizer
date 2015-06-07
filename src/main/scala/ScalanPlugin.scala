@@ -177,17 +177,17 @@ object ScalanPluginState {
 
   /** Mapping between modules and another modules used by them. */
   val usageMap = Map[String, List[String]](
-    "NumMonoids" -> List("Numers"),
+    "NumMonoids" -> List("Nums"),
     "Cols" -> List("NumMonoids"),
     "Vecs" -> List("NumMonoids", "Cols", "LinearAlgebra"),
     "Matrs" -> List("NumMonoids", "Cols", "Vecs", "LinearAlgebra"),
     "LinearAlgebra" -> List("NumMonoids", "Cols", "Vecs", "Matrs"),
-    "LinearAlgebraOps" -> List("Numers", "NumMonoids", "Vecs", "Matrs", "LinearAlgebra")
+    "LinearAlgebraOps" -> List("Nums", "NumMonoids", "Vecs", "Matrs", "LinearAlgebra")
   )
 
   /** Mapping of module name to the package where it is defined. */
   val pkgOfModule = Map[String, String](
-    "Numers" -> "paradise",
+    "Nums" -> "paradise",
     "NumMonoids" -> "paradise",
     "Cols" -> "paradise.collections",
     "Vecs" -> "paradise.linalgebra",
