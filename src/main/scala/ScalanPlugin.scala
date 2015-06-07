@@ -187,13 +187,13 @@ object ScalanPluginState {
 
   /** Mapping of module name to the package where it is defined. */
   val pkgOfModule = Map[String, String](
-    "Nums" -> "paradise",
-    "NumMonoids" -> "paradise",
-    "Cols" -> "paradise.collections",
-    "Vecs" -> "paradise.linalgebra",
-    "Matrs" -> "paradise.linalgebra",
-    "LinearAlgebra" -> "paradise.linalgebra",
-    "LinearAlgebraOps" -> "paradise.linalgebra"
+    "Nums" -> "scalanizer",
+    "NumMonoids" -> "scalanizer",
+    "Cols" -> "scalanizer.collections",
+    "Vecs" -> "scalanizer.linalgebra",
+    "Matrs" -> "scalanizer.linalgebra",
+    "LinearAlgebra" -> "scalanizer.linalgebra",
+    "LinearAlgebraOps" -> "scalanizer.linalgebra"
   )
 }
 
