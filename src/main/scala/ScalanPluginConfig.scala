@@ -10,12 +10,12 @@ object ScalanPluginConfig {
     name = "Scalan Plugin",
     srcPath = "/",
     entityFiles = List[String](
-//       "Numers.scala"
-//      ,"NumMonoids.scala"
-//      ,"Cols.scala"
-//      ,"Vecs.scala"
-//      ,"Matrs.scala"
-      "LinearAlgebraOps.scala"
+       "Numers.scala"
+      ,"NumMonoids.scala"
+      ,"Cols.scala"
+      ,"Vecs.scala"
+      ,"Matrs.scala"
+      ,"LinearAlgebraOps.scala"
     ),
     baseContextTrait = "ScalanDsl",
     seqContextTrait = "ScalanSeq",
@@ -29,8 +29,8 @@ object ScalanPluginConfig {
     isAlreadyRep = false
   )
   val typeClasses = List[String](
-    "Numer", "DoubleNumer"
-    , "NumMonoid", "PlusMonoid"
+//    "Numer", "DoubleNumer"
+//    , "NumMonoid", "PlusMonoid"
   )
 }
 
