@@ -142,7 +142,8 @@ trait Enricher {
   }
 
   def saveDebugCode(fileName: String, code: String) = {
-    val file = FileUtil.file(new File("/tmp"), "debug", fileName)
+    val folder = new File(ScalanPluginConfig.home)
+    val file = FileUtil.file(folder, "debug", fileName)
     file.mkdirs()
 
     FileUtil.write(file, code)

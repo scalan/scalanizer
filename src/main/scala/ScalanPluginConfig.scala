@@ -32,5 +32,6 @@ object ScalanPluginConfig {
 //    "Numer", "DoubleNumer"
 //    , "NumMonoid", "PlusMonoid"
   )
+  val home = "/home/mgekk/scalan/scalan-paradise"
 }
 

@@ -148,7 +148,7 @@ class ScalanPlugin(val global: Global) extends Plugin {
     options foreach {
       case "save" => ScalanPluginConfig.save = true
       case "read" => ScalanPluginConfig.read = true
-      case "debug"     => ScalanPluginConfig.debug = true
+      case "debug" => ScalanPluginConfig.debug = true
       case option => error("Option not understood: " + option)
     }
   }
