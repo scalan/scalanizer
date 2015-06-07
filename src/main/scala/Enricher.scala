@@ -138,6 +138,13 @@ trait Enricher {
     module.copy(concreteSClasses = newClasses)
   }
 
+  def saveDebugCode(fileName: String, code: String) = {
+    val file = FileUtil.file(new File("/tmp"), "debug", fileName)
+    file.mkdirs()
+
+    FileUtil.write(file, code)
+  }
+
   def saveImplCode(file: File, implCode: String) = {
     val fileName = file.getName.split('.')(0)
     val folder = file.getParentFile

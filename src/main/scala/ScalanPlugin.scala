@@ -70,6 +70,9 @@ class ScalanPluginComponent(val global: Global)
         if (!ScalanPluginConfig.read) {
           unit.body = combineAst(unit.body, stagedAst)
         }
+
+        if (ScalanPluginConfig.debug)
+          saveDebugCode(unitName, showCode(unit.body))
       } catch {
         case e: Exception => print(s"Error: failed to parse ${unitName} due to " + e.printStackTrace())
       }
