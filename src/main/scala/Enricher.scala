@@ -26,8 +26,11 @@ trait Enricher {
   def addImports(module: SEntityModuleDef) = {
     val usedModules = ScalanPluginState.usageMap.getOrElse(module.name, List())
     val usedImports = usedModules.map(getImportByName)
+    val usersImport = module.imports.collect{
+      case imp @ SImportStat("scalan.Kernels._") => imp
+    }
 
-    module.copy(imports = SImportStat("scalan._") :: usedImports)
+    module.copy(imports = SImportStat("scalan._") :: (usedImports ++ usersImport))
   }
 
   /** Introduces a synonym for a module. */
