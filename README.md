@@ -1,4 +1,4 @@
-scalanier
+scalanizer
 =========
 
 Scalanizer is a new frontend for Scalan framework. It is implemented as a Plugin for Scala compiler.
