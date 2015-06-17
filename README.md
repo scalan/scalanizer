@@ -12,9 +12,7 @@ These options allow to debug both the plugin and generated code. If the project 
 
 setup
 -----
-Clone this repository using `git clone` command. Run `sbt` and then execute `assembly` command which will generate fat jar file of the plugin.
-
-Reference the generated jar file in the compiler parameter (for example `-Xplugin:/fullpath/scalanizer_2.11.6-0.0.1-fat.jar`)
+Clone this repository using `git clone` command. Run `sbt` and then execute `publishLocal` command which will generate fat jar file of the plugin.
 
 If you set `-P:scalan:debug` additional compiler options you also need to specify a directory for debug output by setting `ScalanPluginConfig.home`.
 
