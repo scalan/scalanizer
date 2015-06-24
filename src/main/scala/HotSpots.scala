@@ -126,7 +126,6 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
           with ScalanCommunityDslExp with EffectfulCompiler with CommunityMethodMappingDSL {
 
           ..$CppWrappers
-          val lms = new CommunityLmsBackend
         }
       }
     """
