@@ -7,7 +7,7 @@ object ScalanBuild extends Build {
   lazy val sharedSettings = Defaults.coreDefaultSettings ++ Seq(
     scalaVersion := "2.11.6",
  //   crossVersion := CrossVersion.full,
-    version := "0.0.1",
+    version := "0.0.2",
     organization := "com.huawei"
   )
 
