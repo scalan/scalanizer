@@ -313,10 +313,9 @@ trait Backend extends PatternMatching {
 
   def genConstr(constr: SContr)(implicit ctx: GenCtx): Tree = {
     val argsTree = constr.args.map(genExpr)
-    if (ctx.module.concreteSClasses.exists(clazz => clazz.name == constr.name))
-      Apply(Ident(TermName(constr.name)), argsTree)
-    else
-      throw new IllegalArgumentException(s"genConstr($constr)")
+    val constrName = constr.name.split('.').last.split('[').head
+
+    Apply(Ident(TermName(constrName)), argsTree)
   }
 
   def genFunc(func: SFunc)(implicit ctx: GenCtx): Tree = {
