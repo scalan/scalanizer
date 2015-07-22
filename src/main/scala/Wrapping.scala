@@ -40,10 +40,20 @@ class Wrapping(val global: Global) extends PluginComponent with ScalanParsers {
   }
 
   def updateWrapper(externalType: Symbol, memberName: Name, memberType: Type): STraitDef = {
-    def formMethodDef(name: String, res: Type): SMethodDef = {
+    def formMethodDef(name: String, args: List[Symbol], res: Type): SMethodDef = {
+      val methodArgs = args.map{arg =>
+        SMethodArg(
+          impFlag = false, overFlag = false,
+          name = arg.toString,
+          tpe = parseType(arg.tpe),
+          default = None, annotations = Nil, isElemOrCont = false
+        )
+      }
       SMethodDef(
         name = name,
-        tpeArgs = Nil, argSections = Nil, tpeRes = Some(parseType(res)),
+        tpeArgs = Nil,
+        argSections = List(SMethodArgs(methodArgs)),
+        tpeRes = Some(parseType(res)),
         isImplicit = false, isOverride = false,
         overloadId = None,
         annotations = List(SMethodAnnotation(annotationClass = "External", args = Nil)),
@@ -52,15 +62,19 @@ class Wrapping(val global: Global) extends PluginComponent with ScalanParsers {
       )
     }
     val member = memberType match {
-      case MethodType(args, res) => formMethodDef(memberName.toString, res)
-      case TypeRef(_,sym,_) => formMethodDef(memberName.toString, sym.tpe)
+      case MethodType(args, res) => formMethodDef(memberName.toString, args, res)
+      case TypeRef(_,sym,_) => formMethodDef(memberName.toString, Nil, sym.tpe)
       case _ => throw new NotImplementedError(s"memberType = ${showRaw(memberType)}")
     }
+    val wrapperName = "S" + externalType.nameString
 
     STraitDef(
-      name = externalType.nameString,
+      name = wrapperName,
       tpeArgs = Nil,
-      ancestors = List(STraitCall("TypeWrapper", List(STraitCall(externalType.nameString, List[STpeExpr]())))),
+      ancestors = List(STraitCall(
+        "TypeWrapper",
+        List(STraitCall(externalType.nameString, Nil), STraitCall(wrapperName, Nil))
+      )),
       body =  List[SBodyItem](member),
       selfType = Some(SSelfTypeDef("self", Nil)),
       companion = None, annotations = Nil
