@@ -40,22 +40,20 @@ class Wrapping(val global: Global) extends PluginComponent with ScalanParsers {
   }
 
   def updateWrapper(externalType: Symbol, memberName: Name, memberType: Type): STraitDef = {
+    def formMethodDef(name: String, res: Type): SMethodDef = {
+      SMethodDef(
+        name = name,
+        tpeArgs = Nil, argSections = Nil, tpeRes = Some(parseType(res)),
+        isImplicit = false, isOverride = false,
+        overloadId = None,
+        annotations = List(SMethodAnnotation(annotationClass = "External", args = Nil)),
+        body = None,
+        isElemOrCont = false
+      )
+    }
     val member = memberType match {
-      case MethodType(args, res) =>
-        SMethodDef(
-          name = memberName.toString,
-          tpeArgs = Nil, argSections = Nil, tpeRes = None,
-          isImplicit = false, isOverride = false,
-          overloadId = None, annotations = Nil, body = None,
-          isElemOrCont = false
-        )
-      case TypeRef(_,sym,_) =>
-        SValDef(
-          name = memberName.toString,
-          tpe = Some(parseType(sym.tpe)),
-          isLazy = false, isImplicit = false,
-          expr = SEmpty()
-        )
+      case MethodType(args, res) => formMethodDef(memberName.toString, res)
+      case TypeRef(_,sym,_) => formMethodDef(memberName.toString, sym.tpe)
       case _ => throw new NotImplementedError(s"memberType = ${showRaw(memberType)}")
     }
 
