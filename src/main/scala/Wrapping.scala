@@ -40,9 +40,7 @@ class Wrapping(val global: Global) extends PluginComponent {
       case MethodType(args, res) =>
         SMethodDef(
           name = memberName.toString,
-          tpeArgs = List[STpeArg](),
-          argSections = List[SMethodArgs](),
-          tpeRes = None,
+          tpeArgs = Nil, argSections = Nil, tpeRes = None,
           isImplicit = false, isOverride = false,
           overloadId = None, annotations = Nil, body = None,
           isElemOrCont = false
@@ -59,12 +57,11 @@ class Wrapping(val global: Global) extends PluginComponent {
 
     STraitDef(
       name = externalType.nameString,
-      tpeArgs = List[STpeArg](),
+      tpeArgs = Nil,
       ancestors = List(STraitCall("TypeWrapper", List(STraitCall(externalType.nameString, List[STpeExpr]())))),
       body =  List[SBodyItem](member),
-      selfType = Some(SSelfTypeDef("self", List[STpeExpr]())),
-      companion = None,
-      annotations = Nil
+      selfType = Some(SSelfTypeDef("self", Nil)),
+      companion = None, annotations = Nil
     )
   }
 }
