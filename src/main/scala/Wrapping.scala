@@ -3,10 +3,14 @@ package scalan.plugin
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
 import scalan.meta.ScalanAst._
+import scalan.meta.{CodegenConfig, ScalanParsers}
 
 /** The component builds wrappers. */
-class Wrapping(val global: Global) extends PluginComponent {
-  import global._
+class Wrapping(val global: Global) extends PluginComponent with ScalanParsers {
+
+  type Compiler = global.type
+  val compiler: Compiler = global
+  import compiler._
 
   val phaseName: String = "scalan-wrapping"
   override def description: String = "Building wrappers for external types"
@@ -48,7 +52,7 @@ class Wrapping(val global: Global) extends PluginComponent {
       case TypeRef(_,sym,_) =>
         SValDef(
           name = memberName.toString,
-          tpe = Some(STpePrimitive(sym.tpe.toString, "")),
+          tpe = Some(parseType(sym.tpe)),
           isLazy = false, isImplicit = false,
           expr = SEmpty()
         )
@@ -64,5 +68,7 @@ class Wrapping(val global: Global) extends PluginComponent {
       companion = None, annotations = Nil
     )
   }
+
+  def config: CodegenConfig = ScalanPluginConfig.codegenConfig
 }
 
