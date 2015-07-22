@@ -2,6 +2,7 @@ package scalan.plugin
 
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
+import scalan.meta.ScalanAst._
 
 /** The component builds wrappers. */
 class Wrapping(val global: Global) extends PluginComponent {
@@ -16,22 +17,55 @@ class Wrapping(val global: Global) extends PluginComponent {
   def newPhase(prev: Phase) = new StdPhase(prev) {
     def apply(unit: CompilationUnit) {
       if (Set("Cols.scala").contains(unit.source.file.name)) {
-//        print(showRaw(unit.body, printTypes = Some(true)))
         newTraverser().traverse(unit.body)
       }
     }
   }
 
-  def newTraverser(): Traverser = new ForeachTreeTraverser(handleMethodCalls)
+  def newTraverser(): Traverser = new ForeachTreeTraverser(catchWrapperUsage)
 
-  def handleMethodCalls(tree: Tree): Unit = tree match {
-    case Select(objSel @ Select(_, obj), method) if isWrapper(objSel.tpe.typeSymbol) =>
-      print(s"$method should be added to wrapper of ${objSel.tpe.typeSymbol}")
+  def catchWrapperUsage(tree: Tree): Unit = tree match {
+    case sel @ Select(objSel @ Select(_, obj), member) if isWrapper(objSel.tpe.typeSymbol) =>
+      val wrapper = updateWrapper(objSel.tpe.typeSymbol, member, sel.tpe)
+      print(wrapper)
     case _ => ()
   }
 
   def isWrapper(sym: Symbol): Boolean = {
     Set("Arr").contains(sym.nameString)
+  }
+
+  def updateWrapper(externalType: Symbol, memberName: Name, memberType: Type): STraitDef = {
+    val member = memberType match {
+      case MethodType(args, res) =>
+        SMethodDef(
+          name = memberName.toString,
+          tpeArgs = List[STpeArg](),
+          argSections = List[SMethodArgs](),
+          tpeRes = None,
+          isImplicit = false, isOverride = false,
+          overloadId = None, annotations = Nil, body = None,
+          isElemOrCont = false
+        )
+      case TypeRef(_,sym,_) =>
+        SValDef(
+          name = memberName.toString,
+          tpe = Some(STpePrimitive(sym.tpe.toString, "")),
+          isLazy = false, isImplicit = false,
+          expr = SEmpty()
+        )
+      case _ => throw new NotImplementedError(s"memberType = ${showRaw(memberType)}")
+    }
+
+    STraitDef(
+      name = externalType.nameString,
+      tpeArgs = List[STpeArg](),
+      ancestors = List(STraitCall("TypeWrapper", List(STraitCall(externalType.nameString, List[STpeExpr]())))),
+      body =  List[SBodyItem](member),
+      selfType = Some(SSelfTypeDef("self", List[STpeExpr]())),
+      companion = None,
+      annotations = Nil
+    )
   }
 }
 
