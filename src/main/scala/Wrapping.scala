@@ -20,7 +20,9 @@ class Wrapping(val global: Global) extends PluginComponent with ScalanParsers {
 
   def newPhase(prev: Phase) = new StdPhase(prev) {
     def apply(unit: CompilationUnit) {
-      if (Set("Cols.scala").contains(unit.source.file.name)) {
+      val unitName = unit.source.file.name
+
+      if (ScalanPluginConfig.codegenConfig.entityFiles.contains(unitName)) {
         newTraverser().traverse(unit.body)
       }
     }
