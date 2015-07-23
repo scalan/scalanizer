@@ -67,13 +67,22 @@ class Wrapping(val global: Global) extends PluginComponent with ScalanParsers {
       case _ => throw new NotImplementedError(s"memberType = ${showRaw(memberType)}")
     }
     val wrapperName = "S" + externalType.nameString
+    val tpeArgs = externalType.typeParams.map{ param =>
+      STpeArg(
+        name = param.nameString,
+        bound = None, contextBound = Nil, tparams = Nil
+      )
+    }
+    val typeParams = externalType.typeParams.map{ param =>
+      STraitCall(name = param.nameString, tpeSExprs = Nil)
+    }
 
     STraitDef(
       name = wrapperName,
-      tpeArgs = Nil,
+      tpeArgs = tpeArgs,
       ancestors = List(STraitCall(
         "TypeWrapper",
-        List(STraitCall(externalType.nameString, Nil), STraitCall(wrapperName, Nil))
+        List(STraitCall(externalType.nameString, typeParams), STraitCall(wrapperName, typeParams))
       )),
       body =  List[SBodyItem](member),
       selfType = Some(SSelfTypeDef("self", Nil)),
