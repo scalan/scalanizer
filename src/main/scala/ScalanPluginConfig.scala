@@ -25,5 +25,6 @@ object ScalanPluginConfig {
   )
   val typeClasses = List[String]()
   val home = "/tmp/debug"
+  val externalTypes = Set[String]("Arr")
 }
 

@@ -36,7 +36,7 @@ class Wrapping(val global: Global) extends PluginComponent with ScalanParsers {
   }
 
   def isWrapper(sym: Symbol): Boolean = {
-    Set("Arr").contains(sym.nameString)
+    ScalanPluginConfig.externalTypes.contains(sym.nameString)
   }
 
   def updateWrapper(externalType: Symbol, memberName: Name,
