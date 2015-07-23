@@ -182,6 +182,9 @@ object ScalanPluginState {
   val pkgOfModule = Map[String, String](
     "Cols" -> "scalanizer"
   )
+
+  /** Mapping of external type names to their wrappers. */
+  val wrappers = Map[String, STraitDef]()
 }
 
 object ScalanPlugin {

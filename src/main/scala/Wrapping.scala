@@ -30,8 +30,7 @@ class Wrapping(val global: Global) extends PluginComponent with ScalanParsers {
 
   def catchWrapperUsage(tree: Tree): Unit = tree match {
     case sel @ Select(objSel @ Select(_, obj), member) if isWrapper(objSel.tpe.typeSymbol) =>
-      val wrapper = updateWrapper(objSel.tpe.typeSymbol, member, sel.tpe, sel.symbol.originalInfo)
-      print(wrapper)
+      updateWrapper(objSel.tpe.typeSymbol, member, sel.tpe, sel.symbol.originalInfo)
     case _ => ()
   }
 
@@ -40,7 +39,7 @@ class Wrapping(val global: Global) extends PluginComponent with ScalanParsers {
   }
 
   def updateWrapper(externalType: Symbol, memberName: Name,
-                    actualMemberType: Type, originalMemberType: Type): STraitDef = {
+                    actualMemberType: Type, originalMemberType: Type): Unit = {
     def formMethodDef(name: String, args: List[Symbol], res: Type): SMethodDef = {
       val methodArgs = args.map{arg =>
         SMethodArg(
@@ -62,6 +61,7 @@ class Wrapping(val global: Global) extends PluginComponent with ScalanParsers {
         isElemOrCont = false
       )
     }
+
     val memberType = originalMemberType
     val member = memberType match {
       case NullaryMethodType(resultType) => formMethodDef(memberName.toString, Nil, resultType)
@@ -69,28 +69,40 @@ class Wrapping(val global: Global) extends PluginComponent with ScalanParsers {
       case TypeRef(_,sym,_) => formMethodDef(memberName.toString, Nil, sym.tpe)
       case _ => throw new NotImplementedError(s"memberType = ${showRaw(memberType)}")
     }
-    val wrapperName = "S" + externalType.nameString
-    val tpeArgs = externalType.typeParams.map{ param =>
-      STpeArg(
-        name = param.nameString,
-        bound = None, contextBound = Nil, tparams = Nil
-      )
-    }
-    val typeParams = externalType.typeParams.map{ param =>
-      STraitCall(name = param.nameString, tpeSExprs = Nil)
-    }
+    val updatedWrapper = ScalanPluginState.wrappers.get(externalType.nameString) match {
+      case None =>
+        val wrapperName = "S" + externalType.nameString
+        val tpeArgs = externalType.typeParams.map{ param =>
+          STpeArg(
+            name = param.nameString,
+            bound = None, contextBound = Nil, tparams = Nil
+          )
+        }
+        val typeParams = externalType.typeParams.map{ param =>
+          STraitCall(name = param.nameString, tpeSExprs = Nil)
+        }
 
-    STraitDef(
-      name = wrapperName,
-      tpeArgs = tpeArgs,
-      ancestors = List(STraitCall(
-        "TypeWrapper",
-        List(STraitCall(externalType.nameString, typeParams), STraitCall(wrapperName, typeParams))
-      )),
-      body =  List[SBodyItem](member),
-      selfType = Some(SSelfTypeDef("self", Nil)),
-      companion = None, annotations = Nil
-    )
+        STraitDef(
+          name = wrapperName,
+          tpeArgs = tpeArgs,
+          ancestors = List(STraitCall(
+            "TypeWrapper",
+            List(STraitCall(externalType.nameString, typeParams), STraitCall(wrapperName, typeParams))
+          )),
+          body =  List[SBodyItem](member),
+          selfType = Some(SSelfTypeDef("self", Nil)),
+          companion = None, annotations = Nil
+        )
+      case Some(wrapper) =>
+        if (wrapper.body.contains(member)) {
+          wrapper
+        } else {
+          val newBody = member :: wrapper.body
+          wrapper.copy(body = newBody)
+        }
+    }
+    ScalanPluginState.wrappers(externalType.nameString) = updatedWrapper
+//    print(updatedWrapper)
   }
 
   def config: CodegenConfig = ScalanPluginConfig.codegenConfig
