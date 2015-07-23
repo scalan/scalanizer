@@ -30,7 +30,7 @@ class Wrapping(val global: Global) extends PluginComponent with ScalanParsers {
 
   def catchWrapperUsage(tree: Tree): Unit = tree match {
     case sel @ Select(objSel @ Select(_, obj), member) if isWrapper(objSel.tpe.typeSymbol) =>
-      val wrapper = updateWrapper(objSel.tpe.typeSymbol, member, sel.tpe)
+      val wrapper = updateWrapper(objSel.tpe.typeSymbol, member, sel.tpe, sel.symbol.originalInfo)
       print(wrapper)
     case _ => ()
   }
@@ -39,7 +39,8 @@ class Wrapping(val global: Global) extends PluginComponent with ScalanParsers {
     Set("Arr").contains(sym.nameString)
   }
 
-  def updateWrapper(externalType: Symbol, memberName: Name, memberType: Type): STraitDef = {
+  def updateWrapper(externalType: Symbol, memberName: Name,
+                    actualMemberType: Type, originalMemberType: Type): STraitDef = {
     def formMethodDef(name: String, args: List[Symbol], res: Type): SMethodDef = {
       val methodArgs = args.map{arg =>
         SMethodArg(
@@ -61,8 +62,10 @@ class Wrapping(val global: Global) extends PluginComponent with ScalanParsers {
         isElemOrCont = false
       )
     }
+    val memberType = originalMemberType
     val member = memberType match {
-      case MethodType(args, res) => formMethodDef(memberName.toString, args, res)
+      case NullaryMethodType(resultType) => formMethodDef(memberName.toString, Nil, resultType)
+      case MethodType(args, resultType) => formMethodDef(memberName.toString, args, resultType)
       case TypeRef(_,sym,_) => formMethodDef(memberName.toString, Nil, sym.tpe)
       case _ => throw new NotImplementedError(s"memberType = ${showRaw(memberType)}")
     }
