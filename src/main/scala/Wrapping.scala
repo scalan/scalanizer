@@ -1,5 +1,7 @@
 package scalan.plugin
 
+import java.io.File
+import scalan.util.FileUtil
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
 import scalan.meta.ScalanAst._
@@ -190,16 +192,33 @@ class WrapBackend(val global: Global) extends PluginComponent with Backend {
 
   def newPhase(prev: Phase) = new StdPhase(prev) {
     override def run(): Unit = {
-      ScalanPluginState.wrappers map { wrapperNameAndAst =>
-        val (wrapperName, wrapperAst) = wrapperNameAndAst
-        implicit val genCtx = GenCtx(null, true)
-        val scalaAst = genTrait(wrapperAst)
-
-        print(showCode(scalaAst))
-        scalaAst
+      val wrappers = ScalanPluginState.wrappers map { wrapperNameAndAst =>
+        val (_, wrapperAst) = wrapperNameAndAst
+        wrapperAst
       }
+      val typeWrappers = STraitDef(
+        name = "Wrappers",
+        tpeArgs = Nil,
+        ancestors = List(STraitCall("Base", Nil), STraitCall("TypeWrappers", Nil)),
+        body = wrappers.toList,
+        selfType = Some(SSelfTypeDef("self", Nil)),
+        companion = None, annotations = Nil
+      )
+      implicit val genCtx = GenCtx(null, true)
+      val scalaAst = genTrait(typeWrappers)
+
+      saveWrappersCode(showCode(scalaAst))
     }
 
     def apply(unit: CompilationUnit): Unit = ()
+  }
+
+  def saveWrappersCode(wrapperCode: String) = {
+    val folder = ScalanPluginConfig.home
+    val wrapperFile = FileUtil.file(folder, "Wrappers.scala")
+
+    wrapperFile.mkdirs()
+
+    FileUtil.write(wrapperFile, wrapperCode)
   }
 }
