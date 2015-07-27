@@ -127,8 +127,9 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
       ScalanPluginState.wrappers map { wrapperNameAndAst =>
         /** Transformations of Wrappers by adding of Elem, Cont and other things. */
         val pipeline = scala.Function.chain(Seq(
-          addWrappedValue _,
-          addElemsToMethods _
+          addElemsToWrapper _,
+          addElemsToMethods _,
+          addWrappedValue _
         ))
         val (_, enrichedWrapper) = pipeline(wrapperNameAndAst)
 
@@ -137,6 +138,14 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
     }
 
     def apply(unit: CompilationUnit): Unit = ()
+  }
+
+  def addElemsToWrapper(wrapperNameAndAst: (String, STraitDef)): (String, STraitDef) = {
+    val (wrapperName, wrapperAst) = wrapperNameAndAst
+    val elems = genElemsByTypeArgs(wrapperAst.tpeArgs)
+    val newWrapperAst = wrapperAst.copy(body = elems ++ wrapperAst.body)
+
+    (wrapperName, newWrapperAst)
   }
 
   def addWrappedValue(wrapperNameAndAst: (String, STraitDef)): (String, STraitDef) = {

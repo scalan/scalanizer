@@ -169,7 +169,7 @@ trait Enricher {
     tpeArgs.filter(!_.tparams.isEmpty)
   }
 
-  def genEntityImpicits(module: SEntityModuleDef) = {
+  def genElemsByTypeArgs(tpeArgs: List[STpeArg]): List[SMethodDef] = {
     def genImplicit(tpeArg: STpeArg, methodPrefix: String, resPrefix: String) =
       SMethodDef(name = methodPrefix + tpeArg.name,
         tpeArgs = Nil, argSections = Nil,
@@ -181,14 +181,15 @@ trait Enricher {
     def genElem(tpeArg: STpeArg) = genImplicit(tpeArg, "ee", "Elem")
     def genCont(tpeArg: STpeArg) = genImplicit(tpeArg, "ce", "Cont")
 
-    def genImplicitDefs(tpeArgs: List[STpeArg]): List[SMethodDef] = {
-      tpeArgs.map{tpeArg =>
-        if (tpeArg.tparams.isEmpty) genElem(tpeArg)
-        else genCont(tpeArg)
-      }
+    tpeArgs.map{tpeArg =>
+      if (tpeArg.tparams.isEmpty) genElem(tpeArg)
+      else genCont(tpeArg)
     }
+  }
 
-    val bodyWithImpElems = genImplicitDefs(module.entityOps.tpeArgs) ++ module.entityOps.body
+  def genEntityImpicits(module: SEntityModuleDef) = {
+
+    val bodyWithImpElems = genElemsByTypeArgs(module.entityOps.tpeArgs) ++ module.entityOps.body
     val newEntity = module.entityOps.copy(body = bodyWithImpElems)
 
     module.copy(entityOps = newEntity, entities = List(newEntity))
