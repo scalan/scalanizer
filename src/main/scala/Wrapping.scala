@@ -104,14 +104,13 @@ class Wrapping(val global: Global) extends PluginComponent with ScalanParsers {
         }
     }
     ScalanPluginState.wrappers(externalType.nameString) = updatedWrapper
-//    print(updatedWrapper)
   }
 
   def config: CodegenConfig = ScalanPluginConfig.codegenConfig
 }
 
 /** Virtualization of type wrappers. */
-class VirtWrappers(val global: Global) extends PluginComponent {
+class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
 
   type Compiler = global.type
   val compiler: Compiler = global
@@ -125,11 +124,34 @@ class VirtWrappers(val global: Global) extends PluginComponent {
 
   def newPhase(prev: Phase) = new StdPhase(prev) {
     override def run(): Unit = {
-      ScalanPluginState.wrappers map { wrapper =>
-        print(wrapper)
+      ScalanPluginState.wrappers map { wrapperNameAndAst =>
+        /** Transformations of Wrappers by adding of Elem, Cont and other things. */
+        val pipeline = scala.Function.chain(Seq(
+          addWrappedValue _
+        ))
+        val (_, enrichedWrapper) = pipeline(wrapperNameAndAst)
+
+        enrichedWrapper
       }
     }
 
     def apply(unit: CompilationUnit): Unit = ()
+  }
+
+  def addWrappedValue(wrapperNameAndAst: (String, STraitDef)): (String, STraitDef) = {
+    val (wrapperName, wrapperAst) = wrapperNameAndAst
+    val resType = wrapperAst.ancestors.collect{
+      case STraitCall("TypeWrapper", List(importedType, _)) => importedType
+    }.headOption
+    val wrappedValueOfBaseType = SMethodDef(
+      name = "wrappedValueOfBaseType",
+      tpeArgs = Nil, argSections = Nil,
+      tpeRes = resType,
+      isImplicit = false, isOverride = false, overloadId = None,
+      annotations = Nil, body = None, isElemOrCont= false
+    )
+    val newWrapperAst = wrapperAst.copy(body = wrappedValueOfBaseType :: wrapperAst.body)
+
+    (wrapperName, newWrapperAst)
   }
 }

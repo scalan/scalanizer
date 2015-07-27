@@ -192,7 +192,7 @@ object ScalanPlugin {
   def components(global: Global) = {
     val result = scala.collection.mutable.ListBuffer[PluginComponent](
       new Wrapping(global),
-      new VirtWrappers(global)
+      new WrapEnricher(global)
 //      new CheckExtensions(global)
 //      ,new ScalanPluginComponent(global)
 //      ,new Debug(global)
