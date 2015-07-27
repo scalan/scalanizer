@@ -46,7 +46,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with ScalanParser
       val methodArgs = args.map{arg =>
         SMethodArg(
           impFlag = false, overFlag = false,
-          name = arg.toString,
+          name = arg.nameString,
           tpe = parseType(arg.tpe),
           default = None, annotations = Nil, isElemOrCont = false
         )
