@@ -110,3 +110,26 @@ class Wrapping(val global: Global) extends PluginComponent with ScalanParsers {
   def config: CodegenConfig = ScalanPluginConfig.codegenConfig
 }
 
+/** Virtualization of type wrappers. */
+class VirtWrappers(val global: Global) extends PluginComponent {
+
+  type Compiler = global.type
+  val compiler: Compiler = global
+  import compiler._
+
+  val phaseName: String = "scalan-virt-wrap"
+  override def description: String = "Virtualization of type wrappers."
+
+  val runsAfter = List[String]("scalan-wrapping")
+  override val runsRightAfter: Option[String] = Some("scalan-wrapping")
+
+  def newPhase(prev: Phase) = new StdPhase(prev) {
+    override def run(): Unit = {
+      ScalanPluginState.wrappers map { wrapper =>
+        print(wrapper)
+      }
+    }
+
+    def apply(unit: CompilationUnit): Unit = ()
+  }
+}

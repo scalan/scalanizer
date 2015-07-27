@@ -191,10 +191,11 @@ object ScalanPlugin {
   /** Yields the list of Components to be executed in this plugin */
   def components(global: Global) = {
     val result = scala.collection.mutable.ListBuffer[PluginComponent](
+      new Wrapping(global),
+      new VirtWrappers(global)
 //      new CheckExtensions(global)
 //      ,new ScalanPluginComponent(global)
 //      ,new Debug(global)
-      new Wrapping(global)
     )
 
     result.toList
