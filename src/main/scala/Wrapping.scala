@@ -6,13 +6,13 @@ import scalan.meta.ScalanAst._
 import scalan.meta.{CodegenConfig, ScalanParsers}
 
 /** The component builds wrappers. */
-class Wrapping(val global: Global) extends PluginComponent with ScalanParsers {
+class WrapFrontend(val global: Global) extends PluginComponent with ScalanParsers {
 
   type Compiler = global.type
   val compiler: Compiler = global
   import compiler._
 
-  val phaseName: String = "scalan-wrapping"
+  val phaseName: String = "scalan-wrap-frontend"
   override def description: String = "Building wrappers for external types"
 
   val runsAfter = List[String]("typer")
@@ -116,23 +116,23 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
   val compiler: Compiler = global
   import compiler._
 
-  val phaseName: String = "scalan-virt-wrap"
+  val phaseName: String = "scalan-wrap-enricher"
   override def description: String = "Virtualization of type wrappers."
 
-  val runsAfter = List[String]("scalan-wrapping")
-  override val runsRightAfter: Option[String] = Some("scalan-wrapping")
+  val runsAfter = List[String]("scalan-wrap-frontend")
+  override val runsRightAfter: Option[String] = Some("scalan-wrap-frontend")
 
   def newPhase(prev: Phase) = new StdPhase(prev) {
     override def run(): Unit = {
-      ScalanPluginState.wrappers map { wrapperNameAndAst =>
+      ScalanPluginState.wrappers transform { (name, wrapper) =>
         /** Transformations of Wrappers by adding of Elem, Cont and other things. */
         val pipeline = scala.Function.chain(Seq(
           addElemsToWrapper _,
           addElemsToMethods _,
           addWrappedValue _
         ))
-        val (_, enrichedWrapper) = pipeline(wrapperNameAndAst)
-
+        val enrichedWrapper = pipeline(wrapper)
+        //print(enrichedWrapper)
         enrichedWrapper
       }
     }
@@ -140,17 +140,15 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
     def apply(unit: CompilationUnit): Unit = ()
   }
 
-  def addElemsToWrapper(wrapperNameAndAst: (String, STraitDef)): (String, STraitDef) = {
-    val (wrapperName, wrapperAst) = wrapperNameAndAst
-    val elems = genElemsByTypeArgs(wrapperAst.tpeArgs)
-    val newWrapperAst = wrapperAst.copy(body = elems ++ wrapperAst.body)
+  def addElemsToWrapper(wrapper: STraitDef): STraitDef = {
+    val elems = genElemsByTypeArgs(wrapper.tpeArgs)
+    val newWrapper = wrapper.copy(body = elems ++ wrapper.body)
 
-    (wrapperName, newWrapperAst)
+    newWrapper
   }
 
-  def addWrappedValue(wrapperNameAndAst: (String, STraitDef)): (String, STraitDef) = {
-    val (wrapperName, wrapperAst) = wrapperNameAndAst
-    val resType = wrapperAst.ancestors.collect{
+  def addWrappedValue(wrapper: STraitDef): STraitDef = {
+    val resType = wrapper.ancestors.collect{
       case STraitCall("TypeWrapper", List(importedType, _)) => importedType
     }.headOption
     val wrappedValueOfBaseType = SMethodDef(
@@ -160,18 +158,48 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
       isImplicit = false, isOverride = false, overloadId = None,
       annotations = Nil, body = None, isElemOrCont= false
     )
-    val newWrapperAst = wrapperAst.copy(body = wrappedValueOfBaseType :: wrapperAst.body)
+    val newWrapper = wrapper.copy(body = wrappedValueOfBaseType :: wrapper.body)
 
-    (wrapperName, newWrapperAst)
+    newWrapper
   }
 
-  def addElemsToMethods(wrapperNameAndAst: (String, STraitDef)): (String, STraitDef) = {
-    val (wrapperName, wrapperAst) = wrapperNameAndAst
-    val newBody = wrapperAst.body.map {bodyItem => bodyItem match {
+  def addElemsToMethods(wrapper: STraitDef): STraitDef = {
+    val newBody = wrapper.body.map {bodyItem => bodyItem match {
       case m: SMethodDef => genImplicitMethodArgs(m)
       case _ => bodyItem
     }}
 
-    (wrapperName, wrapperAst.copy(body = newBody))
+    wrapper.copy(body = newBody)
+  }
+}
+
+/** Generating of Scala AST for wrappers. */
+class WrapBackend(val global: Global) extends PluginComponent with Backend {
+
+  type Compiler = global.type
+  val compiler: Compiler = global
+
+  import compiler._
+
+  val phaseName: String = "scalan-wrap-backend"
+
+  override def description: String = "Generating of Scala AST for wrappers."
+
+  val runsAfter = List[String]("scalan-wrap-enricher")
+  override val runsRightAfter: Option[String] = Some("scalan-wrap-enricher")
+
+  def newPhase(prev: Phase) = new StdPhase(prev) {
+    override def run(): Unit = {
+      ScalanPluginState.wrappers map { wrapperNameAndAst =>
+        val (wrapperName, wrapperAst) = wrapperNameAndAst
+        implicit val genCtx = GenCtx(null, true)
+        val scalaAst = genTrait(wrapperAst)
+
+        print(showCode(scalaAst))
+        scalaAst
+      }
+    }
+
+    def apply(unit: CompilationUnit): Unit = ()
   }
 }
