@@ -219,8 +219,8 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
   }
 
   def saveWrappersCode(wrapperCode: String) = {
-    val folder = ScalanPluginConfig.home
-    val wrapperFile = FileUtil.file(folder, "Wrappers.scala")
+    val folder = ScalanPluginConfig.home + "/src/main/scala/wrappers"
+    val wrapperFile = FileUtil.file(folder, "MyArrWrappers.scala")
 
     wrapperFile.mkdirs()
 

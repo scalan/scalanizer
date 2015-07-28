@@ -24,7 +24,7 @@ object ScalanPluginConfig {
     isAlreadyRep = false
   )
   val typeClasses = List[String]()
-  val home = "/tmp/debug"
-  val externalTypes = Set[String]("Arr")
+  val home = "/home/mgekk/scalan/scalanizer-demo"
+  val externalTypes = Set[String]("MyArr")
 }
 
