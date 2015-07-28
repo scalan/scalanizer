@@ -176,7 +176,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
 }
 
 /** Generating of Scala AST for wrappers. */
-class WrapBackend(val global: Global) extends PluginComponent with Backend {
+class WrapBackend(val global: Global) extends PluginComponent with Enricher with Backend {
 
   type Compiler = global.type
   val compiler: Compiler = global
@@ -196,18 +196,23 @@ class WrapBackend(val global: Global) extends PluginComponent with Backend {
         val (_, wrapperAst) = wrapperNameAndAst
         wrapperAst
       }
-      val typeWrappers = STraitDef(
+      val wrappersModule = STraitDef(
         name = "Wrappers",
         tpeArgs = Nil,
         ancestors = List(STraitCall("Base", Nil), STraitCall("TypeWrappers", Nil)),
         body = wrappers.toList,
-        selfType = Some(SSelfTypeDef("self", Nil)),
+        selfType = Some(SSelfTypeDef("self", List(STraitCall("WrappersDsl", Nil)))),
         companion = None, annotations = Nil
       )
+      val wrappersExtensions = genExtensions(wrappersModule.name,
+        Some(SSelfTypeDef("self", List(STraitCall("Wrappers", Nil)))),
+        Nil
+      )
       implicit val genCtx = GenCtx(null, true)
-      val scalaAst = genTrait(typeWrappers)
+      val wrappersAst = wrappersModule :: wrappersExtensions map (genTrait(_))
+      val wrappersPackage = q"package scalan.wrappers { ..$wrappersAst }"
 
-      saveWrappersCode(showCode(scalaAst))
+      saveWrappersCode(showCode(wrappersPackage))
     }
 
     def apply(unit: CompilationUnit): Unit = ()

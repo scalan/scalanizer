@@ -62,14 +62,20 @@ trait Enricher {
     module.copy(entityOps = newEntity, entities = List(newEntity))
   }
 
-  def selfComponentsWithSuffix(module: SEntityModuleDef, suffix: String): List[STpeExpr] = {
-    module.selfType match {
+  def selfComponentsWithSuffix(moduleName: String,
+                               selfType: Option[SSelfTypeDef],
+                               suffix: String): List[STpeExpr] = {
+    selfType match {
       case Some(selfTypeDef) => selfTypeDef.components.map{(c: STpeExpr) => c match {
         case tr: STraitCall => tr.copy(name = c.name + suffix)
         case _ => c
       }}
-      case _ => List(STraitCall(module.name + suffix, List()))
+      case _ => List(STraitCall(moduleName + suffix, List()))
     }
+  }
+
+  def selfModuleComponents(module: SEntityModuleDef, suffix: String): List[STpeExpr] = {
+    selfComponentsWithSuffix(module.name, module.selfType, suffix)
   }
 
   /** Puts the module to the cake. For example, trait Segments is transformed to
@@ -77,7 +83,7 @@ trait Enricher {
   def updateSelf(module: SEntityModuleDef) = {
     module.copy(selfType = Some(SSelfTypeDef(
       name = "self",
-      components = selfComponentsWithSuffix(module, "Dsl")
+      components = selfModuleComponents(module, "Dsl")
     )))
   }
 
@@ -325,18 +331,21 @@ trait Enricher {
     )
   }
 
-  def genExtensions(module: SEntityModuleDef): List[STraitDef] = {
+  def genExtensions(moduleName: String,
+                    selfModuleType: Option[SSelfTypeDef],
+                    moduleAncestors: List[STraitCall]
+                    ): List[STraitDef] = {
     val boilerplateSuffix = Map("Dsl" -> "Abs", "DslSeq" -> "Seq", "DslExp" -> "Exp")
-    val extensions = ScalanPluginState.extMap(module.name)
+    val extensions = ScalanPluginState.extMap(moduleName)
 
     (extensions map {extName =>
-      val extSuffix = extName.stripPrefix(module.name)
+      val extSuffix = extName.stripPrefix(moduleName)
       val selfType: SSelfTypeDef = SSelfTypeDef(
         name = "self",
-        components = selfComponentsWithSuffix(module, extSuffix)
+        components = selfComponentsWithSuffix(moduleName, selfModuleType, extSuffix)
       )
-      val boilerplate = STraitCall(module.name + boilerplateSuffix(extSuffix), Nil)
-      val ancestors: List[STraitCall] = module.ancestors map {
+      val boilerplate = STraitCall(moduleName + boilerplateSuffix(extSuffix), Nil)
+      val ancestors: List[STraitCall] = moduleAncestors map {
         ancestor => ancestor.copy(name = ancestor.name + extSuffix)
       }
 
@@ -350,6 +359,10 @@ trait Enricher {
         annotations = Nil
       )
     }).toList
+  }
+
+  def genModuleExtensions(module: SEntityModuleDef): List[STraitDef] = {
+    genExtensions(module.name, module.selfType, module.ancestors)
   }
 
   /** ClassTags are removed because they can be extracted from Elems. */
