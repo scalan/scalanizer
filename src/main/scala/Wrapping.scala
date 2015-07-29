@@ -201,8 +201,10 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
       ScalanPluginState.wrappers foreach { moduleNameAndAst =>
         val (_, enrichedAst) = moduleNameAndAst
         implicit val genCtx = GenCtx(module = enrichedAst, toRep = true)
-        val scalaAst = List(genModule(enrichedAst))
-        val wrappersPackage = q"package wrappers { ..$scalaAst }"
+        val scalaAst = genModule(enrichedAst)
+        val imports = enrichedAst.imports.map(genImport(_))
+        val pkgStats = imports :+ scalaAst
+        val wrappersPackage = PackageDef(Ident(TermName("wrappers")), pkgStats)
 
         saveWrappersCode(enrichedAst.name, showCode(wrappersPackage))
       }
