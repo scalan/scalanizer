@@ -211,7 +211,8 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
         implicit val genCtx = GenCtx(module = module, toRep = true)
         val scalaAst = genModule(module)
         val imports = module.imports.map(genImport(_))
-        val extensions = genExtensions(module.name, module.selfType, Nil).map(
+        val selfType = Some(SSelfTypeDef("self", List(STraitCall("Wrappers", Nil))))
+        val extensions = genExtensions(module.name, selfType, Nil).map(
           extTrait => genTrait(extTrait)(GenCtx(module, false))
         )
         val pkgStats = imports ++ (scalaAst :: extensions)
