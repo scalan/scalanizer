@@ -182,8 +182,7 @@ object ScalanPluginState {
 
   /** Mapping of module name to the package where it is defined. */
   val pkgOfModule = Map[String, String](
-    "Cols" -> "scalanizer",
-    "MyArr" -> "scalanizer"
+    "Cols" -> "scalanizer"
   )
 
   /** Mapping of external type names to their wrappers. */

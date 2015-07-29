@@ -96,10 +96,16 @@ class WrapFrontend(val global: Global) extends PluginComponent with ScalanParser
           selfType = Some(SSelfTypeDef("self", Nil)),
           companion = None, annotations = Nil
         )
+        val imports = List(
+          SImportStat("scalan._"),
+          SImportStat("scalan.common.Default"),
+          SImportStat("impl._"),
+          SImportStat(externalType.fullName)
+        )
 
         SEntityModuleDef(
           packageName = "wrappers",
-          imports = Nil,
+          imports = imports,
           name = wrapperName + "s",
           entityRepSynonym = None,
           entityOps = entity, entities = List(entity),
@@ -131,9 +137,11 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
 
   type Compiler = global.type
   val compiler: Compiler = global
+
   import compiler._
 
   val phaseName: String = "scalan-wrap-enricher"
+
   override def description: String = "Virtualization of type wrappers."
 
   val runsAfter = List[String]("scalan-wrap-frontend")
@@ -142,13 +150,13 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
   def newPhase(prev: Phase) = new StdPhase(prev) {
     override def run(): Unit = {
       ScalanPluginState.wrappers transform { (name, module) =>
+
         /** Transformations of Wrappers by adding of Elem, Cont and other things. */
         val pipeline = scala.Function.chain(Seq(
           addWrappedValue _,
           addModuleAncestors _,
           updateSelf _,
           repSynonym _,
-          addImports _,
           checkEntityCompanion _,
           genEntityImpicits _, genMethodsImplicits _
         ))
@@ -162,7 +170,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
   }
 
   def addWrappedValue(module: SEntityModuleDef): SEntityModuleDef = {
-    val resType = module.entityOps.ancestors.collect{
+    val resType = module.entityOps.ancestors.collect {
       case STraitCall("TypeWrapper", List(importedType, _)) => importedType
     }.headOption
     val wrappedValueOfBaseType = SMethodDef(
@@ -170,7 +178,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
       tpeArgs = Nil, argSections = Nil,
       tpeRes = resType,
       isImplicit = false, isOverride = false, overloadId = None,
-      annotations = Nil, body = None, isElemOrCont= false
+      annotations = Nil, body = None, isElemOrCont = false
     )
     val updatedEntity = module.entityOps.copy(
       body = wrappedValueOfBaseType :: module.entityOps.body
