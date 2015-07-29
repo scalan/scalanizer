@@ -186,7 +186,7 @@ object ScalanPluginState {
   )
 
   /** Mapping of external type names to their wrappers. */
-  val wrappers = Map[String, STraitDef]()
+  val wrappers = Map[String, SEntityModuleDef]()
 }
 
 object ScalanPlugin {

@@ -73,9 +73,9 @@ class WrapFrontend(val global: Global) extends PluginComponent with ScalanParser
       case TypeRef(_,sym,_) => formMethodDef(memberName.toString, Nil, sym.tpe)
       case _ => throw new NotImplementedError(s"memberType = ${showRaw(memberType)}")
     }
-    val updatedWrapper = ScalanPluginState.wrappers.get(externalType.nameString) match {
+    val updatedModule = ScalanPluginState.wrappers.get(externalType.nameString) match {
       case None =>
-        val wrapperName = "S" + externalType.nameString
+        val wrapperName = externalType.nameString + "Wrapper"
         val tpeArgs = externalType.typeParams.map{ param =>
           STpeArg(
             name = param.nameString,
@@ -85,8 +85,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with ScalanParser
         val typeParams = externalType.typeParams.map{ param =>
           STraitCall(name = param.nameString, tpeSExprs = Nil)
         }
-
-        STraitDef(
+        val entity = STraitDef(
           name = wrapperName,
           tpeArgs = tpeArgs,
           ancestors = List(STraitCall(
@@ -97,15 +96,31 @@ class WrapFrontend(val global: Global) extends PluginComponent with ScalanParser
           selfType = Some(SSelfTypeDef("self", Nil)),
           companion = None, annotations = Nil
         )
-      case Some(wrapper) =>
-        if (wrapper.body.contains(member)) {
-          wrapper
+
+        SEntityModuleDef(
+          packageName = "wrappers",
+          imports = Nil,
+          name = wrapperName + "s",
+          entityRepSynonym = None,
+          entityOps = entity, entities = List(entity),
+          concreteSClasses = Nil, methods = Nil,
+          selfType = Some(SSelfTypeDef(
+            name = "self",
+            components = List(STraitCall("Wrappers", Nil))
+          )),
+          body = Nil, seqDslImpl = None,
+          ancestors = List(STraitCall("TypeWrappers", Nil))
+        )
+      case Some(module) =>
+        if (module.entityOps.body.contains(member)) {
+          module
         } else {
-          val newBody = member :: wrapper.body
-          wrapper.copy(body = newBody)
+          val updatedBody = member :: module.entityOps.body
+          val updatedEntity = module.entityOps.copy(body = updatedBody)
+          module.copy(entityOps = updatedEntity, entities = List(updatedEntity))
         }
     }
-    ScalanPluginState.wrappers(externalType.nameString) = updatedWrapper
+    ScalanPluginState.wrappers(externalType.nameString) = updatedModule
   }
 
   def config: CodegenConfig = ScalanPluginConfig.codegenConfig
@@ -126,31 +141,29 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
 
   def newPhase(prev: Phase) = new StdPhase(prev) {
     override def run(): Unit = {
-      ScalanPluginState.wrappers transform { (name, wrapper) =>
+      ScalanPluginState.wrappers transform { (name, module) =>
         /** Transformations of Wrappers by adding of Elem, Cont and other things. */
         val pipeline = scala.Function.chain(Seq(
-          addElemsToWrapper _,
-          addElemsToMethods _,
-          addWrappedValue _
+          addWrappedValue _,
+          composeParentWithExt _,
+          addModuleAncestors _,
+          updateSelf _,
+          repSynonym _,
+          addImports _,
+          checkEntityCompanion _,
+          genEntityImpicits _, genMethodsImplicits _
         ))
-        val enrichedWrapper = pipeline(wrapper)
+        val enrichedModule = pipeline(module)
         //print(enrichedWrapper)
-        enrichedWrapper
+        enrichedModule
       }
     }
 
     def apply(unit: CompilationUnit): Unit = ()
   }
 
-  def addElemsToWrapper(wrapper: STraitDef): STraitDef = {
-    val elems = genElemsByTypeArgs(wrapper.tpeArgs)
-    val newWrapper = wrapper.copy(body = elems ++ wrapper.body)
-
-    newWrapper
-  }
-
-  def addWrappedValue(wrapper: STraitDef): STraitDef = {
-    val resType = wrapper.ancestors.collect{
+  def addWrappedValue(module: SEntityModuleDef): SEntityModuleDef = {
+    val resType = module.entityOps.ancestors.collect{
       case STraitCall("TypeWrapper", List(importedType, _)) => importedType
     }.headOption
     val wrappedValueOfBaseType = SMethodDef(
@@ -160,20 +173,14 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
       isImplicit = false, isOverride = false, overloadId = None,
       annotations = Nil, body = None, isElemOrCont= false
     )
-    val newWrapper = wrapper.copy(body = wrappedValueOfBaseType :: wrapper.body)
+    val updatedEntity = module.entityOps.copy(
+      body = wrappedValueOfBaseType :: module.entityOps.body
+    )
 
-    newWrapper
-  }
-
-  def addElemsToMethods(wrapper: STraitDef): STraitDef = {
-    val newBody = wrapper.body.map {bodyItem => bodyItem match {
-      case m: SMethodDef => genImplicitMethodArgs(m)
-      case _ => bodyItem
-    }}
-
-    wrapper.copy(body = newBody)
+    module.copy(entityOps = updatedEntity, entities = List(updatedEntity))
   }
 }
+
 
 /** Generating of Scala AST for wrappers. */
 class WrapBackend(val global: Global) extends PluginComponent with Enricher with Backend {
@@ -192,35 +199,22 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
 
   def newPhase(prev: Phase) = new StdPhase(prev) {
     override def run(): Unit = {
-      val wrappers = ScalanPluginState.wrappers map { wrapperNameAndAst =>
-        val (_, wrapperAst) = wrapperNameAndAst
-        wrapperAst
-      }
-      val wrappersModule = STraitDef(
-        name = "Wrappers",
-        tpeArgs = Nil,
-        ancestors = List(STraitCall("Base", Nil), STraitCall("TypeWrappers", Nil)),
-        body = wrappers.toList,
-        selfType = Some(SSelfTypeDef("self", List(STraitCall("WrappersDsl", Nil)))),
-        companion = None, annotations = Nil
-      )
-      val wrappersExtensions = genExtensions(wrappersModule.name,
-        Some(SSelfTypeDef("self", List(STraitCall("Wrappers", Nil)))),
-        Nil
-      )
-      implicit val genCtx = GenCtx(null, true)
-      val wrappersAst = wrappersModule :: wrappersExtensions map (genTrait(_))
-      val wrappersPackage = q"package scalan.wrappers { ..$wrappersAst }"
+      ScalanPluginState.wrappers foreach { moduleNameAndAst =>
+        val (_, enrichedAst) = moduleNameAndAst
+        implicit val genCtx = GenCtx(module = enrichedAst, toRep = true)
+        val scalaAst = genModule(enrichedAst)
+        val wrappersPackage = q"package wrappers { $scalaAst }"
 
-      saveWrappersCode(showCode(wrappersPackage))
+        saveWrappersCode(enrichedAst.name, showCode(wrappersPackage))
+      }
     }
 
     def apply(unit: CompilationUnit): Unit = ()
   }
 
-  def saveWrappersCode(wrapperCode: String) = {
+  def saveWrappersCode(name: String, wrapperCode: String) = {
     val folder = ScalanPluginConfig.home + "/src/main/scala/wrappers"
-    val wrapperFile = FileUtil.file(folder, "MyArrWrappers.scala")
+    val wrapperFile = FileUtil.file(folder, name + ".scala")
 
     wrapperFile.mkdirs()
 
