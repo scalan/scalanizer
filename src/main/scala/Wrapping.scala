@@ -158,7 +158,8 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
           updateSelf _,
           repSynonym _,
           checkEntityCompanion _,
-          genEntityImpicits _, genMethodsImplicits _
+          genEntityImpicits _, genMethodsImplicits _,
+          defaultMethod _
         ))
         val enrichedModule = pipeline(module)
         //print(enrichedWrapper)
@@ -185,6 +186,22 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
     )
 
     module.copy(entityOps = updatedEntity, entities = List(updatedEntity))
+  }
+
+  def defaultMethod(module: SEntityModuleDef): SEntityModuleDef = {
+    val extType = module.entityOps.ancestors.collect {
+      case STraitCall("TypeWrapper", List(importedType, _)) => importedType
+    }
+    val defaultOfWrapper = SMethodDef(
+      name = "DefaultOf" + extType.head.name,
+      tpeArgs = module.entityOps.tpeArgs,
+      argSections = Nil,
+      tpeRes = Some(STraitCall("Default", extType)),
+      isImplicit = false, isOverride = false, overloadId = None,
+      annotations = Nil, body = Some(SIdent("$qmark$qmark$qmark")),
+      isElemOrCont = false
+    )
+    module.copy(methods = defaultOfWrapper :: module.methods)
   }
 }
 

@@ -20,9 +20,9 @@ trait Backend extends PatternMatching {
   }
 
   def genModule(module: SEntityModuleDef)(implicit ctx: GenCtx): Tree = {
-    val newstats = /*genDefaultElem(module) :: */
-      genEntity(module.entityOps) ::
-      (genConcreteClasses(module.concreteSClasses) ++ genCompanions(module))
+    val methods = module.methods.map(genMethod(_))
+    val newstats =  genEntity(module.entityOps) ::
+      (genConcreteClasses(module.concreteSClasses) ++ genCompanions(module) ++ methods)
     val newSelf = genModuleSelf(module)
     val name = TypeName(module.name)
     val moduleParents = genParents(module.ancestors)

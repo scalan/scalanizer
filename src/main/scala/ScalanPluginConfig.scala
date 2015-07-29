@@ -23,7 +23,7 @@ object ScalanPluginConfig {
     entityTypeSynonyms = Map[String, String](),
     isAlreadyRep = false
   )
-  val typeClasses = List[String]()
+  val typeClasses = List[String]("Default")
   val home = "/home/mgekk/scalan/scalanizer-demo"
   val externalTypes = Set[String]("MyArr")
 }
