@@ -206,6 +206,10 @@ trait Backend extends PatternMatching {
   }
 
   def genSelf(selfType: Option[SSelfTypeDef])(implicit ctx: GenCtx) = selfType match {
+    case Some(SSelfTypeDef(name, Nil)) =>
+      val flags = Flag.PRIVATE | Flag.LAZY
+      val mods = Modifiers(NoFlags, tpnme.EMPTY, List())
+      ValDef(mods, TermName(name), EmptyTree, EmptyTree)
     case Some(selfDef: SSelfTypeDef) => q"val self: ${genTypeByName(selfDef.tpe)}"
     case None => noSelfType
   }
