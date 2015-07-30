@@ -226,6 +226,7 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
       ScalanPluginState.wrappers foreach { moduleNameAndAst =>
         val (_, module) = moduleNameAndAst
         implicit val genCtx = GenCtx(module = module, toRep = true)
+        /** Form source code of the wrapper and store it. */
         val scalaAst = genModule(module)
         val imports = module.imports.map(genImport(_))
         val selfType = Some(SSelfTypeDef("self", List(STraitCall("Wrappers", Nil))))
@@ -234,20 +235,34 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
         )
         val pkgStats = imports ++ (scalaAst :: extensions)
         val wrappersPackage = PackageDef(Ident(TermName("wrappers")), pkgStats)
-
         saveWrappersCode(module.name, showCode(wrappersPackage))
+
+        /** Invoking of Scalan META to produce boilerplate code for the wrapper. */
+        val boilerplate = genWrapperBoilerplate(module)
+        saveWrapperBoilerplate(module.name, boilerplate)
       }
     }
 
     def apply(unit: CompilationUnit): Unit = ()
   }
 
-  def saveWrappersCode(name: String, wrapperCode: String) = {
-    val folder = ScalanPluginConfig.home + "/src/main/scala/wrappers"
-    val wrapperFile = FileUtil.file(folder, name + ".scala")
+  def genWrapperBoilerplate(module: SEntityModuleDef): String = {
+    val gen = new scalan.meta.ScalanCodegen.EntityFileGenerator(
+      module, ScalanPluginConfig.codegenConfig)
+    val implCode = gen.getImplFile
 
+    implCode
+  }
+
+  def getWrappersHome = ScalanPluginConfig.home + "/src/main/scala/wrappers"
+  def saveWrappersCode(fileName: String, wrapperCode: String) = {
+    val wrapperFile = FileUtil.file(getWrappersHome, fileName + ".scala")
     wrapperFile.mkdirs()
-
     FileUtil.write(wrapperFile, wrapperCode)
+  }
+  def saveWrapperBoilerplate(fileName: String, boilerplate: String): Unit = {
+    val boilerplateFile = FileUtil.file(getWrappersHome, "impl", fileName + "Impl.scala")
+    boilerplateFile.mkdirs()
+    FileUtil.write(boilerplateFile, boilerplate)
   }
 }
