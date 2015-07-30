@@ -1,5 +1,6 @@
 package scalan.plugin
 
+import scala.reflect.internal.util.BatchSourceFile
 import scalan.meta.ScalanAst._
 
 trait Backend extends PatternMatching {
@@ -7,6 +8,16 @@ trait Backend extends PatternMatching {
   type Compiler <: scala.tools.nsc.Global
   val compiler: Compiler
   import compiler._
+
+  def genBoilerplate(module: SEntityModuleDef): Tree = {
+    val entityGen = new scalan.meta.ScalanCodegen.EntityFileGenerator(
+      module, ScalanPluginConfig.codegenConfig)
+    val implCode = entityGen.getImplFile
+    val implCodeFile = new BatchSourceFile("<impl>", implCode)
+    val boilerplate = newUnitParser(new CompilationUnit(implCodeFile)).parse()
+
+    boilerplate
+  }
 
   case class GenCtx(val module: SEntityModuleDef, val toRep: Boolean = true)
 

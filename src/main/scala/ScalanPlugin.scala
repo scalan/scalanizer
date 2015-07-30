@@ -3,7 +3,6 @@ package scalan.plugin
 import java.io.{ByteArrayOutputStream, ObjectOutputStream}
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.{PluginComponent, Plugin}
-import scala.reflect.internal.util.BatchSourceFile
 import scalan.meta.ScalanAst._
 import scalan.meta.{CodegenConfig, ScalanParsers}
 
@@ -39,12 +38,8 @@ class ScalanPluginComponent(val global: Global)
         ))
         val enrichedMetaAst = pipeline(metaAst)
 
-        /** Boilerplate generation */
-        val entityGen = new scalan.meta.ScalanCodegen.EntityFileGenerator(
-          enrichedMetaAst, ScalanPluginConfig.codegenConfig)
-        val implCode = entityGen.getImplFile
-        val implCodeFile = new BatchSourceFile("<impl>", implCode)
-        val boilerplate = newUnitParser(new CompilationUnit(implCodeFile)).parse()
+        /** Invoking of Scalan META to produce boilerplate code */
+        val boilerplate = genBoilerplate(enrichedMetaAst)
 
         /** Generates a duplicate of original Scala AST, wraps types by Rep[] and etc. */
         val virtAst = genScalaAst(enrichedMetaAst, unit.body)
