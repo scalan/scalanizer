@@ -53,10 +53,11 @@ class WrapFrontend(val global: Global) extends PluginComponent with ScalanParser
           default = None, annotations = Nil, isElemOrCont = false
         )
       }
+      val argSections = if (methodArgs.isEmpty) Nil else List(SMethodArgs(methodArgs))
       SMethodDef(
         name = name,
         tpeArgs = Nil,
-        argSections = List(SMethodArgs(methodArgs)),
+        argSections = argSections,
         tpeRes = Some(parseType(res)),
         isImplicit = false, isOverride = false,
         overloadId = None,
@@ -150,7 +151,6 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
   def newPhase(prev: Phase) = new StdPhase(prev) {
     override def run(): Unit = {
       ScalanPluginState.wrappers transform { (name, module) =>
-
         /** Transformations of Wrappers by adding of Elem, Cont and other things. */
         val pipeline = scala.Function.chain(Seq(
           addWrappedValue _,
@@ -158,11 +158,13 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
           updateSelf _,
           repSynonym _,
           checkEntityCompanion _,
-          genEntityImpicits _, genMethodsImplicits _,
-          defaultMethod _
+          genEntityImpicits _,
+          genMethodsImplicits _,
+          defaultMethod _,
+          defaultWrapperImpl _
         ))
         val enrichedModule = pipeline(module)
-        //print(enrichedWrapper)
+
         enrichedModule
       }
     }
@@ -203,6 +205,15 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
     )
     module.copy(methods = defaultOfWrapper :: module.methods)
   }
+
+  def defaultWrapperImpl(module: SEntityModuleDef): SEntityModuleDef = {
+    val wrapperType = module.entityOps.ancestors.collect {
+      case STraitCall("TypeWrapper", h :: _) => h
+    }.head
+    val wrapperImpl = SEntityModuleDef.wrapperImpl(module.entityOps, wrapperType)
+
+    module.copy(concreteSClasses = List(wrapperImpl))
+  }
 }
 
 
@@ -225,21 +236,15 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
     override def run(): Unit = {
       ScalanPluginState.wrappers foreach { moduleNameAndAst =>
         val (_, module) = moduleNameAndAst
-        implicit val genCtx = GenCtx(module = module, toRep = true)
-        /** Form source code of the wrapper and store it. */
-        val scalaAst = genModule(module)
-        val imports = module.imports.map(genImport(_))
-        val selfType = Some(SSelfTypeDef("self", List(STraitCall("Wrappers", Nil))))
-        val extensions = genExtensions(module.name, selfType, Nil).map(
-          extTrait => genTrait(extTrait)(GenCtx(module, false))
-        )
-        val pkgStats = imports ++ (scalaAst :: extensions)
-        val wrappersPackage = PackageDef(Ident(TermName("wrappers")), pkgStats)
-        saveWrappersCode(module.name, showCode(wrappersPackage))
 
         /** Invoking of Scalan META to produce boilerplate code for the wrapper. */
         val boilerplate = genWrapperBoilerplate(module)
         saveWrapperBoilerplate(module.name, boilerplate)
+
+        /** Form source code of the wrapper and store it. */
+        val wrapperWithoutImpl = module.copy(concreteSClasses = Nil)
+        val wrappersPackage = genWrapperPackage(wrapperWithoutImpl)
+        saveWrappersCode(wrapperWithoutImpl.name, showCode(wrappersPackage))
       }
     }
 
@@ -254,6 +259,19 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
     implCode
   }
 
+  def genWrapperPackage(module: SEntityModuleDef): Tree = {
+    implicit val genCtx = GenCtx(module = module, toRep = true)
+    val scalaAst = genModule(module)
+    val imports = module.imports.map(genImport(_))
+    val selfType = Some(SSelfTypeDef("self", List(STraitCall("Wrappers", Nil))))
+    val extensions = genExtensions(module.name, selfType, Nil).map(
+      extTrait => genTrait(extTrait)(GenCtx(module, false))
+    )
+    val pkgStats = imports ++ (scalaAst :: extensions)
+    val wrappersPackage = PackageDef(Ident(TermName("wrappers")), pkgStats)
+
+    wrappersPackage
+  }
   def getWrappersHome = ScalanPluginConfig.home + "/src/main/scala/wrappers"
   def saveWrappersCode(fileName: String, wrapperCode: String) = {
     val wrapperFile = FileUtil.file(getWrappersHome, fileName + ".scala")

@@ -287,14 +287,16 @@ trait Enricher {
     }
     def genElem(tpeArg: STpeArg) = genImplicit(tpeArg, "em", "Elem")
     def genCont(tpeArg: STpeArg) = genImplicit(tpeArg, "cm", "Cont")
-
     def genImplicitVals(tpeArgs: List[STpeArg]): List[SMethodArg] = {
       tpeArgs.map{tpeArg =>
         if (tpeArg.tparams.isEmpty) genElem(tpeArg)
         else genCont(tpeArg)
       }
     }
-    val args = method.argSections ++ List(SMethodArgs(genImplicitVals(method.tpeArgs)))
+    val args = genImplicitVals(method.tpeArgs) match {
+      case Nil => method.argSections
+      case as => method.argSections ++ List(SMethodArgs(as))
+    }
 
     method.copy(argSections = joinImplicitArgs(args))
   }
@@ -419,6 +421,11 @@ trait Enricher {
       case (m: SMethodArg) :: _ => m.impFlag
       case _ => false
     }}
-    (nonImp ++ List(imp.flatten)).map(args => SMethodArgs(args))
+    val newArgs = imp.flatten match {
+      case Nil => nonImp
+      case as => nonImp ++ List(as)
+    }
+
+    newArgs.map(args => SMethodArgs(args))
   }
 }
