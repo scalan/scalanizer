@@ -232,8 +232,11 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
   val runsAfter = List[String]("scalan-wrap-enricher")
   override val runsRightAfter: Option[String] = Some("scalan-wrap-enricher")
 
+  case class WrappersCake(abs: STraitDef, seq: STraitDef, exp: STraitDef)
+
   def newPhase(prev: Phase) = new StdPhase(prev) {
     override def run(): Unit = {
+      var wrappersCake = initWrappersCake
       ScalanPluginState.wrappers foreach { moduleNameAndAst =>
         val (_, module) = moduleNameAndAst
 
@@ -245,7 +248,10 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
         val wrapperWithoutImpl = module.copy(concreteSClasses = Nil)
         val wrappersPackage = genWrapperPackage(wrapperWithoutImpl)
         saveWrappersCode(wrapperWithoutImpl.name, showCode(wrappersPackage))
+
+        wrappersCake = updateWrappersCake(wrappersCake, wrapperWithoutImpl)
       }
+      saveWrappersCake(wrappersCake)
     }
 
     def apply(unit: CompilationUnit): Unit = ()
@@ -282,5 +288,59 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
     val boilerplateFile = FileUtil.file(getWrappersHome, "impl", fileName + "Impl.scala")
     boilerplateFile.mkdirs()
     FileUtil.write(boilerplateFile, boilerplate)
+  }
+
+  def initWrappersCake: WrappersCake = {
+    val abs = STraitDef("WrappersDsl", Nil,
+      List(STraitCall("ScalanCommunityDsl", Nil)),
+      Nil, None, None)
+    val seq = STraitDef("WrappersDslSeq", Nil,
+      List(STraitCall("WrappersDsl", Nil), STraitCall("ScalanCommunityDslSeq", Nil)),
+      Nil, None, None)
+    val exp = STraitDef("WrappersDslExp", Nil,
+      List(STraitCall("WrappersDsl", Nil), STraitCall("ScalanCommunityDslExp", Nil)),
+      Nil, None, None)
+
+    WrappersCake(abs, seq, exp)
+  }
+
+  def updateWrappersCake(cake: WrappersCake, module: SEntityModuleDef): WrappersCake = {
+    val absAncestors = cake.abs.ancestors :+ STraitCall(module.name + "Dsl", Nil)
+    val seqAncestors = cake.seq.ancestors :+ STraitCall(module.name + "DslSeq", Nil)
+    val expAncestors = cake.exp.ancestors :+ STraitCall(module.name + "DslExp", Nil)
+
+    WrappersCake(
+      abs = cake.abs.copy(ancestors = absAncestors),
+      seq = cake.seq.copy(ancestors = seqAncestors),
+      exp = cake.exp.copy(ancestors = expAncestors)
+    )
+  }
+
+  def saveWrappersCake(cake: WrappersCake): Unit = {
+    implicit val genCtx = GenCtx(module = null, toRep = false)
+    val absCake = genTrait(cake.abs)
+    val seqCake = genTrait(cake.seq)
+    val expCake = genTrait(cake.exp)
+
+    val cakePackage =
+      q"""
+        package wrappers {
+          import scalan._
+
+          $absCake
+
+          $seqCake
+
+          $expCake
+        }
+     """
+
+    saveWrappersCake(showCode(cakePackage))
+  }
+
+  def saveWrappersCake(cakes: String): Unit = {
+    val wrapperFile = FileUtil.file(getWrappersHome, "Wrappers.scala")
+    wrapperFile.mkdirs()
+    FileUtil.write(wrapperFile, cakes)
   }
 }
