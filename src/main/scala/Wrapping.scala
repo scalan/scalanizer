@@ -25,12 +25,24 @@ class WrapFrontend(val global: Global) extends PluginComponent with ScalanParser
       val unitName = unit.source.file.name
 
       if (ScalanPluginConfig.codegenConfig.entityFiles.contains(unitName)) {
-        newTraverser().traverse(unit.body)
+        val hotSpotFilter = new FilterTreeTraverser(isHotSpotMethod)
+
+        hotSpotFilter.traverse(unit.body)
+        hotSpotFilter.hits foreach { hotSpot =>
+          new ForeachTreeTraverser(catchWrapperUsage).traverse(hotSpot)
+        }
       }
     }
   }
 
-  def newTraverser(): Traverser = new ForeachTreeTraverser(catchWrapperUsage)
+  def isHotSpotMethod(tree: Tree): Boolean = tree match {
+    case method: DefDef =>
+      val isHotSpot = method.symbol.annotations exists { annotation =>
+        annotation.symbol.nameString == "HotSpot"
+      }
+      isHotSpot
+    case _ => false
+  }
 
   def catchWrapperUsage(tree: Tree): Unit = tree match {
     case sel @ Select(objSel @ Select(_, obj), member) if isWrapper(objSel.tpe.typeSymbol) =>
