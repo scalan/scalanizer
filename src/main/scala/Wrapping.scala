@@ -20,14 +20,16 @@ class WrapFrontend(val global: Global) extends PluginComponent with ScalanParser
   val runsAfter = List[String]("typer")
   override val runsRightAfter: Option[String] = Some("typer")
 
+  /** The phase creates wrappers for the type that are out of virtualization scope. */
   def newPhase(prev: Phase) = new StdPhase(prev) {
     def apply(unit: CompilationUnit) {
       val unitName = unit.source.file.name
 
       if (ScalanPluginConfig.codegenConfig.entityFiles.contains(unitName)) {
+        /* Collect all methods with the HotSpot annotation. */
         val hotSpotFilter = new FilterTreeTraverser(isHotSpotMethod)
-
         hotSpotFilter.traverse(unit.body)
+        /* Traversing through the hot spots and building of type wrappers. */
         hotSpotFilter.hits foreach { hotSpot =>
           new ForeachTreeTraverser(catchWrapperUsage).traverse(hotSpot)
         }
@@ -44,6 +46,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with ScalanParser
     case _ => false
   }
 
+  /** For each method call, create type wrapper if the external type should be wrapped. */
   def catchWrapperUsage(tree: Tree): Unit = tree match {
     case sel @ Select(objSel @ Select(_, obj), member) if isWrapper(objSel.tpe.typeSymbol) =>
       updateWrapper(objSel.tpe.typeSymbol, member, sel.tpe, sel.symbol.originalInfo)
@@ -54,6 +57,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with ScalanParser
     ScalanPluginConfig.externalTypes.contains(sym.nameString)
   }
 
+  /** Create/update Meta AST of the module for the external type. */
   def updateWrapper(externalType: Symbol, memberName: Name,
                     actualMemberType: Type, originalMemberType: Type): Unit = {
     def formMethodDef(name: String, args: List[Symbol], res: Type): SMethodDef = {
@@ -160,6 +164,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
   val runsAfter = List[String]("scalan-wrap-frontend")
   override val runsRightAfter: Option[String] = Some("scalan-wrap-frontend")
 
+  /** The phase prepares a wrapper for virtualization. */
   def newPhase(prev: Phase) = new StdPhase(prev) {
     override def run(): Unit = {
       ScalanPluginState.wrappers transform { (name, module) =>
@@ -184,6 +189,8 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
     def apply(unit: CompilationUnit): Unit = ()
   }
 
+  /** Adding of a method which return original external type. For example:
+    * def wrappedValueOfBaseType: Rep[Array[T]]; */
   def addWrappedValue(module: SEntityModuleDef): SEntityModuleDef = {
     val resType = module.entityOps.ancestors.collect {
       case STraitCall("TypeWrapper", List(importedType, _)) => importedType
@@ -202,6 +209,8 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
     module.copy(entityOps = updatedEntity, entities = List(updatedEntity))
   }
 
+  /** Adding of a method which returns default value of external type.
+    * For example: def DefaultOfArray[T]: Default[Array[T]] = ???. */
   def defaultMethod(module: SEntityModuleDef): SEntityModuleDef = {
     val extType = module.entityOps.ancestors.collect {
       case STraitCall("TypeWrapper", List(importedType, _)) => importedType
@@ -218,6 +227,9 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
     module.copy(methods = defaultOfWrapper :: module.methods)
   }
 
+  /** Adding of default implementation of the type wrapper. It is required by
+    * Scalan Codegen. When the module is stored, the default implementation
+    * is filtered. */
   def defaultWrapperImpl(module: SEntityModuleDef): SEntityModuleDef = {
     val wrapperType = module.entityOps.ancestors.collect {
       case STraitCall("TypeWrapper", h :: _) => h
