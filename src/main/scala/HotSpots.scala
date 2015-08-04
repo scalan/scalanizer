@@ -19,13 +19,16 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
   {
     def identss: List[List[Ident]] = vparamss.map(_.map{v => Ident(v.name)})
     def sparamss: List[List[SValDef]] = vparamss.map(_.map{vd =>
-      val tpeRes = optTpeExpr(vd.tpt)
+      val tpeRes = optTpeExpr(vd.tpt) match {
+        case Some(STraitCall("MyArr", tparams)) => Some(STraitCall("MyArrWrapper", tparams)) // TODO: remove the workaround
+        case other => other
+      }
       val isImplicit = vd.mods.isImplicit
       val isLazy = vd.mods.isLazy
-
       SValDef(vd.name, tpeRes, isLazy, isImplicit, parseExpr(vd.rhs))
     })
     def toLambda: Tree = {
+      print(s"toLambda: $name paramss = $vparamss")
       val body = q"${TermName(path)}.${TermName(name)}(...${identss})"
       genFunc(SFunc(sparamss.flatten, parseExpr(body)))(GenCtx(null, true))
     }
@@ -45,7 +48,7 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
           val params = vparamss.map(_.map{v => Ident(v.name)})
           val kernelInvoke = q"$packageName.HotSpotKernels.$kernelName(...$params)"
 
-          hotSpots(module.name) = HotSpotMethod(name, "LA", vparamss, tpt, getKernel(method.symbol.annotations)) ::
+          hotSpots(module.name) = HotSpotMethod(name, "ColOverArray", vparamss, tpt, getKernel(method.symbol.annotations)) ::
                                   hotSpots.getOrElse(module.name, Nil)
           method.copy(rhs = kernelInvoke)
         case _ => super.transform(tree)

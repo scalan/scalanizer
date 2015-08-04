@@ -431,11 +431,23 @@ trait Enricher {
 
   def externalTypeToWrapper(module: SEntityModuleDef) = {
     /* TODO: Needed generic approach. */
-    val entityBody = module.entityOps.body.map {_ match {
-      case smethod @ SMethodDef(_,_,_,Some(STraitCall("MyArr", args)), _,_,_,_,_,_) =>
-        smethod.copy(tpeRes = Some(STraitCall("MyArrWrapper", args)))
+    def convArgs(argSections: List[SMethodArgs]): List[SMethodArgs] = {
+      argSections.map{ methodArgs =>
+        val args = methodArgs.args.map{_ match {
+          case marg @ SMethodArg(_,_,_,STraitCall("MyArr", params),_,_,_) =>
+            marg.copy(tpe = STraitCall("MyArrWrapper", params))
+          case rest => rest
+        }}
+        methodArgs.copy(args = args)
+      }
+    }
+    def convBody(body: List[SBodyItem]): List[SBodyItem] = body.map {_ match {
+      case smethod @ SMethodDef(_,_,argSections,Some(STraitCall("MyArr", tparams)), _,_,_,_,_,_) =>
+        smethod.copy(argSections = convArgs(argSections), tpeRes = Some(STraitCall("MyArrWrapper", tparams)))
+      case smethod: SMethodDef => smethod.copy(argSections = convArgs(smethod.argSections))
       case rest => rest
     }}
+    val entityBody = convBody(module.entityOps.body)
     val entity = module.entityOps.copy(body = entityBody)
     val classes = module.concreteSClasses.map{ clazz =>
       val classArgs = clazz.args.args.map { _ match {
@@ -443,7 +455,12 @@ trait Enricher {
           arg.copy(tpe = STraitCall("MyArrWrapper", params))
         case rest => rest
       }}
-      clazz.copy(args = SClassArgs(classArgs))
+      val companion = clazz.companion.map {_ match {
+        case obj: SObjectDef => obj.copy(body = convBody(obj.body))
+        case tr: STraitDef => tr.copy(body = convBody(tr.body))
+        case unknown => throw new NotImplementedError(unknown.toString)
+      }}
+      clazz.copy(args = SClassArgs(classArgs), companion = companion)
     }
 
     module.copy(entityOps = entity, entities = List(entity), concreteSClasses = classes)

@@ -50,6 +50,8 @@ class WrapFrontend(val global: Global) extends PluginComponent with ScalanParser
   def catchWrapperUsage(tree: Tree): Unit = tree match {
     case sel @ Select(objSel @ Select(_, obj), member) if isWrapper(objSel.tpe.typeSymbol) =>
       updateWrapper(objSel.tpe.typeSymbol, member, sel.tpe, sel.symbol.originalInfo)
+    case sel @ Select(objSel, member) if isWrapper(objSel.tpe.typeSymbol) =>
+      updateWrapper(objSel.tpe.typeSymbol, member, sel.tpe, sel.symbol.originalInfo)
     case _ => ()
   }
 

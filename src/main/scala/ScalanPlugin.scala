@@ -26,6 +26,7 @@ class ScalanPluginComponent(val global: Global)
         val metaAst = parse(unitName, unit.body)
         /** Transformations of Scalan AST */
         val pipeline = scala.Function.chain(Seq(
+          externalTypeToWrapper _,
           composeParentWithExt _,
           addModuleAncestors _, addEntityAncestors _,
           updateSelf _,
@@ -34,8 +35,7 @@ class ScalanPluginComponent(val global: Global)
           //addDefaultElem _,
           checkEntityCompanion _, checkClassCompanion _,
           genEntityImpicits _, genClassesImplicits _, genMethodsImplicits _,
-          filterClassTags _,
-          externalTypeToWrapper _
+          filterClassTags _
         ))
         val enrichedMetaAst = pipeline(metaAst)
 
