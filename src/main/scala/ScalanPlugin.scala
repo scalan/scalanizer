@@ -173,11 +173,14 @@ object ScalanPluginState {
   }
 
   /** Mapping between modules and another modules used by them. */
-  val usageMap = Map[String, List[String]]()
+  val usageMap = Map[String, List[String]](
+    "Cols" -> List("Demo")
+  )
 
   /** Mapping of module name to the package where it is defined. */
   val pkgOfModule = Map[String, String](
-    "Cols" -> "scalanizer"
+    "Cols" -> "scalanizer",
+    "Demo" -> "scalanizer"
   )
 
   /** Mapping of external type names to their wrappers. */
