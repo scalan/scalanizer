@@ -19,18 +19,19 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
   {
     def identss: List[List[Ident]] = vparamss.map(_.map{v => Ident(v.name)})
     def sparamss: List[List[SValDef]] = vparamss.map(_.map{vd =>
-      val tpeRes = optTpeExpr(vd.tpt) match {
-        case Some(STraitCall("MyArr", tparams)) => Some(STraitCall("MyArrWrapper", tparams)) // TODO: remove the workaround
-        case other => other
-      }
+      val tpeRes = optTpeExpr(vd.tpt)
       val isImplicit = vd.mods.isImplicit
       val isLazy = vd.mods.isLazy
       SValDef(vd.name, tpeRes, isLazy, isImplicit, parseExpr(vd.rhs))
     })
     def toLambda: Tree = {
-      print(s"toLambda: $name paramss = $vparamss")
+      val wrappedParamms = sparamss.flatten map { _ match {
+        case svalDef @SValDef(_,Some(STraitCall("MyArr", tparams)),_,_,_) =>
+          svalDef.copy(tpe = Some(STraitCall("MyArrWrapper", tparams)))
+        case other => other
+      }}
       val body = q"${TermName(path)}.${TermName(name)}(...${identss})"
-      genFunc(SFunc(sparamss.flatten, parseExpr(body)))(GenCtx(null, true))
+      genFunc(SFunc(wrappedParamms, parseExpr(body)))(GenCtx(null, true))
     }
     def typeExpr: Tree = {
       val argTpeExprs = sparamss.map(_.map(_.tpe.getOrElse(STpeEmpty()))).flatten
