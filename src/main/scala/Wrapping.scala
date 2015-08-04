@@ -27,7 +27,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with ScalanParser
 
       if (ScalanPluginConfig.codegenConfig.entityFiles.contains(unitName)) {
         /* Collect all methods with the HotSpot annotation. */
-        val hotSpotFilter = new FilterTreeTraverser(isHotSpotMethod)
+        val hotSpotFilter = new FilterTreeTraverser(isHotSpotTree)
         hotSpotFilter.traverse(unit.body)
         /* Traversing through the hot spots and building of type wrappers. */
         hotSpotFilter.hits foreach { hotSpot =>
@@ -37,7 +37,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with ScalanParser
     }
   }
 
-  def isHotSpotMethod(tree: Tree): Boolean = tree match {
+  def isHotSpotTree(tree: Tree): Boolean = tree match {
     case method: DefDef =>
       val isHotSpot = method.symbol.annotations exists { annotation =>
         annotation.symbol.nameString == "HotSpot"

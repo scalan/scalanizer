@@ -38,20 +38,14 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
 
   def transformHotSpots(module: SEntityModuleDef, unitBody: Tree): Tree = {
     val hotSpotTransformer = new Transformer {
-      def isHotSpot(annotations: List[Tree]): Boolean = {
-        annotations.exists(annotation => annotation match {
-          case Apply(Select(New(Ident(TypeName("HotSpot"))), termNames.CONSTRUCTOR), _) => true
-          case _ => false
-        })
-      }
       override def transform(tree: Tree): Tree = tree match {
-        case method @ DefDef(_, TermName(name), _, vparamss,tpt,_)  if isHotSpot(method.mods.annotations) =>
+        case method @ DefDef(_, TermName(name), _, vparamss,tpt,_) if isHotSpotMethod(method) =>
           val kernelName = TermName(name + "Kernel")
           val packageName = TermName("implOf" + module.name)
           val params = vparamss.map(_.map{v => Ident(v.name)})
           val kernelInvoke = q"$packageName.HotSpotKernels.$kernelName(...$params)"
 
-          hotSpots(module.name) = HotSpotMethod(name, "LA", vparamss, tpt, getKernel(method.mods.annotations)) ::
+          hotSpots(module.name) = HotSpotMethod(name, "LA", vparamss, tpt, getKernel(method.symbol.annotations)) ::
                                   hotSpots.getOrElse(module.name, Nil)
           method.copy(rhs = kernelInvoke)
         case _ => super.transform(tree)
@@ -136,14 +130,15 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
     case _ => module.name
   }
 
-  def getKernel(annotations: List[Tree]): KernelType = {
-    val annotArgs = annotations.collectFirst {
-      case Apply(Select(New(Ident(TypeName("HotSpot"))), termNames.CONSTRUCTOR), args) => args
+  def isHotSpotMethod(method: DefDef): Boolean = {
+    method.symbol.annotations exists { annotation =>
+      annotation.symbol.nameString == "HotSpot"
     }
+  }
 
-    annotArgs match {
-      case Some(List(Ident(TermName("CppKernel")))) => CppKernel
-      case Some(List(Ident(TermName("ScalaKernel")))) => ScalaKernel
+  def getKernel(annotations: List[AnnotationInfo]): KernelType = {
+    annotations.head.args match {
+      case Select(_, TermName("CppKernel")) :: _ => CppKernel
       case _ => ScalaKernel
     }
   }
