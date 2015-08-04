@@ -428,4 +428,24 @@ trait Enricher {
 
     newArgs.map(args => SMethodArgs(args))
   }
+
+  def externalTypeToWrapper(module: SEntityModuleDef) = {
+    /* TODO: Needed generic approach. */
+    val entityBody = module.entityOps.body.map {_ match {
+      case smethod @ SMethodDef(_,_,_,Some(STraitCall("MyArr", args)), _,_,_,_,_,_) =>
+        smethod.copy(tpeRes = Some(STraitCall("MyArrWrapper", args)))
+      case rest => rest
+    }}
+    val entity = module.entityOps.copy(body = entityBody)
+    val classes = module.concreteSClasses.map{ clazz =>
+      val classArgs = clazz.args.args.map { _ match {
+        case arg @SClassArg(_,_,_,_,STraitCall("MyArr", params),_,_,_) =>
+          arg.copy(tpe = STraitCall("MyArrWrapper", params))
+        case rest => rest
+      }}
+      clazz.copy(args = SClassArgs(classArgs))
+    }
+
+    module.copy(entityOps = entity, entities = List(entity), concreteSClasses = classes)
+  }
 }
