@@ -188,11 +188,11 @@ object ScalanPlugin {
   /** Yields the list of Components to be executed in this plugin */
   def components(global: Global) = {
     val result = scala.collection.mutable.ListBuffer[PluginComponent](
-      new WrapFrontend(global),
-      new WrapEnricher(global),
-      new WrapBackend(global)
-//      new CheckExtensions(global)
-//      ,new ScalanPluginComponent(global)
+      new WrapFrontend(global)
+      ,new WrapEnricher(global)
+      ,new WrapBackend(global)
+      ,new CheckExtensions(global)
+      ,new ScalanPluginComponent(global)
 //      ,new Debug(global)
     )
 
