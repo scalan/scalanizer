@@ -223,8 +223,10 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
       argSections = Nil,
       tpeRes = Some(STraitCall("Default", extType)),
       isImplicit = false, isOverride = false, overloadId = None,
-      annotations = Nil, body = Some(SIdent("$qmark$qmark$qmark")),
-      isElemOrCont = false
+      annotations = Nil,
+      //body = Some(SIdent("$qmark$qmark$qmark")),
+      body = Some(SApply(SSelect(SIdent("Default"),"defaultVal"), Nil, List(List(SConst(null))))),
+      isElemOrCont = true // Workaround: disable virtualization of the method
     )
     module.copy(methods = defaultOfWrapper :: module.methods)
   }

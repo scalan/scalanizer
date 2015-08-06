@@ -31,7 +31,7 @@ trait Backend extends PatternMatching {
   }
 
   def genModule(module: SEntityModuleDef)(implicit ctx: GenCtx): Tree = {
-    val methods = module.methods.map(genMethod(_))
+    val methods = module.methods.map(m => genMethod(m)(ctx.copy(toRep = !m.isElemOrCont)))
     val newstats =  genEntity(module.entityOps) ::
       (genConcreteClasses(module.concreteSClasses) ++ genCompanions(module) ++ methods)
     val newSelf = genModuleSelf(module)
@@ -354,7 +354,9 @@ trait Backend extends PatternMatching {
 
   def genExpr(expr: SExpr)(implicit ctx: GenCtx): Tree = expr match {
     case SEmpty() => q""
-    case SConst(c: Any) => q"toRep(${compiler.Literal(compiler.Constant(c))})"
+    case SConst(c) =>
+      val constTree = compiler.Literal(compiler.Constant(c))
+      if (ctx.toRep) q"toRep($constTree)" else constTree
     case SIdent(name: String) => Ident(TermName(name))
     case SAssign(left, right) => q"${genExpr(left)} = ${genExpr(right)}"
     case SApply(SSelect(SAscr(obj, STraitCall("Array", _)), method), _, argss) => genBasisArray(obj, method, argss)
