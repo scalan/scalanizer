@@ -49,10 +49,9 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
             TermName("implOf" + module.name))
           val params = vparamss.map(_.map{v => Ident(v.name)})
           val kernelInvoke = q"$packageName.HotSpotKernels.$kernelName(...$params)"
-
-          hotSpots(module.name) = HotSpotMethod(name, "ColOverArray", vparamss, tpt, getKernel(method.symbol.annotations)) ::
-                                  hotSpots.getOrElse(module.name, Nil)
-
+          hotSpots(module.name) = HotSpotMethod(name, method.symbol.outerClass.nameString, vparamss, tpt,
+            getKernel(method.symbol.annotations)) :: hotSpots.getOrElse(module.name, Nil)
+          /* Inferring of type for the created method. */
           val methodWithKernelInvoke = method.copy(rhs = kernelInvoke).clearType
           val ctx = analyzer.rootContext(unit)
           analyzer.newNamer(ctx).enterSym(methodWithKernelInvoke)
