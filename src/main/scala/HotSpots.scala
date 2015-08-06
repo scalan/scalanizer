@@ -40,23 +40,30 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
     }
   }
 
-  def transformHotSpots(module: SEntityModuleDef, unitBody: Tree): Tree = {
+  def transformHotSpots(module: SEntityModuleDef, unit: CompilationUnit): Tree = {
     val hotSpotTransformer = new Transformer {
       override def transform(tree: Tree): Tree = tree match {
         case method @ DefDef(_, TermName(name), _, vparamss,tpt,_) if isHotSpotMethod(method) =>
           val kernelName = TermName(name + "Kernel")
-          val packageName = TermName("implOf" + module.name)
+          val packageName = Select(Ident(TermName(ScalanPluginState.pkgOfModule(module.name))),
+            TermName("implOf" + module.name))
           val params = vparamss.map(_.map{v => Ident(v.name)})
           val kernelInvoke = q"$packageName.HotSpotKernels.$kernelName(...$params)"
 
           hotSpots(module.name) = HotSpotMethod(name, "ColOverArray", vparamss, tpt, getKernel(method.symbol.annotations)) ::
                                   hotSpots.getOrElse(module.name, Nil)
-          method.copy(rhs = kernelInvoke)
+
+          val methodWithKernelInvoke = method.copy(rhs = kernelInvoke).clearType
+          val methodTyper = analyzer.newTyper(analyzer.rootContext(unit))
+          val typedMethod = methodTyper.typedDefDef(methodWithKernelInvoke)
+//          print(showRaw(typedMethod, printTypes = Some(true)))
+
+          typedMethod
         case _ => super.transform(tree)
       }
     }
 
-    hotSpotTransformer.transform(unitBody)
+    hotSpotTransformer.transform(unit.body)
   }
 
   def getHotSpotKernels(module: SEntityModuleDef) = {
