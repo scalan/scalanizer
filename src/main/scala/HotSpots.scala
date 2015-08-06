@@ -26,8 +26,8 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
     })
     def toLambda: Tree = {
       val wrappedParamms = sparamss.flatten map { _ match {
-        case svalDef @SValDef(_,Some(STraitCall("MyArr", tparams)),_,_,_) =>
-          svalDef.copy(tpe = Some(STraitCall("MyArrWrapper", tparams)))
+        case svalDef @SValDef(_,Some(STraitCall(tname, tparams)),_,_,_) if ScalanPluginConfig.externalTypes.contains(tname) =>
+          svalDef.copy(tpe = Some(STraitCall(tname + "Wrapper", tparams)))
         case other => other
       }}
       val body = q"${TermName(path)}.${TermName(name)}(...${identss})"
