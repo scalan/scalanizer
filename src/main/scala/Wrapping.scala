@@ -8,7 +8,7 @@ import scalan.meta.ScalanAst._
 import scalan.meta.{CodegenConfig, ScalanParsers}
 
 /** The component builds wrappers. */
-class WrapFrontend(val global: Global) extends PluginComponent with ScalanParsers {
+class WrapFrontend(val global: Global) extends PluginComponent with Common with ScalanParsers {
 
   type Compiler = global.type
   val compiler: Compiler = global
@@ -94,7 +94,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with ScalanParser
     }
     val updatedModule = ScalanPluginState.wrappers.get(externalType.nameString) match {
       case None =>
-        val wrapperName = externalType.nameString + "Wrapper"
+        val wrapperName = wrap(externalType.nameString)
         val tpeArgs = externalType.typeParams.map{ param =>
           STpeArg(
             name = param.nameString,
@@ -125,7 +125,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with ScalanParser
         SEntityModuleDef(
           packageName = "wrappers",
           imports = imports,
-          name = wrapperName + "s",
+          name = wmod(externalType.nameString),
           entityRepSynonym = None,
           entityOps = entity, entities = List(entity),
           concreteSClasses = Nil, methods = Nil,
@@ -224,7 +224,6 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
       tpeRes = Some(STraitCall("Default", extType)),
       isImplicit = false, isOverride = false, overloadId = None,
       annotations = Nil,
-      //body = Some(SIdent("$qmark$qmark$qmark")),
       body = Some(SApply(SSelect(SIdent("Default"),"defaultVal"), Nil, List(List(SConst(null))))),
       isElemOrCont = true // Workaround: disable virtualization of the method
     )

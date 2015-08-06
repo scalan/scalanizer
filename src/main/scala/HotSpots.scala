@@ -4,7 +4,7 @@ import scalan.compilation.KernelTypes
 import scalan.meta.ScalanAst._
 import scalan.meta.ScalanParsers
 
-trait HotSpots extends Enricher with Backend with ScalanParsers {
+trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
 
   type Compiler <: scala.tools.nsc.Global
   val compiler: Compiler
@@ -27,7 +27,7 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
     def toLambda: Tree = {
       val wrappedParamms = sparamss.flatten map { _ match {
         case svalDef @SValDef(_,Some(STraitCall(tname, tparams)),_,_,_) if ScalanPluginConfig.externalTypes.contains(tname) =>
-          svalDef.copy(tpe = Some(STraitCall(tname + "Wrapper", tparams)))
+          svalDef.copy(tpe = Some(STraitCall(wrap(tname), tparams)))
         case other => other
       }}
       val body = q"${TermName(path)}.${TermName(name)}(...${identss})"
