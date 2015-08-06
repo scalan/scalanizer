@@ -54,9 +54,10 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
                                   hotSpots.getOrElse(module.name, Nil)
 
           val methodWithKernelInvoke = method.copy(rhs = kernelInvoke).clearType
-          val methodTyper = analyzer.newTyper(analyzer.rootContext(unit))
+          val ctx = analyzer.rootContext(unit)
+          analyzer.newNamer(ctx).enterSym(methodWithKernelInvoke)
+          val methodTyper = analyzer.newTyper(ctx)
           val typedMethod = methodTyper.typedDefDef(methodWithKernelInvoke)
-//          print(showRaw(typedMethod, printTypes = Some(true)))
 
           typedMethod
         case _ => super.transform(tree)
