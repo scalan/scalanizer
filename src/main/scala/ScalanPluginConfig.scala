@@ -21,6 +21,7 @@ object ScalanPluginConfig {
     seqContextTrait = "ScalanSeq",
     stagedContextTrait = "ScalanExp",
     extraImports = List(
+      "scalan.meta.ScalanAst._",
       "scala.reflect.runtime.universe._",
       "scala.reflect._",
       "scalan.common.Default"
