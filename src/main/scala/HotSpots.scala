@@ -70,10 +70,11 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
       q"""
         lazy val ${TermName(method.name + "Kernel")} = {
           val ctx = HotSpotManager.${TermName(scalanContextGetter)}
+          val config = new ctx.CompilerConfig(Some("2.11.2"), Seq.empty)
           val compilerOutput = ctx.buildExecutable(
             new File("./it-out/" + ${method.name}),
             ${Literal(Constant(method.name))},
-            ctx.${TermName(method.name + "Wrapper")}, GraphVizConfig.default)(ctx.CompilerConfig(Some("2.11.2"), Seq.empty))
+            ctx.scalan.${TermName(method.name + "Wrapper")}, GraphVizConfig.default)(config)
           val (cls, method) = ctx.loadMethod(compilerOutput)
           val instance = cls.newInstance().asInstanceOf[${method.typeExpr}]
           instance
@@ -84,6 +85,8 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
       object HotSpotKernels {
         import java.io.File
         import scalan.compilation.GraphVizConfig
+        import scala.language.reflectiveCalls
+
         ..$kernels
       }
     """
@@ -98,35 +101,27 @@ trait HotSpots extends Enricher with Backend with ScalanParsers {
     val CppWrappers = wrappers._2.map(_._2)
     implicit val ctx = GenCtx(null, false)
     val cakeImport = genImport(getImportByName(cakeName))
+
     q"""
       object HotSpotManager {
-        import scalan.ScalanCommunityDslExp
-        import scalan.compilation.lms.{CommunityLmsBackend, CoreBridge}
-        import scalan.compilation.lms.scalac.CommunityLmsCompilerScala
-        import scalan.primitives.EffectfulCompiler
+        import scalan.ScalanCommunityDslExp;
+        import scalan.compilation.lms.scalac.CommunityLmsCompilerScala;
+        import scalan.{CommunityMethodMappingDSL, JNIExtractorOpsExp}
+        import scalan.compilation.lms.CommunityBridge
         $cakeImport
 
-        lazy val scalanContext = new Scalan
-        def getScalanContext = scalanContext
-
-        class Scalan extends ${TypeName(cakeName+"DslExp")} with CommunityLmsCompilerScala with CoreBridge
-          with ScalanCommunityDslExp with EffectfulCompiler {
-
+        lazy val prog = new ${TypeName(cakeName+"DslExp")} with ScalanCommunityDslExp with JNIExtractorOpsExp {
           ..$ScalaWrappers
-          val lms = new CommunityLmsBackend
         }
+        lazy val compiler = new CommunityLmsCompilerScala(prog) with CommunityBridge with CommunityMethodMappingDSL;
+        def getScalanContext = compiler;
 
-        import scalan.CommunityMethodMappingDSL
-        import scalan.compilation.lms.uni.LmsCompilerUni
-
-        lazy val scalanContextUni = new ScalanUni
-        def getScalanContextUni = scalanContextUni
-
-        class ScalanUni extends ${TypeName(cakeName+"DslExp")} with LmsCompilerUni with CoreBridge
-          with ScalanCommunityDslExp with EffectfulCompiler with CommunityMethodMappingDSL {
-
+        import scalan.compilation.lms.uni.LmsCompilerUni;
+        lazy val progUni = new ${TypeName(cakeName +"DslExp")} with ScalanCommunityDslExp with JNIExtractorOpsExp {
           ..$CppWrappers
         }
+        lazy val compilerUni = new LmsCompilerUni(progUni) with CommunityBridge with CommunityMethodMappingDSL;
+        def getScalanContextUni = compilerUni;
       }
     """
   }
