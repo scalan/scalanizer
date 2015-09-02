@@ -4,7 +4,7 @@ import java.io.File
 import scalan.meta.ScalanAst._
 import scalan.util.FileUtil
 
-trait Enricher {
+trait Enricher extends Common {
   /** Module parent is replaced by the parent with its extension. */
   def composeParentWithExt(module: SEntityModuleDef) = {
     val parentsWithExts = module.ancestors.map{ancestor =>
@@ -430,39 +430,25 @@ trait Enricher {
   }
 
   def externalTypeToWrapper(module: SEntityModuleDef) = {
-    /* TODO: Needed generic approach. */
-    def convArgs(argSections: List[SMethodArgs]): List[SMethodArgs] = {
-      argSections.map{ methodArgs =>
-        val args = methodArgs.args.map{_ match {
-          case marg @ SMethodArg(_,_,_,STraitCall("MyArr", params),_,_,_) =>
-            marg.copy(tpe = STraitCall("MyArrWrapper", params))
-          case rest => rest
-        }}
-        methodArgs.copy(args = args)
+    class WrapperTransformer(name: String) extends ScalanAstTransformer {
+      override def methodArgTransform(arg: SMethodArg): SMethodArg = arg match {
+        case marg @ SMethodArg(_,_,_,STraitCall(tname, params),_,_,_) if tname == name =>
+          marg.copy(tpe = STraitCall(wrap(name), params))
+        case _ => arg
+      }
+      override def methodResTransform(res: Option[STpeExpr]): Option[STpeExpr] = res match {
+        case Some(STraitCall(tname, tparams)) if tname == name =>
+          Some(STraitCall(wrap(name), tparams))
+        case _ => res
+      }
+      override def classArgTransform(classArg: SClassArg): SClassArg = classArg match {
+        case arg @ SClassArg(_,_,_,_,STraitCall(tname, params),_,_,_) if tname == name =>
+          arg.copy(tpe = STraitCall(wrap(name), params))
+        case _ => classArg
       }
     }
-    def convBody(body: List[SBodyItem]): List[SBodyItem] = body.map {_ match {
-      case smethod @ SMethodDef(_,_,argSections,Some(STraitCall("MyArr", tparams)), _,_,_,_,_,_) =>
-        smethod.copy(argSections = convArgs(argSections), tpeRes = Some(STraitCall("MyArrWrapper", tparams)))
-      case smethod: SMethodDef => smethod.copy(argSections = convArgs(smethod.argSections))
-      case rest => rest
-    }}
-    val entityBody = convBody(module.entityOps.body)
-    val entity = module.entityOps.copy(body = entityBody)
-    val classes = module.concreteSClasses.map{ clazz =>
-      val classArgs = clazz.args.args.map { _ match {
-        case arg @SClassArg(_,_,_,_,STraitCall("MyArr", params),_,_,_) =>
-          arg.copy(tpe = STraitCall("MyArrWrapper", params))
-        case rest => rest
-      }}
-      val companion = clazz.companion.map {_ match {
-        case obj: SObjectDef => obj.copy(body = convBody(obj.body))
-        case tr: STraitDef => tr.copy(body = convBody(tr.body))
-        case unknown => throw new NotImplementedError(unknown.toString)
-      }}
-      clazz.copy(args = SClassArgs(classArgs), companion = companion)
-    }
+    val wrappedModule = new WrapperTransformer("MyArr").moduleTransform(module)
 
-    module.copy(entityOps = entity, entities = List(entity), concreteSClasses = classes)
+    wrappedModule
   }
 }
