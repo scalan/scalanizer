@@ -430,7 +430,7 @@ trait Enricher extends Common {
   }
 
   def externalTypeToWrapper(module: SEntityModuleDef) = {
-    class WrapperTransformer(name: String) extends ScalanAstTransformer {
+    class WrapperTransformer(name: String) extends MetaAstTransformer {
       override def methodArgTransform(arg: SMethodArg): SMethodArg = arg match {
         case marg @ SMethodArg(_,_,_,STraitCall(tname, params),_,_,_) if tname == name =>
           marg.copy(tpe = STraitCall(wrap(name), params))

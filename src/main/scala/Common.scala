@@ -10,7 +10,7 @@ trait Common {
   def wmod(name: String) = name + "Wrappers"
 
   /** The class implements a default Meta AST transformation strategy: breadth-first search */
-  class ScalanAstTransformer {
+  class MetaAstTransformer {
     def methodArgTransform(arg: SMethodArg): SMethodArg = arg
     def methodArgsTransform(args: SMethodArgs): SMethodArgs = {
       val newArgs = args.args mapConserve methodArgTransform
