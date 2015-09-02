@@ -447,7 +447,9 @@ trait Enricher extends Common {
         case _ => classArg
       }
     }
-    val wrappedModule = new WrapperTransformer("MyArr").moduleTransform(module)
+    val wrappedModule = ScalanPluginConfig.externalTypes.foldLeft(module){(acc, externalTypeName) =>
+      new WrapperTransformer(externalTypeName).moduleTransform(acc)
+    }
 
     wrappedModule
   }
