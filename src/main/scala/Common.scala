@@ -71,4 +71,22 @@ trait Common {
       )
     }
   }
+
+  class WrapperTransformer(name: String) extends ScalanAstTransformer {
+    override def methodArgTransform(arg: SMethodArg): SMethodArg = arg match {
+      case marg @ SMethodArg(_,_,_,STraitCall(tname, params),_,_,_) if tname == name =>
+        marg.copy(tpe = STraitCall(wrap(name), params))
+      case _ => arg
+    }
+    override def methodResTransform(res: Option[STpeExpr]): Option[STpeExpr] = res match {
+      case Some(STraitCall(tname, tparams)) if tname == name =>
+        Some(STraitCall(wrap(name), tparams))
+      case _ => res
+    }
+    override def classArgTransform(classArg: SClassArg): SClassArg = classArg match {
+      case arg @ SClassArg(_,_,_,_,STraitCall(tname, params),_,_,_) if tname == name =>
+        arg.copy(tpe = STraitCall(wrap(name), params))
+      case _ => classArg
+    }
+  }
 }
