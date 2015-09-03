@@ -4,10 +4,10 @@ import scalan.meta.ScalanAst._
 
 trait Common {
   /** Converts the name of external type to the name of its wrapper. */
-  def wrap(name: String) = name + "Wrapper"
+  def wrap(name: String) = "W" + name
   /** Converts the name of external type to the name of the module which
     * contains a wrapper for the type. */
-  def wmod(name: String) = name + "Wrappers"
+  def wmod(name: String) = "W" + name + "s"
 
   /** The class implements a default Meta AST transformation strategy: breadth-first search */
   class MetaAstTransformer {
