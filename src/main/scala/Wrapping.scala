@@ -62,7 +62,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
   /** Create/update Meta AST of the module for the external type. */
   def updateWrapper(externalType: Symbol, memberName: Name,
                     actualMemberType: Type, originalMemberType: Type): Unit = {
-    def formMethodDef(name: String, args: List[Symbol], res: Type): SMethodDef = {
+    def formMethodDef(name: String, targs: List[Symbol], args: List[Symbol], res: Type): SMethodDef = {
       val methodArgs = args.map{arg =>
         SMethodArg(
           impFlag = false, overFlag = false,
@@ -72,9 +72,16 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
         )
       }
       val argSections = if (methodArgs.isEmpty) Nil else List(SMethodArgs(methodArgs))
+      val tpeArgs = targs.map{targ =>
+        STpeArg(
+          name = targ.nameString,
+          bound = None, contextBound = Nil, tparams = Nil
+        )
+      }
+
       SMethodDef(
         name = name,
-        tpeArgs = Nil,
+        tpeArgs = tpeArgs,
         argSections = argSections,
         tpeRes = Some(parseType(res)),
         isImplicit = false, isOverride = false,
@@ -87,9 +94,11 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
 
     val memberType = originalMemberType
     val member = memberType match {
-      case NullaryMethodType(resultType) => formMethodDef(memberName.toString, Nil, resultType)
-      case MethodType(args, resultType) => formMethodDef(memberName.toString, args, resultType)
-      case TypeRef(_,sym,_) => formMethodDef(memberName.toString, Nil, sym.tpe)
+      case NullaryMethodType(resultType) => formMethodDef(memberName.toString, Nil, Nil, resultType)
+      case MethodType(args, resultType) => formMethodDef(memberName.toString, Nil, args, resultType)
+      case PolyType(typeArgs, MethodType(args, MethodType(_, resultType))) =>
+        formMethodDef(memberName.toString, typeArgs, args, resultType)
+      case TypeRef(_,sym,_) => formMethodDef(memberName.toString, Nil, Nil, sym.tpe)
       case _ => throw new NotImplementedError(s"memberType = ${showRaw(memberType)}")
     }
     val updatedModule = ScalanPluginState.wrappers.get(externalType.nameString) match {
