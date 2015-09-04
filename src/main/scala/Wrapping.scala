@@ -180,7 +180,8 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
           genEntityImpicits _,
           genMethodsImplicits _,
           defaultMethod _,
-          defaultWrapperImpl _
+          defaultWrapperImpl _,
+          filterConstructor _ // remove methods with name <init>
         ))
         val enrichedModule = pipeline(module)
 
@@ -240,6 +241,17 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
     val wrapperImpl = SEntityModuleDef.wrapperImpl(module.entityOps, wrapperType)
 
     module.copy(concreteSClasses = List(wrapperImpl))
+  }
+
+  def filterConstructor(module: SEntityModuleDef): SEntityModuleDef = {
+    new MetaAstTransformer {
+      override def bodyTransform(body: List[SBodyItem]): List[SBodyItem] = body.filter {
+        _ match {
+          case m: SMethodDef if m.name == "<init>" => false
+          case _ => true
+        }
+      }
+    }.moduleTransform(module)
   }
 }
 

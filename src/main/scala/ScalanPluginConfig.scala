@@ -10,7 +10,7 @@ object ScalanPluginConfig {
     name = "Scalan Plugin",
     srcPath = "/",
     entityFiles = List[String](
-//       "LinearAlgebraOps.scala"
+       "LinearAlgebraOps.scala"
     ),
     baseContextTrait = "ScalanDsl",
     seqContextTrait = "ScalanSeq",

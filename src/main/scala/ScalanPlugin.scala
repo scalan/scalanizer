@@ -205,8 +205,8 @@ object ScalanPlugin {
       new WrapFrontend(global)
       ,new WrapEnricher(global)
       ,new WrapBackend(global)
-      ,new CheckExtensions(global)
-      ,new ScalanPluginComponent(global)
+//      ,new CheckExtensions(global)
+//      ,new ScalanPluginComponent(global)
 //      ,new Debug(global)
     )
 
