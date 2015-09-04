@@ -8,7 +8,7 @@ object ScalanBuild extends Build {
 //    scalaVersion := "2.11.6",
     scalaOrganization := "org.scala-lang.virtualized",
     scalaVersion := "2.11.2",
-    version := "0.0.2",
+    version := "0.0.3",
     organization := "com.huawei"
   )
 
