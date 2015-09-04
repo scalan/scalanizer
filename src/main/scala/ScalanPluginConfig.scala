@@ -25,6 +25,12 @@ object ScalanPluginConfig {
   )
   val typeClasses = List[String]("Default")
   val home = "/home/mgekk/scalan/scalanizer-demo"
-  val externalTypes = Set[String]("MyArr")
+  val externalTypes = Set[String](
+    "Num", "DoubleNum",
+    "NumMonoid", "PlusMonoid",
+    "Col", "ColOverArray", "PairCol",
+    "Vec", "DenseVec",
+    "Matr", "DenseMatr"
+  )
 }
 
