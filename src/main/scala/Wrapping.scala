@@ -101,28 +101,36 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
       case TypeRef(_,sym,_) => formMethodDef(memberName.toString, Nil, Nil, sym.tpe)
       case _ => throw new NotImplementedError(s"memberType = ${showRaw(memberType)}")
     }
+    val isCompanion = externalType.isModuleClass
     val updatedModule = ScalanPluginState.wrappers.get(externalType.nameString) match {
       case None =>
-        val wrapperName = wrap(externalType.nameString)
-        val tpeArgs = externalType.typeParams.map{ param =>
+        val clazz = externalType.companionClass
+        val className = wrap(clazz.nameString)
+        val companionName = comp(className)
+        val tpeArgs = clazz.typeParams.map{ param =>
           STpeArg(
             name = param.nameString,
             bound = None, contextBound = Nil, tparams = Nil
           )
         }
-        val typeParams = externalType.typeParams.map{ param =>
+        val typeParams = clazz.typeParams.map{ param =>
           STraitCall(name = param.nameString, tpeSExprs = Nil)
         }
         val entity = STraitDef(
-          name = wrapperName,
+          name = className,
           tpeArgs = tpeArgs,
           ancestors = List(STraitCall(
             "TypeWrapper",
-            List(STraitCall(externalType.nameString, typeParams), STraitCall(wrapperName, typeParams))
+            List(STraitCall(clazz.nameString, typeParams), STraitCall(className, typeParams))
           )),
-          body =  List[SBodyItem](member),
+          body =  if (isCompanion) Nil else List[SBodyItem](member),
           selfType = Some(SSelfTypeDef("self", Nil)),
-          companion = None, annotations = Nil
+          companion = Some(STraitDef(
+            name = companionName,
+            tpeArgs = Nil, ancestors = Nil,
+            body = if (isCompanion) List[SBodyItem](member) else Nil,
+            selfType = None, companion = None
+          ))
         )
         val imports = List(
           SImportStat("scalan._"),
@@ -149,8 +157,18 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
         if (module.entityOps.body.contains(member)) {
           module
         } else {
-          val updatedBody = member :: module.entityOps.body
-          val updatedEntity = module.entityOps.copy(body = updatedBody)
+          val updatedEntity = if (isCompanion) {
+            val updatedCompanion = module.entityOps.companion match {
+              case Some(companion: STraitDef) =>
+                val updatedBody = member :: companion.body
+                Some(companion.copy(body = updatedBody))
+              case _ => throw new IllegalArgumentException(module.entityOps.companion.toString)
+            }
+            module.entityOps.copy(companion = updatedCompanion)
+          } else {
+            val updatedBody = member :: module.entityOps.body
+            module.entityOps.copy(body = updatedBody)
+          }
           module.copy(entityOps = updatedEntity, entities = List(updatedEntity))
         }
     }

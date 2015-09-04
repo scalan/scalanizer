@@ -8,6 +8,8 @@ trait Common {
   /** Converts the name of external type to the name of the module which
     * contains a wrapper for the type. */
   def wmod(name: String) = "W" + name + "s"
+  /** Gets name of companion by entity name */
+  def comp(name: String) = name + "Companion"
 
   /** The class implements a default Meta AST transformation strategy: breadth-first search */
   class MetaAstTransformer {
