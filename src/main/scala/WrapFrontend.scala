@@ -119,8 +119,8 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
         ancestors = List(STraitCall("ExCompanion" + typeParams.length.toString, List(STraitCall(className, Nil)))),
         body = if (isCompanion) List[SBodyItem](member) else Nil,
         selfType = None, companion = None
-      )),
-      annotations = if (typeParams.isEmpty) Nil else List(STraitOrClassAnnotation("ContainerType", Nil))
+      ))
+//      , annotations = if (typeParams.isEmpty) Nil else List(STraitOrClassAnnotation("ContainerType", Nil))
     )
     val imports = List(
       SImportStat("scalan._"),
