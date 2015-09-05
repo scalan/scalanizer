@@ -35,10 +35,22 @@ trait Common {
     }
     def bodyTransform(body: List[SBodyItem]): List[SBodyItem] = body mapConserve bodyItemTransform
 
+    def traitCompTransform(traitComp: STraitDef): STraitDef = {
+      val newBody = bodyTransform(traitComp.body)
+
+      traitComp.copy(body = newBody)
+    }
+    def entityCompTransform(companion: Option[STraitOrClassDef]): Option[STraitOrClassDef] = {
+      companion match {
+        case Some(tr: STraitDef) => Some(traitCompTransform(tr))
+        case _ => companion
+      }
+    }
     def entityTransform(entity: STraitDef): STraitDef = {
       val newBody = bodyTransform(entity.body)
+      val newCompanion = entityCompTransform(entity.companion)
 
-      entity.copy(body = newBody)
+      entity.copy(body = newBody, companion = newCompanion)
     }
 
     def classCompanionTransform(companion: Option[STraitOrClassDef]): Option[STraitOrClassDef] = {
@@ -71,6 +83,24 @@ trait Common {
         entities = newEntities,
         concreteSClasses = newClasses
       )
+    }
+  }
+
+  class ExtType2WrapperTransformer(name: String) extends MetaAstTransformer {
+    override def methodArgTransform(arg: SMethodArg): SMethodArg = arg match {
+      case marg @ SMethodArg(_,_,_,STraitCall(tname, params),_,_,_) if tname == name =>
+        marg.copy(tpe = STraitCall(wrap(name), params))
+      case _ => arg
+    }
+    override def methodResTransform(res: Option[STpeExpr]): Option[STpeExpr] = res match {
+      case Some(STraitCall(tname, tparams)) if tname == name =>
+        Some(STraitCall(wrap(name), tparams))
+      case _ => res
+    }
+    override def classArgTransform(classArg: SClassArg): SClassArg = classArg match {
+      case arg @ SClassArg(_,_,_,_,STraitCall(tname, params),_,_,_) if tname == name =>
+        arg.copy(tpe = STraitCall(wrap(name), params))
+      case _ => classArg
     }
   }
 }

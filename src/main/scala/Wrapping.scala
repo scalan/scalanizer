@@ -127,10 +127,12 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
           selfType = Some(SSelfTypeDef("self", Nil)),
           companion = Some(STraitDef(
             name = companionName,
-            tpeArgs = Nil, ancestors = Nil,
+            tpeArgs = Nil,
+            ancestors = List(STraitCall("ExCompanion" + typeParams.length.toString, List(STraitCall(className, Nil)))),
             body = if (isCompanion) List[SBodyItem](member) else Nil,
             selfType = None, companion = None
-          ))
+          )),
+          annotations = if (typeParams.isEmpty) Nil else List(STraitOrClassAnnotation("ContainerType", Nil))
         )
         val imports = List(
           SImportStat("scalan._"),
@@ -208,7 +210,8 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
           genMethodsImplicits _,
           defaultMethod _,
           defaultWrapperImpl _,
-          filterConstructor _ // remove methods with name <init>
+          filterConstructor _, // remove methods with name <init>
+          extType2WrapperInWrappers _
         ))
         val enrichedModule = pipeline(module)
 
@@ -279,6 +282,21 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
         }
       }
     }.moduleTransform(module)
+  }
+
+  def extType2WrapperInWrappers(module: SEntityModuleDef): SEntityModuleDef = {
+    class TypeInWrappersTransformer(name: String) extends ExtType2WrapperTransformer(name) {
+      override def methodTransform(method: SMethodDef): SMethodDef = {
+        if (method.name == "wrappedValueOfBaseType")
+          method
+        else super.methodTransform(method)
+      }
+    }
+    val wrappedModule = ScalanPluginConfig.externalTypes.foldLeft(module){(acc, externalTypeName) =>
+      new TypeInWrappersTransformer(externalTypeName).moduleTransform(acc)
+    }
+
+    wrappedModule
   }
 }
 
