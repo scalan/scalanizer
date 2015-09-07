@@ -60,11 +60,17 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
   /** Form Meta AST method by using symbols and types from Scala AST. */
   def formMethodDef(name: String, targs: List[Symbol], args: List[Symbol], res: Type): SMethodDef = {
     val methodArgs = args.map{arg =>
+      val tpe = parseType(arg.tpe)
+      val isElemOrCont = tpe match {
+        case STraitCall("Elem", _) => true
+        case STraitCall("Cont", _) => true
+        case _ => false
+      }
       SMethodArg(
         impFlag = false, overFlag = false,
         name = arg.nameString,
-        tpe = parseType(arg.tpe),
-        default = None, annotations = Nil, isElemOrCont = false
+        tpe = tpe,
+        default = None, annotations = Nil, isElemOrCont = isElemOrCont
       )
     }
     val argSections = if (methodArgs.isEmpty) Nil else List(SMethodArgs(methodArgs))
