@@ -30,12 +30,12 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
           updateSelf _,
           repSynonym _,
           checkEntityCompanion _,
+          constr2apply _,
           filterClassTags _,
           genEntityImpicits _,
           genMethodsImplicits _,
           defaultMethod _,
           defaultWrapperImpl _,
-          filterConstructor _, // remove methods with name <init>
           extType2WrapperInWrappers _
         ))
         val enrichedModule = pipeline(module)
@@ -107,6 +107,23 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
         }
       }
     }.moduleTransform(module)
+  }
+
+  def constr2apply(module: SEntityModuleDef): SEntityModuleDef = {
+    val (constrs, entityBody) = module.entityOps.body partition{ _ match {
+      case m: SMethodDef if m.name == "<init>" => true
+      case _ => false
+    }}
+    val applies = constrs collect {
+      case c: SMethodDef => c.copy(name = "apply", tpeArgs = (module.entityOps.tpeArgs ++ c.tpeArgs).distinct)
+    }
+    val newEntityCompanion = module.entityOps.companion match {
+      case Some(companion: STraitDef) => Some(companion.copy(body = applies ++ companion.body))
+      case other => other
+    }
+    val newEntityOps = module.entityOps.copy(body = entityBody, companion = newEntityCompanion)
+
+    module.copy(entityOps = newEntityOps, entities = List(newEntityOps))
   }
 
   def extType2WrapperInWrappers(module: SEntityModuleDef): SEntityModuleDef = {
