@@ -369,50 +369,40 @@ trait Enricher extends Common {
 
   /** ClassTags are removed because they can be extracted from Elems. */
   def filterClassTags(module: SEntityModuleDef) = {
-    def filterClassTagInClassArgs(classArgs: SClassArgs) = {
-      val args = classArgs.args.filter{carg => carg.tpe match {
-        case tc: STraitCall if tc.name == "ClassTag" => false
-        case _ => true
-      }}
-      classArgs.copy(args = args)
-    }
-    def filerClassTagInMethodArgs(methodArgs: SMethodArgs) = {
-      val args = methodArgs.args.filter{marg => marg.tpe match {
-        case tc: STraitCall if tc.name == "ClassTag" => false
-        case _ => true
-      }}
-      methodArgs.copy(args = args)
-    }
-    def filterClassTagInMethod(m: SMethodDef): SMethodDef = {
-      val argSections = m.argSections.map(filerClassTagInMethodArgs)
-      val body = m.body.map(_ match {
-        case methodDef: SMethodDef => filterClassTagInMethod(methodDef)
-        case item => item
-      })
+    class ClassTagTransformer extends MetaAstTransformer {
+      override def methodArgsTransform(args: SMethodArgs): SMethodArgs = {
+        val newArgs = args.args.filter {marg => marg.tpe match {
+          case tc: STraitCall if tc.name == "ClassTag" => false
+          case _ => true
+        }} mapConserve methodArgTransform
 
-      m.copy(argSections = argSections, body = body)
-    }
-    def filterClassTagInBody(blist: List[SBodyItem]) = {
-      blist.map{_ match {
-        case m: SMethodDef => filterClassTagInMethod(m)
-        case item => item
-      }}.filter{_ match {
-        case SMethodDef(_,_,_,Some(STraitCall("ClassTag", _)),true,_,_,_,_,_) => false
-        case _ => true
-      }}
-    }
-    val entityOps = module.entityOps.copy(body = filterClassTagInBody(module.entityOps.body))
-    val entities = module.entities.map{entity => entity.copy(body = filterClassTagInBody(entity.body))}
-    val concreteSClasses = module.concreteSClasses.map{clazz =>
-      clazz.copy(
-        args = filterClassTagInClassArgs(clazz.args),
-        implicitArgs = filterClassTagInClassArgs(clazz.implicitArgs),
-        body = filterClassTagInBody(clazz.body)
-      )
+        args.copy(args = newArgs)
+      }
+      override def methodArgSectionsTransform(argSections: List[SMethodArgs]): List[SMethodArgs] = {
+        argSections mapConserve methodArgsTransform filter { _ match {
+          case SMethodArgs(List()) | SMethodArgs(Nil) => false
+          case _ => true
+        }}
+      }
+      override def bodyTransform(body: List[SBodyItem]): List[SBodyItem] = {
+        body filter{_ match {
+          case SMethodDef(_,_,_,Some(STraitCall("ClassTag", _)),true,_,_,_,_,_) => false
+          case _ => true
+        }} mapConserve bodyItemTransform
+      }
+      override def classArgsTransform(classArgs: SClassArgs): SClassArgs = {
+        val newArgs = classArgs.args.filter{carg => carg.tpe match {
+          case tc: STraitCall if tc.name == "ClassTag" => false
+          case _ => true
+        }} mapConserve classArgTransform
+
+        classArgs.copy(args = newArgs)
+      }
     }
 
-    module.copy(entityOps = entityOps, entities = entities, concreteSClasses = concreteSClasses)
+    new ClassTagTransformer().moduleTransform(module)
   }
+
   /** According to scala docs, a method or constructor can have only one implicit parameter list,
     * and it must be the last parameter list given. */
   def joinImplicitArgs(argSections: List[SMethodArgs]): List[SMethodArgs] = {
