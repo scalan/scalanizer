@@ -164,7 +164,8 @@ object ScalanPluginState {
   val extMap = Map[String, Set[String]](
     "WDoubleNums" -> Set("WDoubleNumsDsl", "WDoubleNumsDslSeq", "WDoubleNumsDslExp"),
     "WPlusMonoids" -> Set("WPlusMonoidsDsl", "WPlusMonoidsDslSeq", "WPlusMonoidsDslExp"),
-    "WCols" -> Set("WColsDsl", "WColsDslSeq", "WColsDslExp")
+    "WCols" -> Set("WColsDsl", "WColsDslSeq", "WColsDslExp"),
+    "WDenseVecs" -> Set("WDenseVecsDsl", "WDenseVecsDslSeq", "WDenseVecsDslExp")
   )
 
   ScalanPluginConfig.codegenConfig.entityFiles.foreach { file =>

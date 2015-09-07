@@ -1,5 +1,6 @@
 package scalan.plugin
 
+import scala.annotation.tailrec
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
 import scalan.meta.ScalanAst._
@@ -57,9 +58,9 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     ScalanPluginConfig.externalTypes.contains(sym.nameString)
   }
 
-  /** Form Meta AST method by using symbols and types from Scala AST. */
-  def formMethodDef(name: String, targs: List[Symbol], args: List[Symbol], res: Type): SMethodDef = {
-    val methodArgs = args.map{arg =>
+  /** Form the list of method arguments in terms of Meta AST by using symbols from Scala AST. */
+  def formMethodArgs(args: List[Symbol]): List[SMethodArg] = {
+    args.map{arg =>
       val tpe = parseType(arg.tpe)
       val isElemOrCont = tpe match {
         case STraitCall("Elem", _) => true
@@ -73,19 +74,27 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
         default = None, annotations = Nil, isElemOrCont = isElemOrCont
       )
     }
-    val argSections = if (methodArgs.isEmpty) Nil else List(SMethodArgs(methodArgs))
-    val tpeArgs = targs.map{targ =>
+  }
+
+  def formMethodTypeArgs(targs: List[Symbol]): List[STpeArg] = {
+    targs.map{targ =>
       STpeArg(
         name = targ.nameString,
         bound = None, contextBound = Nil, tparams = Nil
       )
     }
+  }
+  def formMethodRes(res: Type): STpeExpr = parseType(res)
 
+  def formMethodDef(name: String,
+                    tpeArgs: List[STpeArg],
+                    argSections: List[SMethodArgs],
+                    tpeRes: STpeExpr): SMethodDef = {
     SMethodDef(
       name = name,
       tpeArgs = tpeArgs,
       argSections = argSections,
-      tpeRes = Some(parseType(res)),
+      tpeRes = Some(tpeRes),
       isImplicit = false, isOverride = false,
       overloadId = None,
       annotations = List(SMethodAnnotation(annotationClass = "External", args = Nil)),
@@ -179,11 +188,15 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
                     actualMemberType: Type, originalMemberType: Type): Unit = {
     val memberType = originalMemberType
     val member = memberType match {
-      case NullaryMethodType(resultType) => formMethodDef(memberName.toString, Nil, Nil, resultType)
-      case MethodType(args, resultType) => formMethodDef(memberName.toString, Nil, args, resultType)
-      case PolyType(typeArgs, MethodType(args, MethodType(_, resultType))) =>
-        formMethodDef(memberName.toString, typeArgs, args, resultType)
-      case TypeRef(_,sym,_) => formMethodDef(memberName.toString, Nil, Nil, sym.tpe)
+      case method @ (_:NullaryMethodType | _:MethodType) =>
+        val (args, res) = uncurryMethodType(method)
+        formMethodDef(memberName.toString, Nil, args, res)
+      case PolyType(typeArgs, method @ (_:NullaryMethodType | _:MethodType)) =>
+        val tpeArgs = formMethodTypeArgs(typeArgs)
+        val (args, res) = uncurryMethodType(method)
+
+        formMethodDef(memberName.toString, tpeArgs, args, res)
+      case TypeRef(_,sym,_) => formMethodDef(memberName.toString, Nil, Nil, formMethodRes(sym.tpe))
       case _ => throw new NotImplementedError(s"memberType = ${showRaw(memberType)}")
     }
     val updatedModule = ScalanPluginState.wrappers.get(externalType.nameString) match {
@@ -192,6 +205,24 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
 
     }
     ScalanPluginState.wrappers(externalType.nameString) = updatedModule
+  }
+
+  def uncurryMethodType(method: Type): (List[SMethodArgs], STpeExpr) = {
+    def addArgSection(sections: List[SMethodArgs], args: List[Symbol]): List[SMethodArgs] = {
+      val methodArgs = formMethodArgs(args)
+
+      if (methodArgs.isEmpty) sections
+      else SMethodArgs(methodArgs) :: sections
+    }
+    @tailrec
+    def loop(currMethod: Type, currArgs: List[SMethodArgs]): (List[SMethodArgs], STpeExpr) = {
+      currMethod match {
+        case NullaryMethodType(method) => loop(method, currArgs)
+        case MethodType(args, method: MethodType) => loop(method, addArgSection(currArgs, args))
+        case MethodType(args, resType) => (addArgSection(currArgs, args), parseType(resType))
+      }
+    }
+    loop(method, Nil)
   }
 
   def config: CodegenConfig = ScalanPluginConfig.codegenConfig
