@@ -11,6 +11,12 @@ trait Common {
   /** Gets name of companion by entity name */
   def comp(name: String) = name + "Companion"
 
+  /** Removing of internal annotation that should be ignored at code generation. */
+  def isInternalAnnot(annotation: SAnnotation) = annotation match {
+    //case SMethodAnnotation("Constructor", _) => true
+    case _ => false
+  }
+
   /** The class implements a default Meta AST transformation strategy: breadth-first search */
   class MetaAstTransformer {
     def methodArgTransform(arg: SMethodArg): SMethodArg = arg

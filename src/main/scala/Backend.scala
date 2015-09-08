@@ -3,7 +3,7 @@ package scalan.plugin
 import scala.reflect.internal.util.BatchSourceFile
 import scalan.meta.ScalanAst._
 
-trait Backend extends PatternMatching {
+trait Backend extends Common with PatternMatching {
 
   type Compiler <: scala.tools.nsc.Global
   val compiler: Compiler
@@ -48,7 +48,7 @@ trait Backend extends PatternMatching {
     val repStats = genBody(tr.body)
     val entityParents = genParents(tr.ancestors)
     val tparams = tr.tpeArgs.map(genTypeArg)
-    val mods = Modifiers(NoFlags, tpnme.EMPTY, tr.annotations.map(genAnnotation))
+    val mods = Modifiers(NoFlags, tpnme.EMPTY, genAnnotations(tr.annotations))
     val res = q"$mods trait $entityName[..$tparams] extends ..$entityParents { $entitySelf => ..$repStats }"
 
     res
@@ -63,7 +63,7 @@ trait Backend extends PatternMatching {
     val repStats = genBody(c.body)
     val repparamss = genClassArgs(c.args, c.implicitArgs)
     val flags = if (c.isAbstract) Flag.ABSTRACT else NoFlags
-    val mods = Modifiers(flags, tpnme.EMPTY, c.annotations.map(genAnnotation))
+    val mods = Modifiers(flags, tpnme.EMPTY, genAnnotations(c.annotations))
     val tparams = c.tpeArgs.map(genTypeArg)
     val res = q"""
             $mods class $className[..$tparams] (...$repparamss)
@@ -110,7 +110,7 @@ trait Backend extends PatternMatching {
     val impFlag = if (m.isImplicit) Flag.IMPLICIT else NoFlags
     val overFlag = if (m.isOverride) Flag.OVERRIDE else NoFlags
     val flags = Flag.PARAM | impFlag | overFlag
-    val mods = Modifiers(flags, tpnme.EMPTY, m.annotations.map(genAnnotation))
+    val mods = Modifiers(flags, tpnme.EMPTY, genAnnotations(m.annotations))
     val tpt = m.tpeRes match {
       case Some(tpeRes) => if (ctx.toRep) repTypeExpr(tpeRes) else genTypeExpr(tpeRes)
       case None => EmptyTree
@@ -132,7 +132,7 @@ trait Backend extends PatternMatching {
     val overFlag = if (arg.overFlag) Flag.OVERRIDE else NoFlags
     val impFlag = if (arg.impFlag) Flag.IMPLICIT else NoFlags
     val flags = overFlag | impFlag
-    val mods = Modifiers(flags, tpnme.EMPTY, arg.annotations.map(genAnnotation))
+    val mods = Modifiers(flags, tpnme.EMPTY, genAnnotations(arg.annotations))
 
     q"$mods val $tname: $tpt"
   }
@@ -278,7 +278,7 @@ trait Backend extends PatternMatching {
     val overFlag = if (arg.overFlag) Flag.OVERRIDE else NoFlags
     val impFlag = if (arg.impFlag) Flag.IMPLICIT else NoFlags
     val flags = Flag.PARAM | valFlag | overFlag | impFlag
-    val mods = Modifiers(flags, tpnme.EMPTY, arg.annotations.map(genAnnotation))
+    val mods = Modifiers(flags, tpnme.EMPTY, genAnnotations(arg.annotations))
 
     q"$mods val $tname: $tpt"
   }
@@ -386,6 +386,9 @@ trait Backend extends PatternMatching {
     case unknown => throw new NotImplementedError(s"genExpr($unknown)")
   }
 
+  def genAnnotations(annotations: List[SAnnotation])(implicit ctx: GenCtx): List[Tree] = {
+    annotations.filterNot(isInternalAnnot).map(genAnnotation)
+  }
   def genAnnotation(annot: SAnnotation)(implicit ctx: GenCtx): Tree = {
     def genAnnotExpr(expr: SExpr): Tree = expr match {
       case SConst(c: Any) => compiler.Literal(compiler.Constant(c))

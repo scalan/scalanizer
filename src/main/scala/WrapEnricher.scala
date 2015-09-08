@@ -115,7 +115,12 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
       case _ => false
     }}
     val applies = constrs collect {
-      case c: SMethodDef => c.copy(name = "apply", tpeArgs = (module.entityOps.tpeArgs ++ c.tpeArgs).distinct)
+      case c: SMethodDef => c.copy(
+        name = "apply",
+        tpeArgs = (module.entityOps.tpeArgs ++ c.tpeArgs).distinct,
+        // This is an internal annotation. And it should be ignored during in the backend.
+        annotations = List(SMethodAnnotation("Constructor", Nil))
+      )
     }
     val newEntityCompanion = module.entityOps.companion match {
       case Some(companion: STraitDef) => Some(companion.copy(body = applies ++ companion.body))
