@@ -119,7 +119,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
         name = "apply",
         tpeArgs = (module.entityOps.tpeArgs ++ c.tpeArgs).distinct,
         // This is an internal annotation. And it should be ignored during in the backend.
-        annotations = List(SMethodAnnotation("Constructor", Nil))
+        annotations = List(SMethodAnnotation("Constructor", List(SAssign(SIdent("original"), c))))
       )
     }
     val newEntityCompanion = module.entityOps.companion match {

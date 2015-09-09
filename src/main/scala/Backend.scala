@@ -387,7 +387,7 @@ trait Backend extends Common with PatternMatching {
   }
 
   def genAnnotations(annotations: List[SAnnotation])(implicit ctx: GenCtx): List[Tree] = {
-    annotations.filterNot(isInternalAnnot).map(genAnnotation)
+    filterInternalAnnot(annotations).map(genAnnotation)
   }
   def genAnnotation(annot: SAnnotation)(implicit ctx: GenCtx): Tree = {
     def genAnnotExpr(expr: SExpr): Tree = expr match {

@@ -11,12 +11,6 @@ trait Common {
   /** Gets name of companion by entity name */
   def comp(name: String) = name + "Companion"
 
-  /** Removing of internal annotation that should be ignored at code generation. */
-  def isInternalAnnot(annotation: SAnnotation) = annotation match {
-    //case SMethodAnnotation("Constructor", _) => true
-    case _ => false
-  }
-
   /** The class implements a default Meta AST transformation strategy: breadth-first search */
   class MetaAstTransformer {
     def methodArgTransform(arg: SMethodArg): SMethodArg = arg
@@ -108,5 +102,18 @@ trait Common {
         arg.copy(tpe = STraitCall(wrap(name), params))
       case _ => classArg
     }
+  }
+
+  /** Removing of internal parts of annotations that should be ignored at code generation. */
+  def filterInternalAnnot(annotations: List[SAnnotation]): List[SAnnotation] = {
+    annotations map {_ match {
+      case annotation @ SMethodAnnotation("Constructor", args) =>
+        val newArgs = args filter {_ match {
+          case SAssign(SIdent("original"), m: SMethodDef) => false
+          case _ => true
+        }}
+        annotation.copy(args = newArgs)
+      case other => other
+    }}
   }
 }
