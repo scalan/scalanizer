@@ -166,7 +166,8 @@ object ScalanPluginState {
     "WDoubleNums" -> Set("WDoubleNumsDsl", "WDoubleNumsDslSeq", "WDoubleNumsDslExp"),
     "WPlusMonoids" -> Set("WPlusMonoidsDsl", "WPlusMonoidsDslSeq", "WPlusMonoidsDslExp"),
     "WCols" -> Set("WColsDsl", "WColsDslSeq", "WColsDslExp"),
-    "WDenseVecs" -> Set("WDenseVecsDsl", "WDenseVecsDslSeq", "WDenseVecsDslExp")
+    "WDenseVecs" -> Set("WDenseVecsDsl", "WDenseVecsDslSeq", "WDenseVecsDslExp"),
+    "WDenseMatrs" -> Set("WDenseMatrsDsl", "WDenseMatrsDslSeq", "WDenseMatrsDslExp")
   )
 
   ScalanPluginConfig.codegenConfig.entityFiles.foreach { file =>
