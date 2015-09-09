@@ -87,20 +87,46 @@ trait Common {
   }
 
   class ExtType2WrapperTransformer(name: String) extends MetaAstTransformer {
+    val typeTransformer = new ExtType2WrapperTypeTransformer(name)
+
     override def methodArgTransform(arg: SMethodArg): SMethodArg = arg match {
-      case marg @ SMethodArg(_,_,_,STraitCall(tname, params),_,_,_) if tname == name =>
-        marg.copy(tpe = STraitCall(wrap(name), params))
+      case marg : SMethodArg => marg.copy(tpe = typeTransformer.typeTransform(marg.tpe))
       case _ => arg
     }
     override def methodResTransform(res: Option[STpeExpr]): Option[STpeExpr] = res match {
-      case Some(STraitCall(tname, tparams)) if tname == name =>
-        Some(STraitCall(wrap(name), tparams))
+      case Some(traitCall: STraitCall) => Some(typeTransformer.traitCallTransform(traitCall))
       case _ => res
     }
     override def classArgTransform(classArg: SClassArg): SClassArg = classArg match {
-      case arg @ SClassArg(_,_,_,_,STraitCall(tname, params),_,_,_) if tname == name =>
-        arg.copy(tpe = STraitCall(wrap(name), params))
+      case carg : SClassArg => carg.copy(tpe = typeTransformer.typeTransform(carg.tpe))
       case _ => classArg
+    }
+  }
+
+  class MetaTypeTransformer {
+    def typeTransform(tpe: STpeExpr): STpeExpr = tpe match {
+      case empty: STpeEmpty => emptyTransform(empty)
+      case traitCall: STraitCall => traitCallTransform(traitCall)
+      case prim: STpePrimitive => primitiveTransform(prim)
+    }
+
+    def emptyTransform(emptyType: STpeEmpty) = emptyType
+    def primitiveTransform(prim: STpePrimitive) = prim
+
+    def traitCallArgsTransform(args: List[STpeExpr]): List[STpeExpr] = args mapConserve(typeTransform)
+    def traitCallNameTransform(name: String): String = name
+    def traitCallTransform(traitCall: STraitCall): STraitCall = {
+      val newName = traitCallNameTransform(traitCall.name)
+      val newArgs = traitCallArgsTransform(traitCall.tpeSExprs)
+
+      traitCall.copy(name = newName, tpeSExprs = newArgs)
+    }
+  }
+
+  class ExtType2WrapperTypeTransformer(name: String) extends MetaTypeTransformer {
+    override def traitCallNameTransform(tname: String): String = {
+      if (tname == name) wrap(tname)
+      else tname
     }
   }
 

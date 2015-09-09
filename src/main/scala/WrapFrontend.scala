@@ -221,6 +221,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
         case MethodType(args, method: MethodType) => loop(method, addArgSection(currArgs, args))
         case MethodType(args, resType) => (addArgSection(currArgs, args), parseType(resType))
         case tref: AbstractTypeRef => (currArgs, parseType(tref.typeSymbol.tpe))
+        case tref: NoArgsTypeRef => (currArgs, parseType(tref.typeSymbol.tpe))
       }
     }
     loop(method, Nil)

@@ -166,6 +166,7 @@ object ScalanPluginState {
     "WDoubleNums" -> Set("WDoubleNumsDsl", "WDoubleNumsDslSeq", "WDoubleNumsDslExp"),
     "WPlusMonoids" -> Set("WPlusMonoidsDsl", "WPlusMonoidsDslSeq", "WPlusMonoidsDslExp"),
     "WCols" -> Set("WColsDsl", "WColsDslSeq", "WColsDslExp"),
+    "WVecs" -> Set("WVecsDsl", "WVecsDslSeq", "WVecsDslExp"),
     "WDenseVecs" -> Set("WDenseVecsDsl", "WDenseVecsDslSeq", "WDenseVecsDslExp"),
     "WDenseMatrs" -> Set("WDenseMatrsDsl", "WDenseMatrsDslSeq", "WDenseMatrsDslExp")
   )
