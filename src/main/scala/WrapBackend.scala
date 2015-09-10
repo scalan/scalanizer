@@ -94,7 +94,10 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
 
   def updateWrappersCake(cake: WrappersCake, module: SEntityModuleDef): WrappersCake = {
     val absAncestors = cake.abs.ancestors :+ STraitCall(module.name + "Dsl", Nil)
-    val seqAncestors = cake.seq.ancestors :+ STraitCall(module.name + "DslSeq", Nil)
+    val seqAncestors = if (ScalanPluginConfig.codegenConfig.isSeqEnabled)
+                         cake.seq.ancestors :+ STraitCall(module.name + "DslSeq", Nil)
+                       else
+                         cake.seq.ancestors
     val expAncestors = cake.exp.ancestors :+ STraitCall(module.name + "DslExp", Nil)
 
     WrappersCake(

@@ -21,7 +21,8 @@ object ScalanPluginConfig {
       "scalan.common.Default"
     ),
     entityTypeSynonyms = Map[String, String](),
-    isAlreadyRep = false
+    isAlreadyRep = false,
+    isSeqEnabled = false
   )
   val typeClasses = List[String]("Default")
   val home = "/home/mgekk/scalan/scalanizer-demo"

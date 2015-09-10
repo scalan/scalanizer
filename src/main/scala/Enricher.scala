@@ -339,6 +339,7 @@ trait Enricher extends Common {
                     ): List[STraitDef] = {
     val boilerplateSuffix = Map("Dsl" -> "Abs", "DslSeq" -> "Seq", "DslExp" -> "Exp")
     val extensions = ScalanPluginState.extMap(moduleName)
+                     .filterNot(ext => ext.endsWith("Seq") && !ScalanPluginConfig.codegenConfig.isSeqEnabled)
 
     (extensions map {extName =>
       val extSuffix = extName.stripPrefix(moduleName)
