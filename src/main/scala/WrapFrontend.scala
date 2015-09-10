@@ -220,7 +220,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
       val methodArgs = formMethodArgs(args)
 
       if (methodArgs.isEmpty) sections
-      else SMethodArgs(methodArgs) :: sections
+      else sections :+ SMethodArgs(methodArgs)
     }
     @tailrec
     def loop(currMethod: Type, currArgs: List[SMethodArgs]): (List[SMethodArgs], STpeExpr) = {
