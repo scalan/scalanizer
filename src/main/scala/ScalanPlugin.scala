@@ -164,11 +164,14 @@ object ScalanPluginState {
   val extMap = Map[String, Set[String]](
     "WNums" -> Set("WNumsDsl", "WNumsDslSeq", "WNumsDslExp"),
     "WDoubleNums" -> Set("WDoubleNumsDsl", "WDoubleNumsDslSeq", "WDoubleNumsDslExp"),
+    "WNumMonoids" -> Set("WNumMonoidsDsl", "WNumMonoidsDslSeq", "WNumMonoidsDslExp"),
     "WPlusMonoids" -> Set("WPlusMonoidsDsl", "WPlusMonoidsDslSeq", "WPlusMonoidsDslExp"),
     "WCols" -> Set("WColsDsl", "WColsDslSeq", "WColsDslExp"),
     "WVecs" -> Set("WVecsDsl", "WVecsDslSeq", "WVecsDslExp"),
     "WDenseVecs" -> Set("WDenseVecsDsl", "WDenseVecsDslSeq", "WDenseVecsDslExp"),
-    "WDenseMatrs" -> Set("WDenseMatrsDsl", "WDenseMatrsDslSeq", "WDenseMatrsDslExp")
+    "WMatrs" -> Set("WMatrsDsl", "WMatrsDslSeq", "WMatrsDslExp"),
+    "WDenseMatrs" -> Set("WDenseMatrsDsl", "WDenseMatrsDslSeq", "WDenseMatrsDslExp"),
+    "WLAs" -> Set("WLAsDsl", "WLAsDslSeq", "WLAsDslExp")
   )
 
   ScalanPluginConfig.codegenConfig.entityFiles.foreach { file =>
@@ -186,7 +189,8 @@ object ScalanPluginState {
     "Vecs" -> List("NumMonoids", "Cols", "LinearAlgebra"),
     "Matrs" -> List("NumMonoids", "Cols", "Vecs", "LinearAlgebra"),
     "LinearAlgebra" -> List("NumMonoids", "Cols", "Vecs", "Matrs"),
-    "LinearAlgebraOps" -> List("Nums", "NumMonoids", "Vecs", "Matrs", "LinearAlgebra")
+    "LinearAlgebraOps" -> List("Nums", "NumMonoids", "Vecs", "Matrs", "LinearAlgebra"),
+    "LA" -> List("Nums", "NumMonoids", "Vecs", "Matrs", "LinearAlgebra")
   )
 
   /** Mapping of module name to the package where it is defined. */
@@ -197,7 +201,8 @@ object ScalanPluginState {
     "Vecs" -> "scalanizer.linalgebra",
     "Matrs" -> "scalanizer.linalgebra",
     "LinearAlgebra" -> "scalanizer.linalgebra",
-    "LinearAlgebraOps" -> "scalanizer.linalgebra"
+    "LinearAlgebraOps" -> "scalanizer.linalgebra",
+    "LA" -> "scalanizer.linalgebra"
   )
 
   /** Mapping of external type names to their wrappers. */

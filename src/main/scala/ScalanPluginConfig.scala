@@ -30,7 +30,8 @@ object ScalanPluginConfig {
     "NumMonoid", "PlusMonoid",
     "Col", "ColOverArray", "PairCol",
     "Vec", "DenseVec",
-    "Matr", "DenseMatr"
+    "Matr", "DenseMatr",
+    "LA"
   )
 }
 
