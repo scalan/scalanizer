@@ -163,8 +163,16 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
   /** Add method or value to a wrapper. */
   def addMember(externalType: Symbol, member: SMethodDef, module: SEntityModuleDef): SEntityModuleDef = {
     val isCompanion = externalType.isModuleClass
+    def isAlreadyAdded = {
+      if (isCompanion) {
+        module.entityOps.companion match {
+          case Some(companion) => companion.body.contains(member)
+          case None => false
+        }
+      } else module.entityOps.body.contains(member)
+    }
 
-    if (module.entityOps.body.contains(member)) {
+    if (isAlreadyAdded) {
       module
     } else {
       val updatedEntity = if (isCompanion) {
