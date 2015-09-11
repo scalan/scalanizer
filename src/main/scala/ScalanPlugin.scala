@@ -190,7 +190,8 @@ object ScalanPluginState {
     "Vecs" -> List("NumMonoids", "Cols", "LinearAlgebra"),
     "Matrs" -> List("NumMonoids", "Cols", "Vecs", "LinearAlgebra"),
     "LinearAlgebra" -> List("NumMonoids", "Cols", "Vecs", "Matrs"),
-    "LinearAlgebraOps" -> List("Nums", "NumMonoids", "Vecs", "Matrs", "LinearAlgebra"),
+//    "LinearAlgebraOps" -> List("Nums", "NumMonoids", "Vecs", "Matrs", "LinearAlgebra"),
+    "LinearAlgebraOps" -> List(),
     "MatrOps" -> List("Nums", "NumMonoids", "Vecs", "Matrs", "LinearAlgebra")
   )
 
@@ -214,10 +215,10 @@ object ScalanPlugin {
   /** Yields the list of Components to be executed in this plugin */
   def components(global: Global) = {
     val result = scala.collection.mutable.ListBuffer[PluginComponent](
-      new WrapFrontend(global)
-      ,new WrapEnricher(global)
-      ,new WrapBackend(global)
-      ,new CheckExtensions(global)
+//      new WrapFrontend(global)
+//      ,new WrapEnricher(global)
+//      ,new WrapBackend(global)
+      new CheckExtensions(global)
       ,new ScalanPluginComponent(global)
 //      ,new Debug(global)
     )
