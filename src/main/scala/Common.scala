@@ -108,6 +108,7 @@ trait Common {
       case empty: STpeEmpty => emptyTransform(empty)
       case traitCall: STraitCall => traitCallTransform(traitCall)
       case prim: STpePrimitive => primitiveTransform(prim)
+      case _ => tpe
     }
 
     def emptyTransform(emptyType: STpeEmpty) = emptyType
