@@ -36,6 +36,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     }
   }
 
+  /** Checks that the method has @HotSpot */
   def isHotSpotTree(tree: Tree): Boolean = tree match {
     case method: DefDef =>
       val isHotSpot = method.symbol.annotations exists { annotation =>
@@ -103,7 +104,17 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     )
   }
 
-  /** Create Meta Module for a wrapper. */
+  /** Creates Meta Module for an external type symbol. For example:
+    * trait WCols extends Base with TypeWrappers { self: WrappersDsl =>
+    *   trait WCol[A] extends TypeWrapper[Col[A], WCol[A]] { self =>
+    *     @External def arr: Array[A]
+    *   };
+    *   trait WColCompanion extends ExCompanion1[WCol]
+    * }
+    * where
+    *   externalType is "class Col"
+    *   member is "@External def arr: Array[A]"
+    * */
   def createWrapper(externalType: Symbol, member: SMethodDef): SEntityModuleDef = {
     val clazz = externalType.companionClass
     val className = wrap(clazz.nameString)
@@ -160,7 +171,8 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     )
   }
 
-  /** Add method or value to a wrapper. */
+  /** Adds a method or a value to the wrapper. It checks the external type symbol
+    * to determine where to put the method (value) - into class or its companion. */
   def addMember(externalType: Symbol, member: SMethodDef, module: SEntityModuleDef): SEntityModuleDef = {
     val isCompanion = externalType.isModuleClass
     def isAlreadyAdded = {
@@ -191,20 +203,40 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     }
   }
 
-  /** Create/update Meta AST of the module for the external type. */
+  /** Create/update Meta AST of the module for the external type. It assembles
+    * Meta AST of a method (value) by its Scala's Type. */
   def updateWrapper(externalType: Symbol, memberName: Name,
                     actualMemberType: Type, originalMemberType: Type): Unit = {
     val memberType = originalMemberType
     val member = memberType match {
       case method @ (_:NullaryMethodType | _:MethodType) =>
+        /* Not polymorphic methods like:
+         *   trait Col[A] {
+         *     def arr: Array[A]
+         *     def apply(i: Int): A
+         *   }
+         **/
         val (args, res) = uncurryMethodType(method)
         formMethodDef(memberName.toString, Nil, args, res)
       case PolyType(typeArgs, method @ (_:NullaryMethodType | _:MethodType)) =>
+        /* Methods that have type parameters like:
+         * object Col {
+         *   def apply[T: ClassTag](arr: Array[T]): Col[T] = fromArray(arr)
+         *   def fromArray[T: ClassTag](arr: Array[T]): Col[T] = new ColOverArray(arr)
+         * }
+         **/
         val tpeArgs = formMethodTypeArgs(typeArgs)
         val (args, res) = uncurryMethodType(method)
 
         formMethodDef(memberName.toString, tpeArgs, args, res)
-      case TypeRef(_,sym,_) => formMethodDef(memberName.toString, Nil, Nil, formMethodRes(sym.tpe))
+      case TypeRef(_,sym,_) =>
+        /* Example: arr.length where
+         * arr has type MyArr[Int] and
+         * class MyArr[T] {
+         *   val length = 0
+         * }
+         **/
+        formMethodDef(memberName.toString, Nil, Nil, formMethodRes(sym.tpe))
       case _ => throw new NotImplementedError(s"memberType = ${showRaw(memberType)}")
     }
     val updatedModule = ScalanPluginState.wrappers.get(externalType.nameString) match {
