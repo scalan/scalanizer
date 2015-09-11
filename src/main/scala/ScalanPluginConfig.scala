@@ -32,7 +32,7 @@ object ScalanPluginConfig {
     "Col", "ColOverArray", "PairCol",
     "Vec", "DenseVec",
     "Matr", "DenseMatr",
-    "LA"
+    "MatrOp", "BaseMatrOp"
   )
 }
 

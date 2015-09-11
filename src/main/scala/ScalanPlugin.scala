@@ -171,7 +171,8 @@ object ScalanPluginState {
     "WDenseVecs" -> Set("WDenseVecsDsl", "WDenseVecsDslSeq", "WDenseVecsDslExp"),
     "WMatrs" -> Set("WMatrsDsl", "WMatrsDslSeq", "WMatrsDslExp"),
     "WDenseMatrs" -> Set("WDenseMatrsDsl", "WDenseMatrsDslSeq", "WDenseMatrsDslExp"),
-    "WLAs" -> Set("WLAsDsl", "WLAsDslSeq", "WLAsDslExp")
+    "WMatrOps" -> Set("WMatrOpsDsl", "WMatrOpsDslSeq", "WMatrOpsDslExp"),
+    "WBaseMatrOps" -> Set("WBaseMatrOpsDsl", "WBaseMatrOpsDslSeq", "WBaseMatrOpsDslExp")
   )
 
   ScalanPluginConfig.codegenConfig.entityFiles.foreach { file =>
@@ -190,7 +191,7 @@ object ScalanPluginState {
     "Matrs" -> List("NumMonoids", "Cols", "Vecs", "LinearAlgebra"),
     "LinearAlgebra" -> List("NumMonoids", "Cols", "Vecs", "Matrs"),
     "LinearAlgebraOps" -> List("Nums", "NumMonoids", "Vecs", "Matrs", "LinearAlgebra"),
-    "LA" -> List("Nums", "NumMonoids", "Vecs", "Matrs", "LinearAlgebra")
+    "MatrOps" -> List("Nums", "NumMonoids", "Vecs", "Matrs", "LinearAlgebra")
   )
 
   /** Mapping of module name to the package where it is defined. */
@@ -202,7 +203,7 @@ object ScalanPluginState {
     "Matrs" -> "scalanizer.linalgebra",
     "LinearAlgebra" -> "scalanizer.linalgebra",
     "LinearAlgebraOps" -> "scalanizer.linalgebra",
-    "LA" -> "scalanizer.linalgebra"
+    "MatrOps" -> "scalanizer.linalgebra"
   )
 
   /** Mapping of external type names to their wrappers. */
