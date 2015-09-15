@@ -104,6 +104,14 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     )
   }
 
+  def getExtTypeAncestors(externalType: Symbol): List[STraitCall] = {
+    externalType.ancestors filter { ancestor =>
+      ancestor.nameString != "Object" && ancestor.nameString != "Any"
+    } map { ancestor =>
+      parseType(ancestor.tpe)
+    } collect {case tr: STraitCall => tr}
+  }
+
   /** Creates Meta Module for an external type symbol. For example:
     * trait WCols extends Base with TypeWrappers { self: WrappersDsl =>
     *   trait WCol[A] extends TypeWrapper[Col[A], WCol[A]] { self =>
@@ -133,10 +141,10 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     val entity = STraitDef(
       name = className,
       tpeArgs = tpeArgs,
-      ancestors = List(STraitCall(
+      ancestors = STraitCall(
         "TypeWrapper",
         List(STraitCall(clazz.nameString, typeParams), STraitCall(className, typeParams))
-      )),
+      ) :: getExtTypeAncestors(externalType),
       body =  if (isCompanion) Nil else List[SBodyItem](member),
       selfType = Some(SSelfTypeDef("self", Nil)),
       companion = Some(STraitDef(
