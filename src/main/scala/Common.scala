@@ -46,11 +46,18 @@ trait Common {
         case _ => companion
       }
     }
+
+    def entityAncestorTransform(ancestor: STraitCall): STraitCall = ancestor
+    def entityAncestorsTransform(ancestors: List[STraitCall]): List[STraitCall] = {
+      ancestors mapConserve entityAncestorTransform
+    }
+
     def entityTransform(entity: STraitDef): STraitDef = {
       val newBody = bodyTransform(entity.body)
       val newCompanion = entityCompTransform(entity.companion)
+      val newAncestors = entityAncestorsTransform(entity.ancestors)
 
-      entity.copy(body = newBody, companion = newCompanion)
+      entity.copy(body = newBody, companion = newCompanion, ancestors = newAncestors)
     }
 
     def classCompanionTransform(companion: Option[STraitOrClassDef]): Option[STraitOrClassDef] = {
