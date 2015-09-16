@@ -49,9 +49,9 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
   /** For each method call, create type wrapper if the external type should be wrapped. */
   def catchWrapperUsage(tree: Tree): Unit = tree match {
     case sel @ Select(objSel @ Select(_, obj), member) if isWrapper(objSel.tpe.typeSymbol) =>
-      updateWrapper(objSel.tpe.typeSymbol, member, sel.tpe, sel.symbol.originalInfo)
+      updateWrapper(objSel.tpe, member, sel.tpe, sel.symbol.originalInfo)
     case sel @ Select(objSel, member) if isWrapper(objSel.tpe.typeSymbol) =>
-      updateWrapper(objSel.tpe.typeSymbol, member, sel.tpe, sel.symbol.originalInfo)
+      updateWrapper(objSel.tpe, member, sel.tpe, sel.symbol.originalInfo)
     case _ => ()
   }
 
@@ -104,12 +104,18 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     )
   }
 
-  def getExtTypeAncestors(externalType: Symbol): List[STraitCall] = {
-    externalType.ancestors filter { ancestor =>
-      ancestor.nameString != "Object" && ancestor.nameString != "Any"
-    } map { ancestor =>
-      parseType(ancestor.tpe)
-    } collect {case tr: STraitCall => tr}
+  def getExtTypeAncestors(externalType: Type): List[STraitCall] = {
+    val externalTypeDecl = externalType.typeSymbol.typeSignature
+    def convToMetaType(types: List[Type]): List[STraitCall] = {
+      types map parseType collect {case t: STraitCall => t}
+    }
+    val ancestors = externalTypeDecl match {
+      case PolyType(_, ClassInfoType(parents,_,_)) => convToMetaType(parents)
+      case ClassInfoType(parents,_,_) => convToMetaType(parents)
+      case _ => Nil
+    }
+
+    ancestors.filterNot(_.name == "AnyRef")
   }
 
   /** Creates Meta Module for an external type symbol. For example:
@@ -123,11 +129,12 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     *   externalType is "class Col"
     *   member is "@External def arr: Array[A]"
     * */
-  def createWrapper(externalType: Symbol, member: SMethodDef): SEntityModuleDef = {
-    val clazz = externalType.companionClass
+  def createWrapper(externalType: Type, member: SMethodDef): SEntityModuleDef = {
+    val externalTypeSym = externalType.typeSymbol
+    val clazz = externalTypeSym.companionClass
     val className = wrap(clazz.nameString)
     val companionName = comp(className)
-    val isCompanion = externalType.isModuleClass
+    val isCompanion = externalTypeSym.isModuleClass
 
     val tpeArgs = clazz.typeParams.map{ param =>
       STpeArg(
@@ -160,13 +167,13 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
       SImportStat("scalan._"),
       SImportStat("scalan.common.Default"),
       SImportStat("impl._"),
-      SImportStat(externalType.fullName)
+      SImportStat(externalTypeSym.fullName)
     )
 
     SEntityModuleDef(
       packageName = "wrappers",
       imports = imports,
-      name = wmod(externalType.nameString),
+      name = wmod(externalTypeSym.nameString),
       entityRepSynonym = None,
       entityOps = entity, entities = List(entity),
       concreteSClasses = Nil, methods = Nil,
@@ -181,8 +188,8 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
 
   /** Adds a method or a value to the wrapper. It checks the external type symbol
     * to determine where to put the method (value) - into class or its companion. */
-  def addMember(externalType: Symbol, member: SMethodDef, module: SEntityModuleDef): SEntityModuleDef = {
-    val isCompanion = externalType.isModuleClass
+  def addMember(externalType: Type, member: SMethodDef, module: SEntityModuleDef): SEntityModuleDef = {
+    val isCompanion = externalType.typeSymbol.isModuleClass
     def isAlreadyAdded = {
       if (isCompanion) {
         module.entityOps.companion match {
@@ -213,8 +220,9 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
 
   /** Create/update Meta AST of the module for the external type. It assembles
     * Meta AST of a method (value) by its Scala's Type. */
-  def updateWrapper(externalType: Symbol, memberName: Name,
+  def updateWrapper(externalType: Type, memberName: Name,
                     actualMemberType: Type, originalMemberType: Type): Unit = {
+    val externalTypeName = externalType.typeSymbol.nameString
     val memberType = originalMemberType
     val member = memberType match {
       case method @ (_:NullaryMethodType | _:MethodType) =>
@@ -247,12 +255,12 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
         formMethodDef(memberName.toString, Nil, Nil, formMethodRes(sym.tpe))
       case _ => throw new NotImplementedError(s"memberType = ${showRaw(memberType)}")
     }
-    val updatedModule = ScalanPluginState.wrappers.get(externalType.nameString) match {
+    val updatedModule = ScalanPluginState.wrappers.get(externalTypeName) match {
       case None => createWrapper(externalType, member)
       case Some(module) => addMember(externalType, member, module)
 
     }
-    ScalanPluginState.wrappers(externalType.nameString) = updatedModule
+    ScalanPluginState.wrappers(externalTypeName) = updatedModule
   }
 
   def uncurryMethodType(method: Type): (List[SMethodArgs], STpeExpr) = {
