@@ -170,6 +170,9 @@ trait Common {
       val newTpe = typeTransformer.typeTransform(arg.tpe)
       arg.copy(tpe = newTpe)
     }
+    override def entityAncestorTransform(ancestor: STraitCall): STraitCall = {
+      typeTransformer.traitCallTransform(ancestor)
+    }
   }
 
   /** Removing of internal parts of annotations that should be ignored at code generation. */

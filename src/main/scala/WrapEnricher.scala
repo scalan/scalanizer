@@ -25,6 +25,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
       ScalanPluginState.wrappers transform { (name, module) =>
         /** Transformations of Wrappers by adding of Elem, Cont and other things. */
         val pipeline = scala.Function.chain(Seq(
+          preventNameConflict _,
           addWrappedValue _,
           addModuleAncestors _,
           updateSelf _,
@@ -170,9 +171,11 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
   def preventNameConflict(module: SEntityModuleDef): SEntityModuleDef = {
     val pipeline = scala.Function.chain(Seq(
       new TypeNameTransformer("Elem", module.name + "Elem").moduleTransform _,
-      new TypeNameTransformer("Cont", module.name + "Cont").moduleTransform _
+      new TypeNameTransformer("Cont", module.name + "Cont").moduleTransform _,
+      new TypeNameTransformer("To", module.name + "To").moduleTransform _
     ))
+    val nonConflictModule = pipeline(module)
 
-    pipeline(module)
+    nonConflictModule
   }
 }
