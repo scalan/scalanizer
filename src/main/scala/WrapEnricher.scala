@@ -32,6 +32,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
           checkEntityCompanion _,
           constr2apply _,
           filterClassTags _,
+          preventNameConflict _,
           genEntityImpicits _,
           genMethodsImplicits _,
           defaultMethod _,
@@ -164,5 +165,14 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
     }
 
     new filterAncestorTransformer().moduleTransform(module)
+  }
+
+  def preventNameConflict(module: SEntityModuleDef): SEntityModuleDef = {
+    val pipeline = scala.Function.chain(Seq(
+      new TypeNameTransformer("Elem", module.name + "Elem").moduleTransform _,
+      new TypeNameTransformer("Cont", module.name + "Cont").moduleTransform _
+    ))
+
+    pipeline(module)
   }
 }

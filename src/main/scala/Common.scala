@@ -52,12 +52,23 @@ trait Common {
       ancestors mapConserve entityAncestorTransform
     }
 
+    def entityTpeArgTransform(tpeArg: STpeArg): STpeArg = tpeArg
+    def entityTpeArgsTransform(tpeArgs: List[STpeArg]): List[STpeArg] = {
+      tpeArgs mapConserve entityTpeArgTransform
+    }
+
     def entityTransform(entity: STraitDef): STraitDef = {
+      val newTpeArgs = entityTpeArgsTransform(entity.tpeArgs)
       val newBody = bodyTransform(entity.body)
       val newCompanion = entityCompTransform(entity.companion)
       val newAncestors = entityAncestorsTransform(entity.ancestors)
 
-      entity.copy(body = newBody, companion = newCompanion, ancestors = newAncestors)
+      entity.copy(
+        tpeArgs = newTpeArgs,
+        body = newBody,
+        companion = newCompanion,
+        ancestors = newAncestors
+      )
     }
 
     def classCompanionTransform(companion: Option[STraitOrClassDef]): Option[STraitOrClassDef] = {
@@ -135,6 +146,29 @@ trait Common {
     override def traitCallNameTransform(tname: String): String = {
       if (tname == name) wrap(tname)
       else tname
+    }
+  }
+
+  class TypeRenamer(oldName: String, newName: String) extends MetaTypeTransformer {
+    override def traitCallNameTransform(tname: String): String = {
+      if (tname == oldName) newName
+      else tname
+    }
+  }
+
+  class TypeNameTransformer(oldName: String, newName: String) extends MetaAstTransformer {
+    val typeTransformer = new TypeRenamer(oldName, newName)
+    override def entityTpeArgTransform(tpeArg: STpeArg): STpeArg = {
+      if (tpeArg.name == oldName) tpeArg.copy(name = newName)
+      else tpeArg
+    }
+    override def methodResTransform(res: Option[STpeExpr]): Option[STpeExpr] = res match {
+      case Some(resType) => Some(typeTransformer.typeTransform(resType))
+      case _ => res
+    }
+    override def methodArgTransform(arg: SMethodArg): SMethodArg = {
+      val newTpe = typeTransformer.typeTransform(arg.tpe)
+      arg.copy(tpe = newTpe)
     }
   }
 
