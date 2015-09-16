@@ -126,6 +126,7 @@ trait Common {
       case empty: STpeEmpty => emptyTransform(empty)
       case traitCall: STraitCall => traitCallTransform(traitCall)
       case prim: STpePrimitive => primitiveTransform(prim)
+      case existType: STpeExistential => existTypeTransform(existType)
       case _ => tpe
     }
 
@@ -140,6 +141,29 @@ trait Common {
 
       traitCall.copy(name = newName, tpeSExprs = newArgs)
     }
+
+    def tpeDefArgTransform(tpeArg: STpeArg): STpeArg = tpeArg
+    def tpeDefArgsTransform(tpeArgs: STpeArgs): STpeArgs = {
+      tpeArgs mapConserve tpeDefArgTransform
+    }
+    def tpeDefTransform(tpeDef: STpeDef): STpeDef = {
+      val newTpeArgs = tpeDefArgsTransform(tpeDef.tpeArgs)
+
+      tpeDef.copy(tpeArgs = newTpeArgs)
+    }
+    def existItemTransform(item: SBodyItem): SBodyItem = item match {
+      case tpeDef: STpeDef => tpeDefTransform(tpeDef)
+      case _ => item
+    }
+    def existItemsTransform(items: List[SBodyItem]): List[SBodyItem] = {
+      items mapConserve existItemTransform
+    }
+    def existTypeTransform(existType: STpeExistential): STpeExistential = {
+      val newTpt = typeTransform(existType.tpt)
+      val newItems = existItemsTransform(existType.items)
+
+      existType.copy(tpt = newTpt, items = newItems)
+    }
   }
 
   class ExtType2WrapperTypeTransformer(name: String) extends MetaTypeTransformer {
@@ -153,6 +177,10 @@ trait Common {
     override def traitCallNameTransform(tname: String): String = {
       if (tname == oldName) newName
       else tname
+    }
+    override def tpeDefArgTransform(tpeArg: STpeArg): STpeArg = {
+      if (tpeArg.name == oldName) tpeArg.copy(name = newName)
+      else tpeArg
     }
   }
 
