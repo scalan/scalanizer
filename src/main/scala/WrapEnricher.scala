@@ -36,7 +36,10 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
           genMethodsImplicits _,
           defaultMethod _,
           defaultWrapperImpl _,
-          extType2WrapperInWrappers _
+          extType2WrapperInWrappers _,
+          /** Currently, inheritance of type wrappers is not supported.
+            * Print warnings and remove ancestors. */
+          filterAncestors _
         ))
         val enrichedModule = pipeline(module)
 
@@ -151,5 +154,15 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
     }
 
     wrappedModule
+  }
+
+  def filterAncestors(module: SEntityModuleDef): SEntityModuleDef = {
+    class filterAncestorTransformer extends MetaAstTransformer {
+      override def entityAncestorsTransform(ancestors: List[STraitCall]): List[STraitCall] = {
+        ancestors.filter(_.name == "TypeWrapper")
+      }
+    }
+
+    new filterAncestorTransformer().moduleTransform(module)
   }
 }
