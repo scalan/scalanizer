@@ -123,15 +123,15 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
   /** Creates Meta Module for an external type symbol. For example:
     * trait WCols extends Base with TypeWrappers { self: WrappersDsl =>
     *   trait WCol[A] extends TypeWrapper[Col[A], WCol[A]] { self =>
-    *     @External def arr: Array[A]
+    *     def arr: Array[A]
     *   };
     *   trait WColCompanion extends ExCompanion1[WCol]
     * }
     * where
     *   externalType is "class Col"
-    *   member is "@External def arr: Array[A]"
+    *   one of the members is "def arr: Array[A]"
     * */
-  def createWrapper(externalType: Type, member: SMethodDef): SEntityModuleDef = {
+  def createWrapper(externalType: Type, members: List[SBodyItem]): SEntityModuleDef = {
     val externalTypeSym = externalType.typeSymbol
     val clazz = externalTypeSym.companionClass
     val className = wrap(clazz.nameString)
@@ -154,13 +154,13 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
         "TypeWrapper",
         List(STraitCall(clazz.nameString, typeParams), STraitCall(className, typeParams))
       ) :: getExtTypeAncestors(externalType),
-      body =  if (isCompanion) Nil else List[SBodyItem](member),
+      body =  if (isCompanion) Nil else members,
       selfType = Some(SSelfTypeDef("self", Nil)),
       companion = Some(STraitDef(
         name = companionName,
         tpeArgs = Nil,
         ancestors = List(STraitCall("ExCompanion" + typeParams.length.toString, List(STraitCall(className, Nil)))),
-        body = if (isCompanion) List[SBodyItem](member) else Nil,
+        body = if (isCompanion) members else Nil,
         selfType = None, companion = None
       ))
 //      , annotations = if (typeParams.isEmpty) Nil else List(STraitOrClassAnnotation("ContainerType", Nil))
@@ -260,7 +260,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
       case _ => throw new NotImplementedError(s"memberType = ${showRaw(memberType)}")
     }
     val updatedModule = ScalanPluginState.wrappers.get(externalTypeName) match {
-      case None => createWrapper(objType, member)
+      case None => createWrapper(objType, List(member))
       case Some(module) => addMember(objType, member, module)
 
     }
