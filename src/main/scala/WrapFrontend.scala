@@ -262,9 +262,10 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     val updatedModule = ScalanPluginState.wrappers.get(externalTypeName) match {
       case None => createWrapper(objType, List(member))
       case Some(module) => addMember(objType, member, module)
-
     }
+
     ScalanPluginState.wrappers(externalTypeName) = updatedModule
+    createDependencies(memberType)
   }
 
   def uncurryMethodType(method: Type): (List[SMethodArgs], STpeExpr) = {
@@ -285,6 +286,22 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
       }
     }
     loop(method, Nil)
+  }
+
+  /** Traversing of the type and adding of wrappers for external types. */
+  def createDependencies(memberType: Type): Unit = {
+    class DependencyTraverser extends TypeTraverser {
+      def traverse(tp: Type): Unit = tp match {
+        case TypeRef(pre, sym, args) if isWrapper(sym) =>
+          if (!ScalanPluginState.wrappers.contains(sym.nameString)) {
+            val module = createWrapper(sym.tpe, Nil)
+            ScalanPluginState.wrappers(sym.nameString) = module
+          }
+        case _ => mapOver(tp)
+      }
+    }
+
+    new DependencyTraverser().traverse(memberType)
   }
 
   def config: CodegenConfig = ScalanPluginConfig.codegenConfig
