@@ -48,10 +48,12 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
 
   /** For each method call, create type wrapper if the external type should be wrapped. */
   def catchWrapperUsage(tree: Tree): Unit = tree match {
+    case sel @ Select(objSel @ Apply(TypeApply(_, _), _), member) =>
+      updateWrapper(objSel.tpe, member, sel.tpe, sel.symbol)
     case sel @ Select(objSel @ Select(_, obj), member) if isWrapper(objSel.tpe.typeSymbol) =>
-      updateWrapper(objSel.tpe, member, sel.tpe, sel.symbol.originalInfo)
+      updateWrapper(objSel.tpe, member, sel.tpe, sel.symbol)
     case sel @ Select(objSel, member) if isWrapper(objSel.tpe.typeSymbol) =>
-      updateWrapper(objSel.tpe, member, sel.tpe, sel.symbol.originalInfo)
+      updateWrapper(objSel.tpe, member, sel.tpe, sel.symbol)
     case _ => ()
   }
 
@@ -220,10 +222,12 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
 
   /** Create/update Meta AST of the module for the external type. It assembles
     * Meta AST of a method (value) by its Scala's Type. */
-  def updateWrapper(externalType: Type, memberName: Name,
-                    actualMemberType: Type, originalMemberType: Type): Unit = {
-    val externalTypeName = externalType.typeSymbol.nameString
-    val memberType = originalMemberType
+  def updateWrapper(objType: Type,
+                    methodName: Name, methodType: Type, methodSym: Symbol): Unit = {
+    val externalTypeName = objType.typeSymbol.nameString
+    val owner = methodSym.owner
+    val pre = objType.typeSymbol.typeSignature
+    val memberType = methodSym.tpe.asSeenFrom(pre, owner)
     val member = memberType match {
       case method @ (_:NullaryMethodType | _:MethodType) =>
         /* Not polymorphic methods like:
@@ -233,7 +237,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
          *   }
          **/
         val (args, res) = uncurryMethodType(method)
-        formMethodDef(memberName.toString, Nil, args, res)
+        formMethodDef(methodName.toString, Nil, args, res)
       case PolyType(typeArgs, method @ (_:NullaryMethodType | _:MethodType)) =>
         /* Methods that have type parameters like:
          * object Col {
@@ -244,7 +248,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
         val tpeArgs = formMethodTypeArgs(typeArgs)
         val (args, res) = uncurryMethodType(method)
 
-        formMethodDef(memberName.toString, tpeArgs, args, res)
+        formMethodDef(methodName.toString, tpeArgs, args, res)
       case TypeRef(_,sym,_) =>
         /* Example: arr.length where
          * arr has type MyArr[Int] and
@@ -252,12 +256,12 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
          *   val length = 0
          * }
          **/
-        formMethodDef(memberName.toString, Nil, Nil, formMethodRes(sym.tpe))
+        formMethodDef(methodName.toString, Nil, Nil, formMethodRes(sym.tpe))
       case _ => throw new NotImplementedError(s"memberType = ${showRaw(memberType)}")
     }
     val updatedModule = ScalanPluginState.wrappers.get(externalTypeName) match {
-      case None => createWrapper(externalType, member)
-      case Some(module) => addMember(externalType, member, module)
+      case None => createWrapper(objType, member)
+      case Some(module) => addMember(objType, member, module)
 
     }
     ScalanPluginState.wrappers(externalTypeName) = updatedModule

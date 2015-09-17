@@ -29,7 +29,7 @@ object ScalanPluginConfig {
   val externalTypes = Set[String](
     "Builder",
     "CanBuildFrom",
-    "Array"
+    "Array", "ArrayOps"
 //    "Num", "DoubleNum",
 //    "NumMonoid", "PlusMonoid",
 //    "Col", "ColOverArray", "PairCol",

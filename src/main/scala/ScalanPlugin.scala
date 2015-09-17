@@ -165,6 +165,7 @@ object ScalanPluginState {
     "WBuilders" -> Set("WBuildersDsl", "WBuildersDslSeq", "WBuildersDslExp"),
     "WCanBuildFroms" -> Set("WCanBuildFromsDsl", "WCanBuildFromsDslSeq", "WCanBuildFromsDslExp"),
     "WArrays" -> Set("WArraysDsl", "WArraysDslSeq", "WArraysDslExp"),
+    "WArrayOpss" -> Set("WArrayOpssDsl", "WArrayOpssDslSeq", "WArrayOpssDslExp"),
     "WNums" -> Set("WNumsDsl", "WNumsDslSeq", "WNumsDslExp"),
     "WDoubleNums" -> Set("WDoubleNumsDsl", "WDoubleNumsDslSeq", "WDoubleNumsDslExp"),
     "WNumMonoids" -> Set("WNumMonoidsDsl", "WNumMonoidsDslSeq", "WNumMonoidsDslExp"),
