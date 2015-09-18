@@ -63,7 +63,8 @@ trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
       }
     }
 
-    hotSpotTransformer.transform(unit.body)
+    //hotSpotTransformer.transform(unit.body)
+    unit.body
   }
 
   def getHotSpotKernels(module: SEntityModuleDef) = {

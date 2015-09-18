@@ -11,7 +11,13 @@ object ScalanPluginConfig {
     name = "Scalan Plugin",
     srcPath = "/",
     entityFiles = List[String](
-       "LinearAlgebraOps.scala"
+      "Nums.scala"
+      ,"NumMonoids.scala"
+      ,"Cols.scala"
+      ,"Vecs.scala"
+      ,"Matrs.scala"
+      ,"MatrOps.scala"
+      ,"LinearAlgebraOps.scala"
     ),
     baseContextTrait = "ScalanDsl",
     seqContextTrait = "ScalanSeq",

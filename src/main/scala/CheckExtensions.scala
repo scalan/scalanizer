@@ -11,10 +11,10 @@ class CheckExtensions(val global: Global) extends PluginComponent {
   val phaseName: String = "scalan-check"
   override def description: String = "Find user's extensions"
 
-//  val runsAfter = List[String]("scalan-wrap-backend")
-//  override val runsRightAfter: Option[String] = Some("scalan-wrap-backend")
-  val runsAfter = List[String]("typer")
-  override val runsRightAfter: Option[String] = Some("typer")
+  val runsAfter = List[String]("scalan-wrap-backend")
+  override val runsRightAfter: Option[String] = Some("scalan-wrap-backend")
+//  val runsAfter = List[String]("typer")
+//  override val runsRightAfter: Option[String] = Some("typer")
 
   def newPhase(prev: Phase) = new StdPhase(prev) {
     def apply(unit: CompilationUnit) {
