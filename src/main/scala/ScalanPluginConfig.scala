@@ -6,6 +6,7 @@ object ScalanPluginConfig {
   var save: Boolean = true
   var read: Boolean = true
   var debug: Boolean = false
+  var saveMetaAst: Boolean = false
   val codegenConfig = CodegenConfig(
     name = "Scalan Plugin",
     srcPath = "/",

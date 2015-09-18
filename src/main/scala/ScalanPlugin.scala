@@ -112,17 +112,20 @@ class ScalanPluginComponent(val global: Global)
   }
 
   def serializeAst(module: SEntityModuleDef): Tree = {
-    val bos = new ByteArrayOutputStream()
-    val objOut = new ObjectOutputStream(bos)
+    val str = if (ScalanPluginConfig.saveMetaAst) {
+      val bos = new ByteArrayOutputStream()
+      val objOut = new ObjectOutputStream(bos)
 
-    /* Erasing of the module: give up Scala Trees */
-    val erasedModule = eraseModule(module)
+      /* Erasing of the module: give up Scala Trees */
+      val erasedModule = eraseModule(module)
 
-    objOut.writeObject(erasedModule)
-    objOut.close()
+      objOut.writeObject(erasedModule)
+      objOut.close()
 
-    val str = javax.xml.bind.DatatypeConverter.printBase64Binary(bos.toByteArray)
+      javax.xml.bind.DatatypeConverter.printBase64Binary(bos.toByteArray)
+    } else ""
     val serialized = global.Literal(Constant(str))
+
     q"val serializedMetaAst = $serialized"
   }
 
@@ -219,11 +222,11 @@ object ScalanPlugin {
   /** Yields the list of Components to be executed in this plugin */
   def components(global: Global) = {
     val result = scala.collection.mutable.ListBuffer[PluginComponent](
-      new WrapFrontend(global)
-      ,new WrapEnricher(global)
-      ,new WrapBackend(global)
-//      new CheckExtensions(global)
-//      ,new ScalanPluginComponent(global)
+//      new WrapFrontend(global)
+//      ,new WrapEnricher(global)
+//      ,new WrapBackend(global)
+      new CheckExtensions(global)
+      ,new ScalanPluginComponent(global)
 //      ,new Debug(global)
     )
 
