@@ -25,13 +25,14 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
       val unitName = unit.source.file.name
 
       if (ScalanPluginConfig.codegenConfig.entityFiles.contains(unitName)) {
-        /* Collect all methods with the HotSpot annotation. */
-        val hotSpotFilter = new FilterTreeTraverser(isHotSpotTree)
-        hotSpotFilter.traverse(unit.body)
-        /* Traversing through the hot spots and building of type wrappers. */
-        hotSpotFilter.hits foreach { hotSpot =>
-          new ForeachTreeTraverser(catchWrapperUsage).traverse(hotSpot)
-        }
+//        /* Collect all methods with the HotSpot annotation. */
+//        val hotSpotFilter = new FilterTreeTraverser(isHotSpotTree)
+//        hotSpotFilter.traverse(unit.body)
+//        /* Traversing through the hot spots and building of type wrappers. */
+//        hotSpotFilter.hits foreach { hotSpot =>
+//          new ForeachTreeTraverser(catchWrapperUsage).traverse(hotSpot)
+//        }
+        new ForeachTreeTraverser(catchWrapperUsage).traverse(unit.body)
       }
     }
   }
@@ -48,7 +49,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
 
   /** For each method call, create type wrapper if the external type should be wrapped. */
   def catchWrapperUsage(tree: Tree): Unit = tree match {
-    case sel @ Select(objSel @ Apply(TypeApply(_, _), _), member) =>
+    case sel @ Select(objSel @ Apply(TypeApply(_, _), _), member) if isWrapper(objSel.tpe.typeSymbol) =>
       updateWrapper(objSel.tpe, member, sel.tpe, sel.symbol)
     case sel @ Select(objSel @ Select(_, obj), member) if isWrapper(objSel.tpe.typeSymbol) =>
       updateWrapper(objSel.tpe, member, sel.tpe, sel.symbol)
@@ -120,6 +121,14 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     ancestors.filterNot(_.name == "AnyRef")
   }
 
+  /** Gets names of an external type, its class and its module. */
+  def wrapperNames(externalType: Type): (String, String, String) = {
+    val externalName = externalType.typeSymbol.nameString
+    val className = wrap(externalName)
+
+    (externalName, className, comp(className))
+  }
+
   /** Creates Meta Module for an external type symbol. For example:
     * trait WCols extends Base with TypeWrappers { self: WrappersDsl =>
     *   trait WCol[A] extends TypeWrapper[Col[A], WCol[A]] { self =>
@@ -134,8 +143,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
   def createWrapper(externalType: Type, members: List[SBodyItem]): SEntityModuleDef = {
     val externalTypeSym = externalType.typeSymbol
     val clazz = externalTypeSym.companionClass
-    val className = wrap(clazz.nameString)
-    val companionName = comp(className)
+    val (externalName, className, companionName) = wrapperNames(externalType)
     val isCompanion = externalTypeSym.isModuleClass
 
     val tpeArgs = clazz.typeParams.map{ param =>
@@ -152,7 +160,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
       tpeArgs = tpeArgs,
       ancestors = STraitCall(
         "TypeWrapper",
-        List(STraitCall(clazz.nameString, typeParams), STraitCall(className, typeParams))
+        List(STraitCall(externalName, typeParams), STraitCall(className, typeParams))
       ) :: getExtTypeAncestors(externalType),
       body =  if (isCompanion) Nil else members,
       selfType = Some(SSelfTypeDef("self", Nil)),

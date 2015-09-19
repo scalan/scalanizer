@@ -34,9 +34,10 @@ object ScalanPluginConfig {
   val typeClasses = List[String]("Default")
   val home = "/home/mgekk/scalan/scalanizer-demo"
   val externalTypes = Set[String](
-    "Builder",
+    "Predef",
+    "GenIterable",
     "CanBuildFrom",
-    "Array", "ArrayOps"
+    "Array", "ArrayOps", "WrappedArray"
 //    "Num", "DoubleNum",
 //    "NumMonoid", "PlusMonoid",
 //    "Col", "ColOverArray", "PairCol",
