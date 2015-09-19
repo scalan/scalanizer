@@ -194,13 +194,14 @@ object ScalanPluginState {
 
   /** Mapping between modules and another modules used by them. */
   val usageMap = Map[String, List[String]](
-    "NumMonoids" -> List("Nums"),
-    "Cols" -> List("NumMonoids"),
+    "Nums" -> List("LinearAlgebra"),
+    "NumMonoids" -> List("Nums","LinearAlgebra"),
+    "Cols" -> List("NumMonoids","LinearAlgebra"),
     "Vecs" -> List("NumMonoids", "Cols", "LinearAlgebra"),
     "Matrs" -> List("NumMonoids", "Cols", "Vecs", "LinearAlgebra"),
     "MatrOps" -> List("Nums", "NumMonoids", "Vecs", "Matrs", "LinearAlgebra"),
     "LinearAlgebra" -> List("NumMonoids", "Cols", "Vecs", "Matrs"),
-    "LinearAlgebraOps" -> List()
+    "LinearAlgebraOps" -> List("LinearAlgebra")
   )
 
   /** Mapping of module name to the package where it is defined. */
