@@ -13,6 +13,59 @@ trait Common {
 
   /** The class implements a default Meta AST transformation strategy: breadth-first search */
   class MetaAstTransformer {
+    def constTransform(c: SConst): SConst = c
+    def identTransform(ident: SIdent): SIdent = ident
+    def selectTransform(select: SSelect): SSelect = {
+      val newExpr = exprTransform(select.expr)
+      select.copy(expr = newExpr)
+    }
+    def applyTransform(apply: SApply): SApply = {
+      val newFun = exprTransform(apply.fun)
+      val newArgss = apply.argss map (_.map(exprTransform))
+
+      apply.copy(fun = newFun, argss = newArgss)
+    }
+    def typeApplyTransform(typeApply: STypeApply): STypeApply = {
+      val newFun = exprTransform(typeApply.fun)
+      typeApply.copy(fun = newFun)
+    }
+    def thisTransform(sthis: SThis): SThis = sthis
+    def constrTransform(constr: SContr): SContr = {
+      val newArgs = constr.args mapConserve exprTransform
+      constr.copy(args = newArgs)
+    }
+    def ascrTransform(ascr: SAscr): SAscr = {
+      val newExpr = exprTransform(ascr.expr)
+      ascr.copy(expr = newExpr)
+    }
+    def funcTransform(func: SFunc): SFunc = {
+      val newParams = func.params mapConserve valdefTransform
+      val newRes = exprTransform(func.res)
+      func.copy(params = newParams, res = newRes)
+    }
+    def blockTransform(block: SBlock): SBlock = {
+      val newBlockInit = block.init mapConserve exprTransform
+      val newBlocklast = exprTransform(block.last)
+
+      block.copy(init = newBlockInit, last = newBlocklast)
+    }
+
+    def exprTransform(expr: SExpr): SExpr = expr match {
+      case empty: SEmpty => empty
+      case c: SConst => constTransform(c)
+      case ident: SIdent => identTransform(ident)
+      case apply: SApply => applyTransform(apply)
+      case typeApply: STypeApply => typeApplyTransform(typeApply)
+      case select: SSelect => selectTransform(select)
+      case constr: SContr => constrTransform(constr)
+      case sthis: SThis => thisTransform(sthis)
+      case ascr: SAscr => ascrTransform(ascr)
+      case func: SFunc => funcTransform(func)
+      case block: SBlock => blockTransform(block)
+      case bodyItem: SBodyItem => bodyItemTransform(bodyItem)
+      case _ => throw new NotImplementedError(s"$expr")
+    }
+
     def methodArgTransform(arg: SMethodArg): SMethodArg = arg
     def methodArgsTransform(args: SMethodArgs): SMethodArgs = {
       val newArgs = args.args mapConserve methodArgTransform
@@ -23,15 +76,30 @@ trait Common {
       argSections mapConserve methodArgsTransform
     }
     def methodResTransform(res: Option[STpeExpr]): Option[STpeExpr] = res
+    def methodBodyTransform(body: Option[SExpr]): Option[SExpr] = body match {
+      case Some(bodyExpr) => Some(exprTransform(bodyExpr))
+      case None => None
+    }
     def methodTransform(method: SMethodDef): SMethodDef = {
       val newArgSections = methodArgSectionsTransform(method.argSections)
       val newTpeRes = methodResTransform(method.tpeRes)
+      val newBody = methodBodyTransform(method.body)
 
-      method.copy(argSections = newArgSections, tpeRes = newTpeRes)
+      method.copy(
+        argSections = newArgSections,
+        tpeRes = newTpeRes,
+        body = newBody
+      )
     }
+    def valdefTransform(valdef: SValDef): SValDef = {
+      val newExpr = exprTransform(valdef.expr)
+      valdef.copy(expr = newExpr)
+    }
+
     def bodyItemTransform(bodyItem: SBodyItem): SBodyItem = bodyItem match {
       case method: SMethodDef => methodTransform(method)
-      case _ => bodyItem
+      case valdef: SValDef => valdefTransform(valdef)
+      case _ => throw new NotImplementedError(s"${bodyItem}")
     }
     def bodyTransform(body: List[SBodyItem]): List[SBodyItem] = body mapConserve bodyItemTransform
 
