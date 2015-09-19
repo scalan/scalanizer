@@ -87,8 +87,13 @@ trait Common {
     def classTransform(clazz: SClassDef): SClassDef = {
       val newCompanion = classCompanionTransform(clazz.companion)
       val newClassArgs = classArgsTransform(clazz.args)
+      val newImplicitClassArgs = classArgsTransform(clazz.implicitArgs)
 
-      clazz.copy(args = newClassArgs, companion = newCompanion)
+      clazz.copy(
+        args = newClassArgs,
+        implicitArgs = newImplicitClassArgs,
+        companion = newCompanion
+      )
     }
 
     def moduleTransform(module: SEntityModuleDef): SEntityModuleDef = {
