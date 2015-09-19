@@ -192,6 +192,11 @@ trait Common {
       case carg : SClassArg => carg.copy(tpe = typeTransformer.typeTransform(carg.tpe))
       case _ => classArg
     }
+    override def selectTransform(select: SSelect): SSelect = select match {
+      case SSelect(_, extTypeName) if extTypeName == name =>
+        SSelect(SEmpty(), wrap(extTypeName))
+      case _ => super.selectTransform(select)
+    }
   }
 
   class MetaTypeTransformer {

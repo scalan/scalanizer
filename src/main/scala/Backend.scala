@@ -362,7 +362,10 @@ trait Backend extends Common with PatternMatching {
     case SApply(SSelect(SAscr(obj, STraitCall("Array", _)), method), _, argss) => genBasisArray(obj, method, argss)
     case SSelect(SAscr(obj, STraitCall("Array", _)), method) => genBasisArray(obj, method, List(List()))
     case SApply(SSelect(obj @ SIdent("Array"), method), _, argss) => genBasisArray(obj, method, argss)
-    case SSelect(expr: SExpr, tname: String) => q"${genExpr(expr)}.${TermName(tname)}"
+    case SSelect(expr: SExpr, tname: String) => expr match {
+      case SEmpty() => q"${TermName(tname)}"
+      case _ => q"${genExpr(expr)}.${TermName(tname)}"
+    }
     case SApply(fun, tpts, argss) =>
       val typeArgs = tpts.map(genTypeExpr)
       val valArgss = argss.map(_.map(genExpr))
