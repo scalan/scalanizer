@@ -75,14 +75,11 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
   /** Adding of a method which returns default value of external type.
     * For example: def DefaultOfArray[T]: Default[Array[T]] = ???. */
   def defaultMethod(module: SEntityModuleDef): SEntityModuleDef = {
-    val extType = module.entityOps.ancestors.collect {
-      case STraitCall("TypeWrapper", List(importedType, _)) => importedType
-    }
     val defaultOfWrapper = SMethodDef(
-      name = "DefaultOf" + extType.head.name,
+      name = "DefaultOf" + module.entityOps.baseInstanceName,
       tpeArgs = module.entityOps.tpeArgs,
       argSections = Nil,
-      tpeRes = Some(STraitCall("Default", extType)),
+      tpeRes = Some(STraitCall("Default", module.entityOps.optBaseType.toList)),
       isImplicit = false, isOverride = false, overloadId = None,
       annotations = Nil,
       body = Some(SApply(SSelect(SIdent("Default"),"defaultVal"), Nil, List(List(SConst(null))))),

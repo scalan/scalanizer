@@ -155,12 +155,14 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     val typeParams = clazz.typeParams.map{ param =>
       STraitCall(name = param.nameString, tpeSExprs = Nil)
     }
+    val baseType = if (isCompanion) STraitCall(externalName + ".type", typeParams)
+                   else STraitCall(externalName, typeParams)
     val entity = STraitDef(
       name = className,
       tpeArgs = tpeArgs,
       ancestors = STraitCall(
         "TypeWrapper",
-        List(STraitCall(externalName, typeParams), STraitCall(className, typeParams))
+        List(baseType, STraitCall(className, typeParams))
       ) :: getExtTypeAncestors(externalType),
       body =  if (isCompanion) Nil else members,
       selfType = Some(SSelfTypeDef("self", Nil)),
