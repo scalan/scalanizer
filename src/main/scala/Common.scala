@@ -153,6 +153,7 @@ trait Common {
       classArgs.copy(args = newArgs)
     }
     def classTransform(clazz: SClassDef): SClassDef = {
+      val newBody = bodyTransform(clazz.body)
       val newCompanion = classCompanionTransform(clazz.companion)
       val newClassArgs = classArgsTransform(clazz.args)
       val newImplicitClassArgs = classArgsTransform(clazz.implicitArgs)
@@ -160,6 +161,7 @@ trait Common {
       clazz.copy(
         args = newClassArgs,
         implicitArgs = newImplicitClassArgs,
+        body = newBody,
         companion = newCompanion
       )
     }
@@ -196,6 +198,18 @@ trait Common {
       case SSelect(_, extTypeName) if extTypeName == name =>
         SSelect(SEmpty(), wrap(extTypeName))
       case _ => super.selectTransform(select)
+    }
+    override def ascrTransform(ascr: SAscr): SAscr = {
+      val newPt = typeTransformer.typeTransform(ascr.pt)
+      super.ascrTransform(ascr.copy(pt = newPt))
+    }
+    override def applyTransform(apply: SApply): SApply = {
+      val newTs = apply.ts mapConserve typeTransformer.typeTransform
+      super.applyTransform(apply.copy(ts = newTs))
+    }
+    override def typeApplyTransform(typeApply: STypeApply): STypeApply = {
+      val newTs = typeApply.ts mapConserve typeTransformer.typeTransform
+      super.typeApplyTransform(typeApply.copy(ts = newTs))
     }
   }
 
