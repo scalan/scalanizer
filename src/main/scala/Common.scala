@@ -105,13 +105,24 @@ trait Common {
 
     def traitCompTransform(traitComp: STraitDef): STraitDef = {
       val newBody = bodyTransform(traitComp.body)
-
       traitComp.copy(body = newBody)
     }
+    def classCompTransform(classComp: SClassDef): SClassDef = {
+      val newBody = bodyTransform(classComp.body)
+      classComp.copy(body = newBody)
+    }
+    def objCompTransform(obj: SObjectDef): SObjectDef = {
+      val newBody = bodyTransform(obj.body)
+      obj.copy(body = newBody)
+    }
+
     def entityCompTransform(companion: Option[STraitOrClassDef]): Option[STraitOrClassDef] = {
       companion match {
         case Some(tr: STraitDef) => Some(traitCompTransform(tr))
-        case _ => companion
+        case Some(clazz: SClassDef) => Some(classCompTransform(clazz))
+        case Some(obj: SObjectDef) => Some(objCompTransform(obj))
+        case None => None
+        case _ => throw new NotImplementedError(s"companion = $companion")
       }
     }
 
@@ -182,17 +193,15 @@ trait Common {
   class ExtType2WrapperTransformer(name: String) extends MetaAstTransformer {
     val typeTransformer = new ExtType2WrapperTypeTransformer(name)
 
-    override def methodArgTransform(arg: SMethodArg): SMethodArg = arg match {
-      case marg : SMethodArg => marg.copy(tpe = typeTransformer.typeTransform(marg.tpe))
-      case _ => arg
+    override def methodArgTransform(arg: SMethodArg): SMethodArg = {
+      arg.copy(tpe = typeTransformer.typeTransform(arg.tpe))
     }
     override def methodResTransform(res: Option[STpeExpr]): Option[STpeExpr] = res match {
       case Some(traitCall: STraitCall) => Some(typeTransformer.traitCallTransform(traitCall))
-      case _ => res
+      case _ => super.methodResTransform(res)
     }
-    override def classArgTransform(classArg: SClassArg): SClassArg = classArg match {
-      case carg : SClassArg => carg.copy(tpe = typeTransformer.typeTransform(carg.tpe))
-      case _ => classArg
+    override def classArgTransform(classArg: SClassArg): SClassArg = {
+      classArg.copy(tpe = typeTransformer.typeTransform(classArg.tpe))
     }
     override def selectTransform(select: SSelect): SSelect = select match {
       case SSelect(_, extTypeName) if extTypeName == name =>
