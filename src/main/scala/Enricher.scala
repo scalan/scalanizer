@@ -432,8 +432,8 @@ trait Enricher extends Common {
     class ECompanionTransformer extends MetaAstTransformer {
       override def applyTransform(apply: SApply): SApply = {
         apply match {
-          case SApply(SSelect(SThis(entity),method),ts,argss) if ScalanPluginConfig.entities.contains(entity) =>
-            SApply(SSelect(SThis(entity + "Companion"),method),ts,argss)
+          case SApply(SSelect(SThis(clazz),method),ts,argss) if isEntity(clazz) =>
+            SApply(SSelect(SThis(clazz + "Companion"),method),ts,argss)
           case _ => super.applyTransform(apply)
         }
       }

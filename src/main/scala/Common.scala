@@ -11,6 +11,10 @@ trait Common {
   /** Gets name of companion by entity name */
   def comp(name: String) = name + "Companion"
 
+  def isEntity(name: String): Boolean = {
+    ScalanPluginConfig.entities.contains(name)
+  }
+
   /** The class implements a default Meta AST transformation strategy: breadth-first search */
   class MetaAstTransformer {
     def constTransform(c: SConst): SConst = c
