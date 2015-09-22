@@ -45,5 +45,13 @@ object ScalanPluginConfig {
 //    "Matr", "DenseMatr",
 //    "MatrOp", "BaseMatrOp"
   )
+  val entities = Set[String](
+    "Num",
+    "NumMonoid",
+    "Col",
+    "Vec",
+    "Matr",
+    "MatrOp"
+  )
 }
 

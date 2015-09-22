@@ -427,4 +427,17 @@ trait Enricher extends Common {
 
     wrappedModule
   }
+
+  def fixEntityCompanionName(module: SEntityModuleDef) = {
+    class ECompanionTransformer extends MetaAstTransformer {
+      override def applyTransform(apply: SApply): SApply = {
+        apply match {
+          case SApply(SSelect(SThis(entity),method),ts,argss) if ScalanPluginConfig.entities.contains(entity) =>
+            SApply(SSelect(SThis(entity + "Companion"),method),ts,argss)
+          case _ => super.applyTransform(apply)
+        }
+      }
+    }
+    new ECompanionTransformer().moduleTransform(module)
+  }
 }
