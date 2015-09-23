@@ -31,7 +31,7 @@ object ScalanPluginConfig {
     isAlreadyRep = false,
     isSeqEnabled = false
   )
-  val typeClasses = List[String]("Default")
+  val typeClasses = List[String]("Elem", "Cont", "ClassTag")
   val home = "/home/mgekk/scalan/scalanizer-demo"
   val entities = Map[String, Set[String]](
     "LinearAlgebra" -> Set(),

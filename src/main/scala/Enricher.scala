@@ -440,4 +440,8 @@ trait Enricher extends Common {
     }
     new ECompanionTransformer().moduleTransform(module)
   }
+
+  def replaceClassTagByElem(module: SEntityModuleDef) = {
+    new MetaAstReplacer("ClassTag", (_:String) => "Elem").moduleTransform(module)
+  }
 }
