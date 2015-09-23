@@ -442,6 +442,27 @@ trait Enricher extends Common {
   }
 
   def replaceClassTagByElem(module: SEntityModuleDef) = {
-    new MetaAstReplacer("ClassTag", (_:String) => "Elem").moduleTransform(module)
+    new MetaAstReplacer("ClassTag", (_:String) => "Elem") {
+      override def selectTransform(select: SSelect): SSelect = {
+        val type2Elem = Map(
+          "AnyRef" -> "AnyRefElement",
+          "Boolean" -> "BoolElement",
+          "Byte" -> "ByteElement",
+          "Short" -> "ShortElement",
+          "Int" -> "IntElement",
+          "Long" -> "LongElement",
+          "Float" -> "FloatElement",
+          "Double" -> "DoubleElement",
+          "Unit" -> "UnitElement",
+          "String" -> "StringElement",
+          "Char" -> "CharElement"
+        )
+        select match {
+          case SSelect(SIdent("ClassTag"), t) if type2Elem.keySet.contains(t) =>
+            SSelect(SIdent("self"), type2Elem(t))
+          case _ => super.selectTransform(select)
+        }
+      }
+    }.moduleTransform(module)
   }
 }
