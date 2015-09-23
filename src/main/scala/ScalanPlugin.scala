@@ -219,6 +219,13 @@ object ScalanPluginState {
 
   /** Mapping of external type names to their wrappers. */
   val wrappers = Map[String, SEntityModuleDef]()
+
+  val externalTypes = Set[String](
+    "Predef",
+    "GenIterable",
+    "CanBuildFrom",
+    "Array", "ArrayOps", "WrappedArray"
+  )
 }
 
 object ScalanPlugin {

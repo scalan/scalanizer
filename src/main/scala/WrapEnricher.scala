@@ -148,7 +148,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
           typeTransformer.traitCallTransform(ancestor)
       }
     }
-    val wrappedModule = ScalanPluginConfig.externalTypes.foldLeft(module){(acc, externalTypeName) =>
+    val wrappedModule = ScalanPluginState.externalTypes.foldLeft(module){(acc, externalTypeName) =>
       new TypeInWrappersTransformer(externalTypeName).moduleTransform(acc)
     }
 

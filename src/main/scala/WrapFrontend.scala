@@ -47,19 +47,20 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     case _ => false
   }
 
+  def isWrapperSym(sym: Symbol): Boolean = {
+    !sym.hasPackageFlag && sym.isClass && isWrapper(sym.nameString)
+  }
+  def isWrapperType(tpe: Type): Boolean = isWrapperSym(tpe.typeSymbol)
+
   /** For each method call, create type wrapper if the external type should be wrapped. */
   def catchWrapperUsage(tree: Tree): Unit = tree match {
-    case sel @ Select(objSel @ Apply(TypeApply(_, _), _), member) if isWrapper(objSel.tpe.typeSymbol) =>
+    case sel @ Select(objSel @ Apply(TypeApply(_, _), _), member) if isWrapperType(objSel.tpe) =>
       updateWrapper(objSel.tpe, member, sel.tpe, sel.symbol)
-    case sel @ Select(objSel @ Select(_, obj), member) if isWrapper(objSel.tpe.typeSymbol) =>
+    case sel @ Select(objSel @ Select(_, obj), member) if isWrapperType(objSel.tpe) =>
       updateWrapper(objSel.tpe, member, sel.tpe, sel.symbol)
-    case sel @ Select(objSel, member) if isWrapper(objSel.tpe.typeSymbol) =>
+    case sel @ Select(objSel, member) if isWrapperType(objSel.tpe) =>
       updateWrapper(objSel.tpe, member, sel.tpe, sel.symbol)
     case _ => ()
-  }
-
-  def isWrapper(sym: Symbol): Boolean = {
-    ScalanPluginConfig.externalTypes.contains(sym.nameString)
   }
 
   /** Form the list of method arguments in terms of Meta AST by using symbols from Scala AST. */
@@ -302,7 +303,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
   def createDependencies(memberType: Type): Unit = {
     class DependencyTraverser extends TypeTraverser {
       def traverse(tp: Type): Unit = tp match {
-        case TypeRef(pre, sym, args) if isWrapper(sym) =>
+        case TypeRef(pre, sym, args) if isWrapperSym(sym) =>
           if (!ScalanPluginState.wrappers.contains(sym.nameString)) {
             val module = createWrapper(sym.tpe, Nil)
             ScalanPluginState.wrappers(sym.nameString) = module

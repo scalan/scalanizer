@@ -33,25 +33,15 @@ object ScalanPluginConfig {
   )
   val typeClasses = List[String]("Default")
   val home = "/home/mgekk/scalan/scalanizer-demo"
-  val externalTypes = Set[String](
-    "Predef",
-    "GenIterable",
-    "CanBuildFrom",
-    "Array", "ArrayOps", "WrappedArray"
-//    "Num", "DoubleNum",
-//    "NumMonoid", "PlusMonoid",
-//    "Col", "ColOverArray", "PairCol",
-//    "Vec", "DenseVec",
-//    "Matr", "DenseMatr",
-//    "MatrOp", "BaseMatrOp"
-  )
-  val entities = Set[String](
-    "Num",
-    "NumMonoid",
-    "Col",
-    "Vec",
-    "Matr",
-    "MatrOp"
+  val entities = Map[String, Set[String]](
+    "LinearAlgebra" -> Set(),
+    "Num" -> Set("DoubleNum"),
+    "NumMonoid" -> Set("PlusMonoid"),
+    "Col" -> Set("ColOverArray", "PairCol"),
+    "Vec" -> Set("DenseVec"),
+    "Matr" -> Set("DenseMatr"),
+    "MatrOp" -> Set("BaseMatrOp"),
+    "LinearAlgebraOp" -> Set("LA")
   )
 }
 

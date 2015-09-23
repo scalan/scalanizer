@@ -10,9 +10,38 @@ trait Common {
   def wmod(name: String) = "W" + name + "s"
   /** Gets name of companion by entity name */
   def comp(name: String) = name + "Companion"
+  /** Gets module name by its entity. TODO: Should be a general solution. */
+  def mod(name: String) = name + "s"
 
+  def isPrimitive(name: String): Boolean = {
+    STpePrimitives.keySet.contains(name)
+  }
+  def isStandardType(name: String): Boolean = {
+    Set("Tuple", "Function").exists(name.startsWith(_)) ||
+    Set("ClassTag").contains(name)
+  }
   def isEntity(name: String): Boolean = {
-    ScalanPluginConfig.entities.contains(name)
+    ScalanPluginConfig.entities.keySet.contains(name)
+  }
+  def isEntityCompanion(name: String): Boolean = {
+    ScalanPluginConfig.entities.keys.map(comp(_)).toSet.contains(name)
+  }
+  def isClass(name: String): Boolean = {
+    ScalanPluginConfig.entities.values.flatten.toSet.contains(name)
+  }
+  def isClassCompanion(name: String): Boolean = {
+    ScalanPluginConfig.entities.values.flatten.map(comp(_)).toSet.contains(name)
+  }
+  def isModule(name: String): Boolean = {
+    ScalanPluginConfig.entities.keys.map(mod(_)).toSet.contains(name)
+  }
+  def isWrapper(name: String): Boolean = {
+    !Set(
+      isPrimitive _, isStandardType _,
+      isEntity _, isEntityCompanion _,
+      isClass _, isClassCompanion _,
+      isModule _
+    ).exists(_(name))
   }
 
   /** The class implements a default Meta AST transformation strategy: breadth-first search */

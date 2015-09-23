@@ -421,7 +421,7 @@ trait Enricher extends Common {
   }
 
   def externalTypeToWrapper(module: SEntityModuleDef) = {
-    val wrappedModule = ScalanPluginConfig.externalTypes.foldLeft(module){(acc, externalTypeName) =>
+    val wrappedModule = ScalanPluginState.externalTypes.foldLeft(module){(acc, externalTypeName) =>
       new ExtType2WrapperTransformer(externalTypeName).moduleTransform(acc)
     }
 
