@@ -223,8 +223,8 @@ trait Common {
     }
   }
 
-  class ExtType2WrapperTransformer(name: String) extends MetaAstTransformer {
-    val typeTransformer = new ExtType2WrapperTypeTransformer(name)
+  class MetaAstReplacer(name: String, repl: String => String) extends MetaAstTransformer {
+    val typeTransformer = new TypeReplacer(name, repl)
 
     override def methodArgTransform(arg: SMethodArg): SMethodArg = {
       arg.copy(tpe = typeTransformer.typeTransform(arg.tpe))
@@ -238,7 +238,7 @@ trait Common {
     }
     override def selectTransform(select: SSelect): SSelect = select match {
       case SSelect(_, extTypeName) if extTypeName == name =>
-        SSelect(SEmpty(), wrap(extTypeName))
+        SSelect(SEmpty(), repl(extTypeName))
       case _ => super.selectTransform(select)
     }
     override def ascrTransform(ascr: SAscr): SAscr = {
@@ -254,6 +254,7 @@ trait Common {
       super.typeApplyTransform(typeApply.copy(ts = newTs))
     }
   }
+  class ExtType2WrapperTransformer(name: String) extends MetaAstReplacer(name, wrap)
 
   class MetaTypeTransformer {
     def typeTransform(tpe: STpeExpr): STpeExpr = tpe match {
@@ -300,12 +301,14 @@ trait Common {
     }
   }
 
-  class ExtType2WrapperTypeTransformer(name: String) extends MetaTypeTransformer {
+  class TypeReplacer(name: String, repl: String => String) extends MetaTypeTransformer {
     override def traitCallNameTransform(tname: String): String = {
-      if (tname == name) wrap(tname)
+      if (tname == name) repl(tname)
       else tname
     }
   }
+
+  class ExtType2WrapperTypeTransformer(name: String) extends TypeReplacer(name, wrap)
 
   class TypeRenamer(oldName: String, newName: String) extends MetaTypeTransformer {
     override def traitCallNameTransform(tname: String): String = {

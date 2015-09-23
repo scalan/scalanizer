@@ -369,7 +369,7 @@ trait Enricher extends Common {
   }
 
   /** ClassTags are removed because they can be extracted from Elems. */
-  def filterClassTags(module: SEntityModuleDef) = {
+  def cleanUpClassTags(module: SEntityModuleDef) = {
     class ClassTagTransformer extends MetaAstTransformer {
       override def methodArgsTransform(args: SMethodArgs): SMethodArgs = {
         val newArgs = args.args.filter {marg => marg.tpe match {

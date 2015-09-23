@@ -32,7 +32,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
           repSynonym _,
           checkEntityCompanion _,
           constr2apply _,
-          filterClassTags _,
+          cleanUpClassTags _,
           preventNameConflict _,
           genEntityImpicits _,
           genMethodsImplicits _,
