@@ -253,6 +253,10 @@ trait Common {
       val newTs = typeApply.ts mapConserve typeTransformer.typeTransform
       super.typeApplyTransform(typeApply.copy(ts = newTs))
     }
+    override def valdefTransform(valdef: SValDef): SValDef = {
+      val newTpe = valdef.tpe.map(typeTransformer.typeTransform _)
+      super.valdefTransform(valdef.copy(tpe = newTpe))
+    }
   }
   class ExtType2WrapperTransformer(name: String) extends MetaAstReplacer(name, wrap)
 
