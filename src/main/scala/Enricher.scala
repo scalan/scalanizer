@@ -465,4 +465,14 @@ trait Enricher extends Common {
       }
     }.moduleTransform(module)
   }
+
+  def eliminateClassTagApply(module: SEntityModuleDef) = {
+    new MetaAstTransformer {
+      override def applyTransform(apply: SApply): SApply = apply match {
+        case SApply(SSelect(SIdent("ClassTag"), "apply"), List(tpe), _) =>
+          SApply(SSelect(SIdent("self"), "element"), List(tpe), Nil)
+        case _ => super.applyTransform(apply)
+      }
+    }.moduleTransform(module)
+  }
 }
