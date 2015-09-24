@@ -370,8 +370,8 @@ trait Backend extends Common with PatternMatching {
       val typeArgs = tpts.map(genTypeExpr)
       val valArgss = argss.map(_.map(genExpr))
       fun match {
-        case SSelect(SIdent(pkg), name) if pkg == "scala" && name.startsWith("Tuple") =>
-          q"Tuple[..$typeArgs](...$valArgss)"
+        case SSelect(SSelect(SIdent("scala"), "Tuple2"), "apply") =>
+          q"Pair[..$typeArgs](...$valArgss)"
         case _ => q"${genExpr(fun)}[..$typeArgs](...$valArgss)"
       }
     case SBlock(init: List[SExpr], last) => Block(init.map(genExpr), genExpr(last))
