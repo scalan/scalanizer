@@ -359,20 +359,17 @@ trait Backend extends Common with PatternMatching {
       if (ctx.toRep) q"toRep($constTree)" else constTree
     case SIdent(name: String) => Ident(TermName(name))
     case SAssign(left, right) => q"${genExpr(left)} = ${genExpr(right)}"
-    case SApply(SSelect(SAscr(obj, STraitCall("Array", _)), method), _, argss) => genBasisArray(obj, method, argss)
-    case SSelect(SAscr(obj, STraitCall("Array", _)), method) => genBasisArray(obj, method, List(List()))
-    case SApply(SSelect(obj @ SIdent("Array"), method), _, argss) => genBasisArray(obj, method, argss)
     case SSelect(expr: SExpr, tname: String) => expr match {
       case SEmpty() => q"${TermName(tname)}"
       case _ => q"${genExpr(expr)}.${TermName(tname)}"
     }
-    case SApply(fun, tpts, argss) =>
-      val typeArgs = tpts.map(genTypeExpr)
-      val valArgss = argss.map(_.map(genExpr))
-      fun match {
+    case apply: SApply =>
+      val typeArgs = apply.ts.map(genTypeExpr)
+      val valArgss = apply.argss.map(_.map(genExpr))
+      apply.fun match {
         case SSelect(SSelect(SIdent("scala"), "Tuple2"), "apply") =>
           q"Pair[..$typeArgs](...$valArgss)"
-        case _ => q"${genExpr(fun)}[..$typeArgs](...$valArgss)"
+        case _ => q"${genExpr(apply.fun)}[..$typeArgs](...$valArgss)"
       }
     case SBlock(init: List[SExpr], last) => Block(init.map(genExpr), genExpr(last))
     case SIf(c, t, e) => q"IF (${genExpr(c)}) THEN {${genExpr(t)}} ELSE {${genExpr(e)}}"
@@ -401,22 +398,5 @@ trait Backend extends Common with PatternMatching {
     }
     val args = annot.args.map(genAnnotExpr)
     Apply(Select(New(Ident(annot.annotationClass)), nme.CONSTRUCTOR), args)
-  }
-
-  def genBasisArray(obj: SExpr, method: String, argss: List[List[SExpr]])
-                   (implicit ctx: GenCtx): Tree = {
-    val constArgs = genExpr(obj) :: argss.flatten.map(genExpr)
-    method match {
-      case "map" => q"array_map(..${constArgs.take(2)})"
-      case "length" => q"array_length(..${constArgs.take(1)})"
-      case "apply" => q"array_apply(..${constArgs.take(2)})"
-      case "reduce" =>
-        val plus = Literal(Constant("+"))
-        val SSelect(monoidName, _) = argss.head.head
-        q"array_reduce(..${constArgs.take(1)})(RepMonoid(opName = $plus, zero = ${genExpr(monoidName)}.zero, append = ${genExpr(monoidName)}.append, isCommutative = true))"
-      case "range" =>
-        val List(_,_,end,_) = constArgs
-        q"SArray.rangeFrom0($end)"
-    }
   }
 }
