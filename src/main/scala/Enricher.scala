@@ -478,4 +478,21 @@ trait Enricher extends Common {
       }
     }.moduleTransform(module)
   }
+
+  def checkExprTypes(module: SEntityModuleDef) = {
+    new MetaAstTransformer {
+      override def applyTransform(apply: SApply): SApply = apply.exprType match {
+        case Some(mt:STpeMethod) =>
+          println(
+            s"""
+               |===
+               |found: ${apply.argss.map(_.map(_.exprType))}
+               |required: ${mt.params}
+               |===
+             """.stripMargin)
+          super.applyTransform(apply)
+        case _ => super.applyTransform(apply)
+      }
+    }.moduleTransform(module)
+  }
 }

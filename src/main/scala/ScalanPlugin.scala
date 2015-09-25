@@ -36,7 +36,8 @@ class ScalanPluginComponent(val global: Global)
           checkEntityCompanion _, checkClassCompanion _,
           cleanUpClassTags _, replaceClassTagByElem _, eliminateClassTagApply _,
           genEntityImpicits _, genClassesImplicits _, genMethodsImplicits _,
-          fixEntityCompanionName _
+          fixEntityCompanionName _,
+          checkExprTypes _
         ))
         val enrichedMetaAst = pipeline(metaAst)
 
