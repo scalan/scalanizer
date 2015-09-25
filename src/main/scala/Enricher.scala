@@ -485,9 +485,10 @@ trait Enricher extends Common {
         case Some(mt:STpeMethod) =>
           println(
             s"""
-               |===
-               |found: ${apply.argss.map(_.map(_.exprType))}
-               |required: ${mt.params}
+               |=== ${apply}
+               |found: ${apply.argss}
+               |found type: ${apply.argss.map(_.map(_.exprType))}
+               |required type: ${mt.params}
                |===
              """.stripMargin)
           super.applyTransform(apply)
