@@ -443,7 +443,7 @@ trait Enricher extends Common {
 
   def replaceClassTagByElem(module: SEntityModuleDef) = {
     new MetaAstReplacer("ClassTag", (_:String) => "Elem") {
-      override def selectTransform(select: SSelect): SSelect = {
+      override def selectTransform(select: SSelect): SExpr = {
         val type2Elem = Map(
           "AnyRef" -> "AnyRefElement",
           "Boolean" -> "BoolElement",
@@ -479,20 +479,27 @@ trait Enricher extends Common {
     }.moduleTransform(module)
   }
 
-  def checkExprTypes(module: SEntityModuleDef) = {
+  def fixEvidences(module: SEntityModuleDef) = {
     new MetaAstTransformer {
-      override def applyTransform(apply: SApply): SApply = apply.exprType match {
-        case Some(mt:STpeMethod) =>
-          println(
-            s"""
-               |=== ${apply}
-               |found: ${apply.argss}
-               |found type: ${apply.argss.map(_.map(_.exprType))}
-               |required type: ${mt.params}
-               |===
-             """.stripMargin)
-          super.applyTransform(apply)
-        case _ => super.applyTransform(apply)
+      def implicitElem(tpeSExprs: List[STpeExpr]) = {
+        STypeApply(
+          SSelect(
+            SIdent("Predef"),
+            "implicitly"
+          ),
+          tpeSExprs map (tpe => STraitCall("Elem", List(tpe)))
+        )
+      }
+
+      override def identTransform(ident: SIdent): SExpr = ident match {
+        case SIdent(name, Some(STraitCall("ClassTag", targs))) if name.startsWith("evidence$") =>
+          super.typeApplyTransform(implicitElem(targs))
+        case _ => super.identTransform(ident)
+      }
+      override def selectTransform(select: SSelect): SExpr = select match {
+        case SSelect(_, name, Some(STraitCall("ClassTag", targs))) if name.startsWith("evidence$") =>
+          super.typeApplyTransform(implicitElem(targs))
+        case _ => super.selectTransform(select)
       }
     }.moduleTransform(module)
   }

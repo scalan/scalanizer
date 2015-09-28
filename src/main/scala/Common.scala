@@ -47,8 +47,8 @@ trait Common {
   /** The class implements a default Meta AST transformation strategy: breadth-first search */
   class MetaAstTransformer {
     def constTransform(c: SConst): SConst = c
-    def identTransform(ident: SIdent): SIdent = ident
-    def selectTransform(select: SSelect): SSelect = {
+    def identTransform(ident: SIdent): SExpr = ident
+    def selectTransform(select: SSelect): SExpr = {
       val newExpr = exprTransform(select.expr)
       select.copy(expr = newExpr)
     }
@@ -236,7 +236,7 @@ trait Common {
     override def classArgTransform(classArg: SClassArg): SClassArg = {
       classArg.copy(tpe = typeTransformer.typeTransform(classArg.tpe))
     }
-    override def selectTransform(select: SSelect): SSelect = select match {
+    override def selectTransform(select: SSelect): SExpr = select match {
       case select: SSelect if select.tname == name =>
         SSelect(SEmpty(), repl(select.tname))
       case _ => super.selectTransform(select)
