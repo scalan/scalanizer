@@ -471,7 +471,7 @@ trait Enricher extends Common {
       override def applyTransform(apply: SApply): SApply = apply match {
         case SApply(SSelect(SIdent("ClassTag",_), "apply",_), List(tpe), _,_) =>
           apply.copy(
-            fun = SSelect(SIdent("self"), "element"),
+            fun = SIdent("element"),
             argss = Nil
           )
         case _ => super.applyTransform(apply)
