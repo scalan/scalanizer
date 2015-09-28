@@ -237,8 +237,8 @@ trait Common {
       classArg.copy(tpe = typeTransformer.typeTransform(classArg.tpe))
     }
     override def selectTransform(select: SSelect): SSelect = select match {
-      case SSelect(_, extTypeName) if extTypeName == name =>
-        SSelect(SEmpty(), repl(extTypeName))
+      case select: SSelect if select.tname == name =>
+        SSelect(SEmpty(), repl(select.tname))
       case _ => super.selectTransform(select)
     }
     override def ascrTransform(ascr: SAscr): SAscr = {
@@ -349,7 +349,7 @@ trait Common {
     annotations map {_ match {
       case annotation @ SMethodAnnotation("Constructor", args) =>
         val newArgs = args filter {_ match {
-          case SAssign(SIdent("original"), m: SMethodDef) => false
+          case SAssign(SIdent("original",_), m: SMethodDef,_) => false
           case _ => true
         }}
         annotation.copy(args = newArgs)

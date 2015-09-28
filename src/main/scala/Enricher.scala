@@ -432,7 +432,7 @@ trait Enricher extends Common {
     class ECompanionTransformer extends MetaAstTransformer {
       override def applyTransform(apply: SApply): SApply = {
         apply match {
-          case SApply(sel @ SSelect(SThis(clazz),_),_,_,_) if isEntity(clazz) =>
+          case SApply(sel @ SSelect(SThis(clazz,_),_,_),_,_,_) if isEntity(clazz) =>
             apply.copy(fun = sel.copy(expr = SThis(clazz + "Companion")))
           case _ => super.applyTransform(apply)
         }
@@ -458,7 +458,7 @@ trait Enricher extends Common {
           "Char" -> "CharElement"
         )
         select match {
-          case SSelect(SIdent("ClassTag"), t) if type2Elem.keySet.contains(t) =>
+          case SSelect(SIdent("ClassTag",_), t,_) if type2Elem.keySet.contains(t) =>
             SSelect(SIdent("self"), type2Elem(t))
           case _ => super.selectTransform(select)
         }
@@ -469,7 +469,7 @@ trait Enricher extends Common {
   def eliminateClassTagApply(module: SEntityModuleDef) = {
     new MetaAstTransformer {
       override def applyTransform(apply: SApply): SApply = apply match {
-        case SApply(SSelect(SIdent("ClassTag"), "apply"), List(tpe), _,_) =>
+        case SApply(SSelect(SIdent("ClassTag",_), "apply",_), List(tpe), _,_) =>
           apply.copy(
             fun = SSelect(SIdent("self"), "element"),
             argss = Nil

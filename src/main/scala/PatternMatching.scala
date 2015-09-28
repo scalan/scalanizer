@@ -8,7 +8,7 @@ trait PatternMatching {
                             condExpr: SExpr, thenExpr: SExpr, elseExpr: SExpr,
                             forAll: Boolean = false) {
     def get: SExpr = condExpr match {
-      case SEmpty() => thenExpr
+      case _: SEmpty => thenExpr
       case _ => SIf(condExpr, thenExpr, elseExpr)
     }
   }
@@ -29,8 +29,8 @@ trait PatternMatching {
   def updateMatchingState(implicit matchCase: SCase, state: MatchingState): MatchingState = {
     matchCase.pat match {
       case SWildcardPattern() => skipPattern
-      case SLiteralPattern(const @ SConst(_)) => eqCheck(const)
-      case SStableIdPattern(id @ SIdent(_)) => eqCheck(id)
+      case SLiteralPattern(const: SConst) => eqCheck(const)
+      case SStableIdPattern(id: SIdent) => eqCheck(id)
       case SSelPattern(sel, name) => eqCheck(SSelect(sel, name))
       case SBindPattern(name, SWildcardPattern()) => bindVal(name)
       case STypedPattern(tpe) => typeCheck(tpe)
@@ -156,7 +156,7 @@ trait PatternMatching {
   }
 
   def convStableIdToType(stableId: SExpr): STpeExpr = stableId match {
-    case SIdent(name) => STraitCall(name, List())
+    case ident: SIdent => STraitCall(ident.name, List())
   }
 
   def getSel(optName: String, max: Int, offset: Int): SExpr = {

@@ -353,34 +353,37 @@ trait Backend extends Common with PatternMatching {
   }
 
   def genExpr(expr: SExpr)(implicit ctx: GenCtx): Tree = expr match {
-    case SEmpty() => q""
-    case SConst(c) =>
-      val constTree = compiler.Literal(compiler.Constant(c))
+    case empty: SEmpty => q""
+    case const: SConst =>
+      val constTree = compiler.Literal(compiler.Constant(const.c))
       if (ctx.toRep) q"toRep($constTree)" else constTree
-    case SIdent(name: String) => Ident(TermName(name))
-    case SAssign(left, right) => q"${genExpr(left)} = ${genExpr(right)}"
-    case SSelect(expr: SExpr, tname: String) => expr match {
-      case SEmpty() => q"${TermName(tname)}"
-      case _ => q"${genExpr(expr)}.${TermName(tname)}"
+    case ident: SIdent => Ident(TermName(ident.name))
+    case assign: SAssign => q"${genExpr(assign.left)} = ${genExpr(assign.right)}"
+    case select: SSelect => select.expr match {
+      case _: SEmpty => q"${TermName(select.tname)}"
+      case _ => q"${genExpr(select.expr)}.${TermName(select.tname)}"
     }
     case apply: SApply =>
       val typeArgs = apply.ts.map(genTypeExpr)
       val valArgss = apply.argss.map(_.map(genExpr))
       apply.fun match {
-        case SSelect(SSelect(SIdent("scala"), "Tuple2"), "apply") =>
+        case SSelect(SSelect(SIdent("scala",_), "Tuple2",_), "apply",_) =>
           q"Pair[..$typeArgs](...$valArgss)"
         case _ => q"${genExpr(apply.fun)}[..$typeArgs](...$valArgss)"
       }
-    case SBlock(init: List[SExpr], last) => Block(init.map(genExpr), genExpr(last))
-    case SIf(c, t, e) => q"IF (${genExpr(c)}) THEN {${genExpr(t)}} ELSE {${genExpr(e)}}"
-    case SAscr(expr, tpt) => q"${genExpr(expr)}: ${repTypeExpr(tpt)}"
+    case block: SBlock => Block(block.init.map(genExpr), genExpr(block.last))
+    case sIf: SIf => q"IF (${genExpr(sIf.cond)}) THEN {${genExpr(sIf.th)}} ELSE {${genExpr(sIf.el)}}"
+    case ascr: SAscr => q"${genExpr(ascr.expr)}: ${repTypeExpr(ascr.pt)}"
     case constr: SContr => genConstr(constr)
     case func: SFunc => genFunc(func)
-    case SThis(tname) => q"${TypeName(tname)}.this"
-    case SSuper(name, qual, field) => q"${TypeName(name)}.super[${TypeName(qual)}].${TermName(field)}"
-    case SAnnotated(expr, annot) => q"${genExpr(expr)}: @${TypeName(annot)}"
-    case STypeApply(fun, tpts) => q"${genExpr(fun)}[..${tpts.map(genTypeExpr)}]"
-    case STuple(exprs) => q"Tuple(..${exprs.map(genExpr)})"
+    case sThis: SThis => q"${TypeName(sThis.typeName)}.this"
+    case sSuper: SSuper =>
+      q"${TypeName(sSuper.name)}.super[${TypeName(sSuper.qual)}].${TermName(sSuper.field)}"
+    case annotated: SAnnotated =>
+      q"${genExpr(annotated.expr)}: @${TypeName(annotated.annot)}"
+    case typeApply: STypeApply =>
+      q"${genExpr(typeApply.fun)}[..${typeApply.ts.map(genTypeExpr)}]"
+    case tuple: STuple => q"Tuple(..${tuple.exprs.map(genExpr)})"
     case m: SMatch => genExpr(transformPatternMatching(m))
     case bi: SBodyItem => genBodyItem(bi)
     case unknown => throw new NotImplementedError(s"genExpr($unknown)")
@@ -391,9 +394,9 @@ trait Backend extends Common with PatternMatching {
   }
   def genAnnotation(annot: SAnnotation)(implicit ctx: GenCtx): Tree = {
     def genAnnotExpr(expr: SExpr): Tree = expr match {
-      case SConst(c: Any) => compiler.Literal(compiler.Constant(c))
-      case SIdent(name: String) => Ident(TermName(name))
-      case SAssign(left, right) => q"${genAnnotExpr(left)} = ${genAnnotExpr(right)}"
+      case const: SConst => compiler.Literal(compiler.Constant(const.c))
+      case ident: SIdent => Ident(TermName(ident.name))
+      case assign: SAssign => q"${genAnnotExpr(assign.left)} = ${genAnnotExpr(assign.right)}"
       case unknown => throw new NotImplementedError(s"genAnnotExpr($unknown)")
     }
     val args = annot.args.map(genAnnotExpr)
