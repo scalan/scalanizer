@@ -25,11 +25,11 @@ trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
       SValDef(vd.name, tpeRes, isLazy, isImplicit, parseExpr(vd.rhs))
     })
     def toLambda: Tree = {
-      val wrappedParamms = sparamss.flatten map { _ match {
-        case svalDef @SValDef(_,Some(STraitCall(tname, tparams)),_,_,_) if ScalanPluginState.externalTypes.contains(tname) =>
-          svalDef.copy(tpe = Some(STraitCall(wrap(tname), tparams)))
-        case other => other
-      }}
+      val wrappedParamms = sparamss.flatten map { param =>
+        ScalanPluginState.externalTypes.foldLeft(param) { (acc, externalTypeName) =>
+          new ExtType2WrapperTransformer(externalTypeName).valdefTransform(acc)
+        }
+      }
       val body = q"${TermName(path)}.${TermName(name)}(...${identss})"
       genFunc(SFunc(wrappedParamms, parseExpr(body)))(GenCtx(null, true))
     }
