@@ -503,4 +503,39 @@ trait Enricher extends Common {
       }
     }.moduleTransform(module)
   }
+
+  def fixExistentialType(module: SEntityModuleDef) = {
+    new MetaAstTransformer {
+      def containsExistential(tpe: STpeExpr): Boolean = {
+        var hasExistential = false
+        new MetaTypeTransformer {
+          override def existTypeTransform(existType: STpeExistential): STpeExistential = {
+            hasExistential = true
+            super.existTypeTransform(existType)
+          }
+        }.typeTransform(tpe)
+
+        hasExistential
+      }
+
+      override def applyTransform(apply: SApply): SApply = {
+        val hasExistential = apply.argss exists (_.exists(arg =>
+          containsExistential(arg.exprType.getOrElse(STpeEmpty()))
+        ))
+        def castToUniversal(targs: List[STpeExpr]) = {
+          val newArgss = apply.argss map(_.map(arg =>
+            SApply(SSelect(arg, "asRep"),targs, Nil)
+          ))
+          apply.copy(argss = newArgss)
+        }
+
+        if (hasExistential) {
+          apply.fun.exprType match {
+            case Some(methodType: STpeMethod) => castToUniversal(methodType.params)
+            case _ => super.applyTransform(apply)
+          }
+        } else super.applyTransform(apply)
+      }
+    }.moduleTransform(module)
+  }
 }

@@ -26,6 +26,7 @@ class ScalanPluginComponent(val global: Global)
         val metaAst = parse(unitName, unit.body)
         /** Transformations of Scalan AST */
         val pipeline = scala.Function.chain(Seq(
+          fixExistentialType _,
           externalTypeToWrapper _,
           composeParentWithExt _,
           addModuleAncestors _, addEntityAncestors _,
