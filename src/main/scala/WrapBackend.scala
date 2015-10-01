@@ -25,8 +25,9 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
   def newPhase(prev: Phase) = new StdPhase(prev) {
     override def run(): Unit = {
       var wrappersCake = initWrappersCake
-      ScalanPluginState.wrappers foreach { moduleNameAndAst =>
-        val (_, module) = moduleNameAndAst
+      ScalanPluginState.wrappers foreach { wrapperNameAndDescr =>
+        val (_, wrapperDescr) = wrapperNameAndDescr
+        val module = wrapperDescr.module
 
         /** Invoking of Scalan META to produce boilerplate code for the wrapper. */
         val boilerplate = genWrapperBoilerplate(module)

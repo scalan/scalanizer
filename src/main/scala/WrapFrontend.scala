@@ -5,6 +5,7 @@ import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
 import scalan.meta.ScalanAst._
 import scalan.meta.{CodegenConfig, ScalanParsers}
+import scalan.plugin.ScalanPluginState.WrapperDescr
 
 /** The component builds wrappers. */
 class WrapFrontend(val global: Global) extends PluginComponent with Common with ScalanParsers {
@@ -141,7 +142,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     *   externalType is "class Col"
     *   one of the members is "def arr: Array[A]"
     * */
-  def createWrapper(externalType: Type, members: List[SBodyItem]): SEntityModuleDef = {
+  def createWrapper(externalType: Type, members: List[SBodyItem]): WrapperDescr = {
     val externalTypeSym = externalType.typeSymbol
     val clazz = externalTypeSym.companionClass
     val (externalName, className, companionName) = wrapperNames(externalType)
@@ -183,7 +184,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
       SImportStat(externalTypeSym.fullName)
     )
 
-    SEntityModuleDef(
+    val module = SEntityModuleDef(
       packageName = "wrappers",
       imports = imports,
       name = wmod(externalTypeSym.nameString),
@@ -197,12 +198,16 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
       body = Nil, seqDslImpl = None,
       ancestors = List(STraitCall("TypeWrappers", Nil))
     )
+
+    WrapperDescr(module)
   }
 
   /** Adds a method or a value to the wrapper. It checks the external type symbol
     * to determine where to put the method (value) - into class or its companion. */
-  def addMember(externalType: Type, member: SMethodDef, module: SEntityModuleDef): SEntityModuleDef = {
+  def addMember(externalType: Type, member: SMethodDef, wrapperDescr: WrapperDescr): WrapperDescr = {
+    val module = wrapperDescr.module
     val isCompanion = externalType.typeSymbol.isModuleClass
+
     def isAlreadyAdded = {
       if (isCompanion) {
         module.entityOps.companion match {
@@ -213,7 +218,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     }
 
     if (isAlreadyAdded) {
-      module
+      wrapperDescr
     } else {
       val updatedEntity = if (isCompanion) {
         val updatedCompanion = module.entityOps.companion match {
@@ -227,7 +232,9 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
         val updatedBody = member :: module.entityOps.body
         module.entityOps.copy(body = updatedBody)
       }
-      module.copy(entityOps = updatedEntity, entities = List(updatedEntity))
+      wrapperDescr.copy(
+        module = module.copy(entityOps = updatedEntity, entities = List(updatedEntity))
+      )
     }
   }
 
@@ -270,12 +277,12 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
         formMethodDef(methodName.toString, Nil, Nil, formMethodRes(sym.tpe))
       case _ => throw new NotImplementedError(s"memberType = ${showRaw(memberType)}")
     }
-    val updatedModule = ScalanPluginState.wrappers.get(externalTypeName) match {
+    val updatedWrapper = ScalanPluginState.wrappers.get(externalTypeName) match {
       case None => createWrapper(objType, List(member))
-      case Some(module) => addMember(objType, member, module)
+      case Some(wrapperDescr) => addMember(objType, member, wrapperDescr)
     }
 
-    ScalanPluginState.wrappers(externalTypeName) = updatedModule
+    ScalanPluginState.wrappers(externalTypeName) = updatedWrapper
     createDependencies(memberType)
   }
 

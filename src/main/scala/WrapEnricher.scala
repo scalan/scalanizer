@@ -22,7 +22,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
   /** The phase prepares a wrapper for virtualization. */
   def newPhase(prev: Phase) = new StdPhase(prev) {
     override def run(): Unit = {
-      ScalanPluginState.wrappers transform { (name, module) =>
+      ScalanPluginState.wrappers transform { (name, wrapperDescr) =>
         /** Transformations of Wrappers by adding of Elem, Cont and other things. */
         val pipeline = scala.Function.chain(Seq(
           preventNameConflict _,
@@ -43,9 +43,9 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
             * Print warnings and remove ancestors. */
           filterAncestors _
         ))
-        val enrichedModule = pipeline(module)
+        val enrichedModule = pipeline(wrapperDescr.module)
 
-        enrichedModule
+        wrapperDescr.copy(module = enrichedModule)
       }
     }
 

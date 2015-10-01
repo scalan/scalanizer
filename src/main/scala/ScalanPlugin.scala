@@ -219,8 +219,9 @@ object ScalanPluginState {
     "LinearAlgebraOps" -> "scalanizer.linalgebra"
   )
 
+  case class WrapperDescr(module: SEntityModuleDef)
   /** Mapping of external type names to their wrappers. */
-  val wrappers = Map[String, SEntityModuleDef]()
+  val wrappers = Map[String, WrapperDescr]()
   /** Names of external types. They must be read only after the WrapFrontend phase. */
   def externalTypes = wrappers.keySet
 }

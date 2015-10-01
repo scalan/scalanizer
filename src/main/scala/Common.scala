@@ -3,6 +3,7 @@ package scalan.plugin
 import scalan.meta.ScalanAst._
 
 trait Common {
+  type WrapperDescr = ScalanPluginState.WrapperDescr
   /** Converts the name of external type to the name of its wrapper. */
   def wrap(name: String) = "W" + name
   /** Converts the name of external type to the name of the module which
