@@ -198,8 +198,9 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
       body = Nil, seqDslImpl = None,
       ancestors = List(STraitCall("TypeWrappers", Nil))
     )
+    val baseClasses = externalType.baseClasses map (_.nameString)
 
-    WrapperDescr(module)
+    WrapperDescr(module, baseClasses)
   }
 
   /** Adds a method or a value to the wrapper. It checks the external type symbol
