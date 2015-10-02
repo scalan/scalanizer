@@ -357,4 +357,8 @@ trait Common {
       case other => other
     }}
   }
+
+  def getExtentionNames(moduleName: String): Set[String] = {
+    Set("Dsl", "DslSeq", "DslExp").map(moduleName + _)
+  }
 }
