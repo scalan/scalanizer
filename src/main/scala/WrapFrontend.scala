@@ -279,14 +279,12 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
       case _ => throw new NotImplementedError(s"memberType = ${showRaw(memberType)}")
     }
     val updatedWrapper = ScalanPluginState.wrappers.get(externalTypeName) match {
-      case None =>
-        createWrapper(objType, List(member))
-      case Some(wrapperDescr) =>
-        createMemberDependencies(memberType)
-        addMember(objType, member, wrapperDescr)
+      case None =>  createWrapper(objType, List(member))
+      case Some(wrapperDescr) => addMember(objType, member, wrapperDescr)
     }
 
     ScalanPluginState.wrappers(externalTypeName) = updatedWrapper
+    createMemberDependencies(memberType)
   }
 
   def uncurryMethodType(method: Type): (List[SMethodArgs], STpeExpr) = {
