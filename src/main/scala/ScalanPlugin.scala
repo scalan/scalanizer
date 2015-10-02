@@ -33,7 +33,6 @@ class ScalanPluginComponent(val global: Global)
           updateSelf _,
           repSynonym _,
           addImports _,
-          //addDefaultElem _,
           checkEntityCompanion _, checkClassCompanion _,
           cleanUpClassTags _, replaceClassTagByElem _, eliminateClassTagApply _,
           genEntityImpicits _, genClassesImplicits _, genMethodsImplicits _,

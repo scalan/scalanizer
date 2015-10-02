@@ -3,7 +3,7 @@ package scalan.plugin
 import scala.reflect.internal.util.BatchSourceFile
 import scalan.meta.ScalanAst._
 
-trait Backend extends Common with PatternMatching {
+trait Backend extends Common {
 
   type Compiler <: scala.tools.nsc.Global
   val compiler: Compiler
@@ -384,7 +384,6 @@ trait Backend extends Common with PatternMatching {
     case typeApply: STypeApply =>
       q"${genExpr(typeApply.fun)}[..${typeApply.ts.map(genTypeExpr)}]"
     case tuple: STuple => q"Tuple(..${tuple.exprs.map(genExpr)})"
-    case m: SMatch => genExpr(transformPatternMatching(m))
     case bi: SBodyItem => genBodyItem(bi)
     case unknown => throw new NotImplementedError(s"genExpr($unknown)")
   }

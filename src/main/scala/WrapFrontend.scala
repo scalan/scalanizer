@@ -199,7 +199,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
       ancestors = List(STraitCall("TypeWrappers", Nil))
     )
     val ownerChain = externalTypeSym.ownerChain.map(_.nameString)
-    
+
     //createDependencies(externalType)
     WrapperDescr(module, ownerChain)
   }
