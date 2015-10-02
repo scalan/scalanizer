@@ -92,12 +92,16 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
     * Scalan Codegen. When the module is stored, the default implementation
     * is filtered. */
   def defaultWrapperImpl(module: SEntityModuleDef): SEntityModuleDef = {
-    val wrapperType = module.entityOps.ancestors.collect {
+    val wrapperTypes = module.entityOps.ancestors.collect {
       case STraitCall("TypeWrapper", h :: _) => h
-    }.head
-    val wrapperImpl = SEntityModuleDef.wrapperImpl(module.entityOps, wrapperType)
+    }
 
-    module.copy(concreteSClasses = List(wrapperImpl))
+    if (wrapperTypes.isEmpty) module
+    else {
+      val wrapperType = wrapperTypes.head
+      val wrapperImpl = SEntityModuleDef.wrapperImpl(module.entityOps, wrapperType)
+      module.copy(concreteSClasses = List(wrapperImpl))
+    }
   }
 
   def filterConstructor(module: SEntityModuleDef): SEntityModuleDef = {
