@@ -361,4 +361,6 @@ trait Common {
   def getExtentionNames(moduleName: String): Set[String] = {
     Set("Dsl", "DslSeq", "DslExp").map(moduleName + _)
   }
+
+  def isIgnoredExternalType(typeName: String) = Set("Object", "Any", "AnyRef").contains(typeName)
 }

@@ -120,7 +120,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
       case _ => Nil
     }
 
-    ancestors.filterNot(_.name == "AnyRef")
+    ancestors.filterNot(a => isIgnoredExternalType(a.name))
   }
 
   /** Gets names of an external type, its class and its module. */
@@ -159,13 +159,13 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     }
     val baseType = if (isCompanion) STraitCall(externalName + ".type", typeParams)
                    else STraitCall(externalName, typeParams)
+    val originalEntityAncestors = getExtTypeAncestors(externalType)
+    val entityAncestors = STraitCall("TypeWrapper", List(baseType, STraitCall(className, typeParams))) :: originalEntityAncestors
+
     val entity = STraitDef(
       name = className,
       tpeArgs = tpeArgs,
-      ancestors = STraitCall(
-        "TypeWrapper",
-        List(baseType, STraitCall(className, typeParams))
-      ) :: getExtTypeAncestors(externalType),
+      ancestors = entityAncestors,
       body =  if (isCompanion) Nil else members,
       selfType = Some(SSelfTypeDef("self", Nil)),
       companion = Some(STraitDef(
@@ -198,9 +198,9 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
       body = Nil, seqDslImpl = None,
       ancestors = List(STraitCall("TypeWrappers", Nil))
     )
-    val baseClasses = externalType.baseClasses map (_.nameString)
 
-    WrapperDescr(module, baseClasses)
+    //createDependencies(externalType)
+    WrapperDescr(module)
   }
 
   /** Adds a method or a value to the wrapper. It checks the external type symbol
@@ -279,12 +279,14 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
       case _ => throw new NotImplementedError(s"memberType = ${showRaw(memberType)}")
     }
     val updatedWrapper = ScalanPluginState.wrappers.get(externalTypeName) match {
-      case None => createWrapper(objType, List(member))
-      case Some(wrapperDescr) => addMember(objType, member, wrapperDescr)
+      case None =>
+        createWrapper(objType, List(member))
+      case Some(wrapperDescr) =>
+        createMemberDependencies(memberType)
+        addMember(objType, member, wrapperDescr)
     }
 
     ScalanPluginState.wrappers(externalTypeName) = updatedWrapper
-    createDependencies(memberType)
   }
 
   def uncurryMethodType(method: Type): (List[SMethodArgs], STpeExpr) = {
@@ -307,8 +309,23 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     loop(method, Nil)
   }
 
+  def createDependencies(objType: Type): Unit = {
+    val parentDecls = objType.typeSymbol.typeSignature match {
+      case PolyType(_, ClassInfoType(parents,_,_)) => parents
+      case ClassInfoType(parents,_,_) => parents
+      case _ => Nil
+    }
+
+    parentDecls foreach {parent =>
+      val name = parent.typeSymbol.nameString
+      if (!isIgnoredExternalType(name) && !ScalanPluginState.wrappers.keySet.contains(name)) {
+        ScalanPluginState.wrappers(name) = createWrapper(parent, Nil)
+      }
+    }
+  }
+
   /** Traversing of the type and adding of wrappers for external types. */
-  def createDependencies(memberType: Type): Unit = {
+  def createMemberDependencies(memberType: Type): Unit = {
     class DependencyTraverser extends TypeTraverser {
       def traverse(tp: Type): Unit = tp match {
         case TypeRef(pre, sym, args) if isWrapperSym(sym) =>
