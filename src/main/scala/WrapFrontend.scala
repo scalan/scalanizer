@@ -48,6 +48,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     case _ => false
   }
 
+  /** Applying of the policy: wrap all types outside of virtualization scope. */
   def isWrapperSym(sym: Symbol): Boolean = {
     !sym.hasPackageFlag && sym.isClass && isWrapper(sym.nameString)
   }
@@ -109,6 +110,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     )
   }
 
+  /** Gets the list of ancestors of the external type in term of Meta AST. */
   def getExtTypeAncestors(externalType: Type): List[STraitCall] = {
     val externalTypeDecl = externalType.typeSymbol.typeSignature
     def convToMetaType(types: List[Type]): List[STraitCall] = {
@@ -288,6 +290,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     createMemberDependencies(memberType)
   }
 
+  /** Converts curried method type its uncurried Meta AST representation. */
   def uncurryMethodType(method: Type): (List[SMethodArgs], STpeExpr) = {
     def addArgSection(sections: List[SMethodArgs], args: List[Symbol]): List[SMethodArgs] = {
       val methodArgs = formMethodArgs(args)
@@ -308,6 +311,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     loop(method, Nil)
   }
 
+  /** For the given type, find all dependencies and wrap them. */
   def createDependencies(objType: Type): Unit = {
     val parentDecls = objType.typeSymbol.typeSignature match {
       case PolyType(_, ClassInfoType(parents,_,_)) => parents
