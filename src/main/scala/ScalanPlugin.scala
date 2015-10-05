@@ -65,7 +65,7 @@ class ScalanPluginComponent(val global: Global)
         }
 
         unit.body = accelAst
-        /** Discracrd the generated code and load it from FS. */
+        /** Discards the generated code and load it from FS. */
         if (!ScalanPluginConfig.read) {
           unit.body = combineAst(unit.body, stagedAst)
         }
@@ -116,6 +116,16 @@ class ScalanPluginComponent(val global: Global)
     }
   }
 
+  /** Puts original and virtualized entity code together. For example:
+    * package scalanizer.linalgebra {
+    *   trait Matrs {self: LinearAlgebra => }
+    * }
+    * and the result of the getStagedAst method are combined into:
+    * package scalanizer.linalgebra {
+    *   trait Matrs {self: LinearAlgebra => ...}
+    *   package implOfMatrs {...}
+    * }
+    * */
   def combineAst(orig: Tree, staged: Tree): Tree = {
     val stagedStats = staged match {
       case PackageDef(_, stats: List[Tree]) => stats
