@@ -9,11 +9,9 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
 
   type Compiler = global.type
   val compiler: Compiler = global
-
   import compiler._
 
   val phaseName: String = "scalan-wrap-enricher"
-
   override def description: String = "Virtualization of type wrappers."
 
   val runsAfter = List[String]("scalan-wrap-frontend")
@@ -104,17 +102,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
     }
   }
 
-  def filterConstructor(module: SEntityModuleDef): SEntityModuleDef = {
-    new MetaAstTransformer {
-      override def bodyTransform(body: List[SBodyItem]): List[SBodyItem] = body.filter {
-        _ match {
-          case m: SMethodDef if m.name == "<init>" => false
-          case _ => true
-        }
-      }
-    }.moduleTransform(module)
-  }
-
+  /** Converts constructors (methods with "<init> name") to the apply method of companions. */
   def constr2apply(module: SEntityModuleDef): SEntityModuleDef = {
     val (constrs, entityBody) = module.entityOps.body partition{ _ match {
       case m: SMethodDef if m.name == "<init>" => true
@@ -137,6 +125,11 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
     module.copy(entityOps = newEntityOps, entities = List(newEntityOps))
   }
 
+  /** Replaces external types by their wrappers. For example:
+    * trait Col[A] { def arr: Array[A]; }
+    * The external type Array is replaced by its wrapper WArray
+    * trait Col[A] { def arr: WArray[A]; }
+    * */
   def extType2WrapperInWrappers(module: SEntityModuleDef): SEntityModuleDef = {
     class TypeInWrappersTransformer(name: String) extends ExtType2WrapperTransformer(name) {
       override def methodTransform(method: SMethodDef): SMethodDef = {
@@ -159,6 +152,8 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
     wrappedModule
   }
 
+  /** Discards all ancestors of the entity except TypeWrapper. It could be used as temporary solution
+    * if inheritance of type wrappers is not supported. */
   def filterAncestors(module: SEntityModuleDef): SEntityModuleDef = {
     class filterAncestorTransformer extends MetaAstTransformer {
       override def entityAncestorsTransform(ancestors: List[STraitCall]): List[STraitCall] = {
@@ -169,6 +164,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
     new filterAncestorTransformer().moduleTransform(module)
   }
 
+  /** Adds a prefix for type parameters To, Elem and Cont, to eliminate name conflicts. */
   def preventNameConflict(module: SEntityModuleDef): SEntityModuleDef = {
     val pipeline = scala.Function.chain(Seq(
       new TypeNameTransformer("Elem", module.name + "Elem").moduleTransform _,
