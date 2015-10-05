@@ -10,11 +10,9 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
 
   type Compiler = global.type
   val compiler: Compiler = global
-
   import compiler._
 
   val phaseName: String = "scalan-wrap-backend"
-
   override def description: String = "Generating of Scala AST for wrappers."
 
   val runsAfter = List[String]("scalan-wrap-enricher")
@@ -46,6 +44,7 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
     def apply(unit: CompilationUnit): Unit = ()
   }
 
+  /** Calls Scalan Meta to generate boilerplate code for the wrapper. */
   def genWrapperBoilerplate(module: SEntityModuleDef): String = {
     val gen = new scalan.meta.ScalanCodegen.EntityFileGenerator(
       module, ScalanPluginConfig.codegenConfig)
@@ -53,7 +52,7 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
 
     implCode
   }
-
+  /** Generates Scala AST for the given wrapper (without implementation). */
   def genWrapperPackage(module: SEntityModuleDef): Tree = {
     implicit val genCtx = GenCtx(module = module, toRep = true)
     val scalaAst = genModule(module)
@@ -108,6 +107,8 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
     )
   }
 
+  /** Puts all wrappers to the cakes WrappersDsl, WrappersDslSeq and WrappersDslExp.
+    * Stores them into the file: $home/wrappers/Wrappers.scala */
   def saveWrappersCake(cake: WrappersCake): Unit = {
     implicit val genCtx = GenCtx(module = null, toRep = false)
     val absCake = genTrait(cake.abs)
@@ -129,7 +130,6 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
 
     saveWrappersCake(showCode(cakePackage))
   }
-
   def saveWrappersCake(cakes: String): Unit = {
     val wrapperFile = FileUtil.file(getWrappersHome, "Wrappers.scala")
     wrapperFile.mkdirs()
