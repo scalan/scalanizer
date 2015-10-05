@@ -14,6 +14,7 @@ trait Common {
   /** Gets module name by its entity. TODO: Should be a general solution. */
   def mod(name: String) = name + "s"
 
+  /** Classification of external types by their names. */
   def isPrimitive(name: String): Boolean = {
     STpePrimitives.keySet.contains(name)
   }
@@ -224,6 +225,7 @@ trait Common {
     }
   }
 
+  /** Transform some Meta AST to another AST by applying the repl function to each type name. */
   class MetaAstReplacer(name: String, repl: String => String) extends MetaAstTransformer {
     val typeTransformer = new TypeReplacer(name, repl)
 
@@ -261,6 +263,7 @@ trait Common {
   }
   class ExtType2WrapperTransformer(name: String) extends MetaAstReplacer(name, wrap)
 
+  /** Transforming of Meta AST related to types (children of STpeExpr)*/
   class MetaTypeTransformer {
     def typeTransform(tpe: STpeExpr): STpeExpr = tpe match {
       case empty: STpeEmpty => emptyTransform(empty)
@@ -306,6 +309,7 @@ trait Common {
     }
   }
 
+  /** Renaming of all types with the given name by applying the repl function. */
   class TypeReplacer(name: String, repl: String => String) extends MetaTypeTransformer {
     override def traitCallNameTransform(tname: String): String = {
       if (tname == name) repl(tname)
@@ -314,7 +318,7 @@ trait Common {
   }
 
   class ExtType2WrapperTypeTransformer(name: String) extends TypeReplacer(name, wrap)
-
+  /** Renaming of types with oldName to new name (newName). */
   class TypeRenamer(oldName: String, newName: String) extends MetaTypeTransformer {
     override def traitCallNameTransform(tname: String): String = {
       if (tname == oldName) newName
@@ -325,7 +329,7 @@ trait Common {
       else tpeArg
     }
   }
-
+  /** Traverse whole META AST and rename types. Returns new tree. */
   class TypeNameTransformer(oldName: String, newName: String) extends MetaAstTransformer {
     val typeTransformer = new TypeRenamer(oldName, newName)
     override def entityTpeArgTransform(tpeArg: STpeArg): STpeArg = {
@@ -361,6 +365,6 @@ trait Common {
   def getExtentionNames(moduleName: String): Set[String] = {
     Set("Dsl", "DslSeq", "DslExp").map(moduleName + _)
   }
-
+  /** The external types that should be rejected during virtualization. */
   def isIgnoredExternalType(typeName: String) = Set("Object", "Any", "AnyRef").contains(typeName)
 }
