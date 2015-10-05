@@ -14,6 +14,7 @@ trait Enricher extends Common {
     module.copy(ancestors = parentsWithExts)
   }
 
+  /** Gets all packages needed for the module and imports them. */
   def getImportByName(name: String): SImportStat = {
     val pkgOfModule = ScalanPluginState.pkgOfModule.get(name) match {
       case Some(pkgName) => pkgName + "."
@@ -33,7 +34,9 @@ trait Enricher extends Common {
     module.copy(imports = SImportStat("scalan._") :: (usedImports ++ usersImport))
   }
 
-  /** Introduces a synonym for a module. */
+  /** Introduces a synonym for the entity. If name of the entity is Matr, the method adds:
+    *   type RepMatr[T] = Rep[Matr[T]]
+    * */
   def repSynonym(module: SEntityModuleDef) = {
     val entity = module.entityOps
     module.copy(entityRepSynonym = Some(STpeDef(
@@ -62,6 +65,13 @@ trait Enricher extends Common {
     module.copy(entityOps = newEntity, entities = List(newEntity))
   }
 
+  /** Appends the given suffix to the type of self. For example:
+    *   trait Matrs {self: LinearAlgebra => ... }
+    * and for the suffix "Dsl", the method extends LinearAlgebra to LinearAlgebraDsl:
+    *   trait Matrs {self: LinearAlgebraDsl => ... }
+    * If the module doesn't have self than self is added with the type of module plus the suffix:
+    *   trait Matrs {...} -> trait Matrs {self: MatrsDsl => ...}
+    * */
   def selfComponentsWithSuffix(moduleName: String,
                                selfType: Option[SSelfTypeDef],
                                suffix: String): List[STpeExpr] = {
@@ -73,7 +83,6 @@ trait Enricher extends Common {
       case _ => List(STraitCall(moduleName + suffix, List()))
     }
   }
-
   def selfModuleComponents(module: SEntityModuleDef, suffix: String): List[STpeExpr] = {
     selfComponentsWithSuffix(module.name, module.selfType, suffix)
   }
@@ -87,6 +96,7 @@ trait Enricher extends Common {
     )))
   }
 
+  /** Creates empty companion trait (no body) for an entity or concrete classes. */
   def createCompanion(baseName: String) = STraitDef(
     name = baseName + "Companion",
     tpeArgs = List(),
@@ -95,7 +105,8 @@ trait Enricher extends Common {
     selfType = None,
     companion = None
   )
-  
+
+  /** Converts and fixes the type of companion. SObjectDef -> STraitDef. */
   def convertCompanion(comp: STraitOrClassDef): STraitOrClassDef = comp match {
     case obj: SObjectDef =>
       STraitDef(name = obj.name + "Companion",
@@ -117,7 +128,7 @@ trait Enricher extends Common {
     module.copy(entityOps = newEntity, entities = List(newEntity))
   }
 
-  /** Checks that concrete classes have their companions. */
+  /** Checks that concrete classes have their companions and adds them. */
   def checkClassCompanion(module: SEntityModuleDef) = {
     val newClasses = module.concreteSClasses.map{ clazz =>
       val newCompanion = clazz.companion match {
