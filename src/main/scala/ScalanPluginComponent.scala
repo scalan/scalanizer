@@ -1,18 +1,14 @@
 package scalan.plugin
 
-import java.io.{ObjectOutputStream, ByteArrayOutputStream}
-
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
 import scalan.meta.ScalanAst.SEntityModuleDef
-import scalan.meta.{CodegenConfig, ScalanParsers}
+import scalan.meta.{ScalanCodegen, CodegenConfig, ScalanParsers}
 
 class ScalanPluginComponent(val global: Global)
   extends PluginComponent with ScalanParsers with Enricher with HotSpots with Backend {
 
-  type Compiler = global.type
-  val compiler: Compiler = global
-  import compiler._
+  import global._
 
   val phaseName: String = "scalan"
   override def description: String = "Code virtualization and specialization"
@@ -153,18 +149,10 @@ class ScalanPluginComponent(val global: Global)
     * returns Scala Tree of the variable. */
   def serializeAst(module: SEntityModuleDef): Tree = {
     val str = if (ScalanPluginConfig.saveMetaAst) {
-      val bos = new ByteArrayOutputStream()
-      val objOut = new ObjectOutputStream(bos)
-
-      /* Erasing of the module: give up Scala Trees */
       val erasedModule = eraseModule(module)
-
-      objOut.writeObject(erasedModule)
-      objOut.close()
-
-      javax.xml.bind.DatatypeConverter.printBase64Binary(bos.toByteArray)
+      ScalanCodegen.serialize(erasedModule)
     } else ""
-    val serialized = global.Literal(Constant(str))
+    val serialized = Literal(Constant(str))
 
     q"val serializedMetaAst = $serialized"
   }

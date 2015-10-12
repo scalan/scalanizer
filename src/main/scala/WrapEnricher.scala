@@ -10,9 +10,7 @@ import scalan.meta.ScalanParsers
 class WrapEnricher(val global: Global) extends PluginComponent with Enricher with ScalanParsers {
   def config = throw new Exception("WrapEnricher.config shouldn't be accessed")
 
-  type Compiler = global.type
-  val compiler: Compiler = global
-  import compiler._
+  import global._
 
   val phaseName: String = "scalan-wrap-enricher"
   override def description: String = "Virtualization of type wrappers."

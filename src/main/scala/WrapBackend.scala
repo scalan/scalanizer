@@ -8,9 +8,7 @@ import scalan.meta.ScalanAst._
 /** Generating of Scala AST for wrappers. */
 class WrapBackend(val global: Global) extends PluginComponent with Enricher with Backend {
 
-  type Compiler = global.type
-  val compiler: Compiler = global
-  import compiler._
+  import global._
 
   val phaseName: String = "scalan-wrap-backend"
   override def description: String = "Generating of Scala AST for wrappers."

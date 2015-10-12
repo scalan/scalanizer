@@ -4,7 +4,7 @@ import scala.reflect.internal.util.BatchSourceFile
 import scalan.meta.ScalanAst._
 
 trait Backend extends Common {
-  import compiler._
+  import global._
 
   def genBoilerplate(module: SEntityModuleDef): Tree = {
     val entityGen = new scalan.meta.ScalanCodegen.EntityFileGenerator(
@@ -352,7 +352,7 @@ trait Backend extends Common {
   def genExpr(expr: SExpr)(implicit ctx: GenCtx): Tree = expr match {
     case empty: SEmpty => q""
     case const: SConst =>
-      val constTree = compiler.Literal(compiler.Constant(const.c))
+      val constTree = Literal(Constant(const.c))
       if (ctx.toRep) q"toRep($constTree)" else constTree
     case ident: SIdent => Ident(TermName(ident.name))
     case assign: SAssign => q"${genExpr(assign.left)} = ${genExpr(assign.right)}"
@@ -391,7 +391,7 @@ trait Backend extends Common {
   }
   def genAnnotation(annot: SAnnotation)(implicit ctx: GenCtx): Tree = {
     def genAnnotExpr(expr: SExpr): Tree = expr match {
-      case const: SConst => compiler.Literal(compiler.Constant(const.c))
+      case const: SConst => Literal(Constant(const.c))
       case ident: SIdent => Ident(TermName(ident.name))
       case assign: SAssign => q"${genAnnotExpr(assign.left)} = ${genAnnotExpr(assign.right)}"
       case unknown => throw new NotImplementedError(s"genAnnotExpr($unknown)")

@@ -1,11 +1,13 @@
 package scalan.plugin
 
+import scala.tools.nsc.Global
 import scalan.meta.ScalanAst._
 
 trait Common {
-  type Compiler <: scala.tools.nsc.Global
-  val compiler: Compiler
-  import compiler._
+  val global: Global
+  type Compiler = global.type
+  val compiler: Compiler = global
+  import global._
 
   type WrapperDescr = ScalanPluginState.WrapperDescr
   /** Converts the name of external type to the name of its wrapper. */

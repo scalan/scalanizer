@@ -5,14 +5,12 @@ import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
 import scalan.meta.ScalanAst._
 import scalan.meta.{CodegenConfig, ScalanParsers}
-import scalan.plugin.ScalanPluginState.WrapperDescr
+import ScalanPluginState.WrapperDescr
 
 /** The component builds wrappers. */
 class WrapFrontend(val global: Global) extends PluginComponent with Common with ScalanParsers {
 
-  type Compiler = global.type
-  val compiler: Compiler = global
-  import compiler._
+  import global._
 
   val phaseName: String = "scalan-wrap-frontend"
   override def description: String = "Building wrappers for external types"

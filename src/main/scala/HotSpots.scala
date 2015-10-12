@@ -6,7 +6,7 @@ import scalan.meta.ScalanParsers
 
 trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
 
-  import compiler._
+  import global._
 
   import KernelTypes._
 
