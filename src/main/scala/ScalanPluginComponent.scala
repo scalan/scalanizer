@@ -98,9 +98,9 @@ class ScalanPluginComponent(val global: Global)
                    cake: Tree, impl: Tree, exts: List[Tree], serial: Tree,
                    hotSpotKernels: Tree, hotSpotManager: Tree): Tree = {
     val implContent = impl match {
-      case PackageDef(_, topstats) => topstats.flatMap{ _ match {
+      case PackageDef(_, topstats) => topstats.flatMap {
         case PackageDef(Ident(TermName("impl")), stats) => stats
-      }}
+      }
     }
     cake match {
       case PackageDef(pkgName, cakeContent) =>

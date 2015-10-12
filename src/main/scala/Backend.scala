@@ -16,7 +16,7 @@ trait Backend extends Common {
     boilerplate
   }
 
-  case class GenCtx(val module: SEntityModuleDef, val toRep: Boolean = true)
+  case class GenCtx(module: SEntityModuleDef, toRep: Boolean = true)
 
   def genScalaAst(module: SEntityModuleDef, orig: Tree): Tree = orig match {
     case q"package $ref { ..$body }" =>

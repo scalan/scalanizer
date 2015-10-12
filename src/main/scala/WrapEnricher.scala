@@ -103,12 +103,21 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher wit
     }
   }
 
-  /** Converts constructors (methods with "<init> name") to the apply method of companions. */
+  /** Converts constructors (methods with name "<init>") to the apply method of companions. */
+  def filterConstructor(module: SEntityModuleDef): SEntityModuleDef = {
+    new MetaAstTransformer {
+      override def bodyTransform(body: List[SBodyItem]): List[SBodyItem] = body.filter {
+        case m: SMethodDef if m.name == "<init>" => false
+        case _ => true
+      }
+    }.moduleTransform(module)
+  }
+
   def constr2apply(module: SEntityModuleDef): SEntityModuleDef = {
-    val (constrs, entityBody) = module.entityOps.body partition{ _ match {
+    val (constrs, entityBody) = module.entityOps.body partition {
       case m: SMethodDef if m.name == "<init>" => true
       case _ => false
-    }}
+    }
     val applies = constrs collect {
       case c: SMethodDef => c.copy(
         name = "apply",

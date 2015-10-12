@@ -56,4 +56,3 @@ object ScalanPluginConfig {
     isSeqEnabled = false
   )
 }
-

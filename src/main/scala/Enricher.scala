@@ -375,20 +375,20 @@ trait Enricher extends Common {
         args.copy(args = newArgs)
       }
       override def methodArgSectionsTransform(argSections: List[SMethodArgs]): List[SMethodArgs] = {
-        argSections mapConserve methodArgsTransform filter { _ match {
+        argSections mapConserve methodArgsTransform filter {
           case SMethodArgs(List()) | SMethodArgs(Nil) => false
           case _ => true
-        }}
+        }
       }
       override def bodyTransform(body: List[SBodyItem]): List[SBodyItem] = {
-        body filter{_ match {
+        body filter{
           case SMethodDef(_,_,_,Some(STraitCall("ClassTag", _)),true,_,_,_,_,_) => false
           case _ => true
-        }} mapConserve bodyItemTransform
+        } mapConserve bodyItemTransform
       }
       override def classArgsTransform(classArgs: SClassArgs): SClassArgs = {
-        val newArgs = classArgs.args.filter{carg => carg.tpe match {
-          case tc: STraitCall if tc.name == "ClassTag" => false
+        val newArgs = classArgs.args.filter { _.tpe match {
+          case STraitCall("ClassTag", _) => false
           case _ => true
         }} mapConserve classArgTransform
 
@@ -403,10 +403,10 @@ trait Enricher extends Common {
     * and it must be the last parameter list given. */
   def joinImplicitArgs(argSections: List[SMethodArgs]): List[SMethodArgs] = {
     val cleanArgs = argSections.map(_.args)
-    val (imp, nonImp) = cleanArgs.partition{_ match {
+    val (imp, nonImp) = cleanArgs.partition {
       case (m: SMethodArg) :: _ => m.impFlag
       case _ => false
-    }}
+    }
     val newArgs = imp.flatten match {
       case Nil => nonImp
       case as => nonImp ++ List(as)

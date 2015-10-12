@@ -20,10 +20,10 @@ class CheckExtensions(val global: Global) extends PluginComponent {
     def apply(unit: CompilationUnit) {
       val hasStagedObj = unit.body match {
         case q"package $ref0 { package $ref1 {..$topstats }}" =>
-          topstats.exists(stat => stat match {
+          topstats.exists {
             case q"object StagedEvaluation {..$stats}" => true
             case _ => false
-          })
+          }
         case _ => false
       }
       if (!hasStagedObj)

@@ -200,11 +200,11 @@ trait Common {
     }
 
     def classCompanionTransform(companion: Option[STraitOrClassDef]): Option[STraitOrClassDef] = {
-      companion.map {_ match {
+      companion.map {
         case obj: SObjectDef => obj.copy(body = bodyTransform(obj.body))
         case tr: STraitDef => tr.copy(body = bodyTransform(tr.body))
         case unknown => throw new NotImplementedError(unknown.toString)
-      }}
+      }
     }
     def classArgTransform(classArg: SClassArg): SClassArg = classArg
     def classArgsTransform(classArgs: SClassArgs): SClassArgs = {
@@ -365,15 +365,15 @@ trait Common {
 
   /** Removing of internal parts of annotations that should be ignored at code generation. */
   def filterInternalAnnot(annotations: List[SAnnotation]): List[SAnnotation] = {
-    annotations map {_ match {
+    annotations map {
       case annotation @ SMethodAnnotation("Constructor", args) =>
-        val newArgs = args filter {_ match {
+        val newArgs = args filter {
           case SAssign(SIdent("original",_), m: SMethodDef,_) => false
           case _ => true
-        }}
+        }
         annotation.copy(args = newArgs)
       case other => other
-    }}
+    }
   }
 
   def getExtentionNames(moduleName: String): Set[String] = {
