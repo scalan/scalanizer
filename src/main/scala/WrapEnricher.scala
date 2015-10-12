@@ -5,6 +5,10 @@ import scala.tools.nsc.plugins.PluginComponent
 import scalan.meta.ScalanAst._
 import scalan.meta.ScalanParsers
 
+object WrapEnricher {
+  val name = "scalan-wrap-enricher"
+}
+
 // TODO ScalanParsers is used only to get wrapperImpl. Move it somewhere?
 /** Virtualization of type wrappers. */
 class WrapEnricher(val global: Global) extends PluginComponent with Enricher with ScalanParsers {
@@ -12,11 +16,11 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher wit
 
   import global._
 
-  val phaseName: String = "scalan-wrap-enricher"
+  val phaseName: String = WrapEnricher.name
+
   override def description: String = "Virtualization of type wrappers."
 
-  val runsAfter = List[String]("scalan-wrap-frontend")
-  override val runsRightAfter: Option[String] = Some("scalan-wrap-frontend")
+  val runsAfter = List(WrapFrontend.name)
 
   /** The phase prepares a wrapper for virtualization. */
   def newPhase(prev: Phase) = new StdPhase(prev) {

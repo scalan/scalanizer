@@ -4,17 +4,18 @@ import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
 import scala.collection.mutable.Map
 
+object CheckExtensions {
+  val name = "scalan-check"
+}
+
 /** The component searches user's extensions traits */
 class CheckExtensions(val global: Global) extends PluginComponent {
   import global._
 
-  val phaseName: String = "scalan-check"
+  val phaseName: String = CheckExtensions.name
   override def description: String = "Find user's extensions"
 
-  val runsAfter = List[String]("scalan-wrap-backend")
-  override val runsRightAfter: Option[String] = Some("scalan-wrap-backend")
-//  val runsAfter = List[String]("typer")
-//  override val runsRightAfter: Option[String] = Some("typer")
+  val runsAfter = List(WrapBackend.name)
 
   def newPhase(prev: Phase) = new StdPhase(prev) {
     def apply(unit: CompilationUnit) {

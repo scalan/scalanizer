@@ -5,16 +5,20 @@ import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
 import scalan.meta.ScalanAst._
 
+object WrapBackend {
+  val name = "scalan-wrap-backend"
+}
+
 /** Generating of Scala AST for wrappers. */
 class WrapBackend(val global: Global) extends PluginComponent with Enricher with Backend {
 
   import global._
 
-  val phaseName: String = "scalan-wrap-backend"
+  val phaseName: String = WrapBackend.name
+
   override def description: String = "Generating of Scala AST for wrappers."
 
-  val runsAfter = List[String]("scalan-wrap-enricher")
-  override val runsRightAfter: Option[String] = Some("scalan-wrap-enricher")
+  override val runsAfter = List(WrapEnricher.name)
 
   case class WrappersCake(abs: STraitDef, seq: STraitDef, exp: STraitDef)
 

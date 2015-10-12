@@ -7,16 +7,19 @@ import scalan.meta.ScalanAst._
 import scalan.meta.{CodegenConfig, ScalanParsers}
 import ScalanPluginState.WrapperDescr
 
+object WrapFrontend {
+  val name = "scalan-wrap-frontend"
+}
+
 /** The component builds wrappers. */
 class WrapFrontend(val global: Global) extends PluginComponent with Common with ScalanParsers {
 
   import global._
 
-  val phaseName: String = "scalan-wrap-frontend"
+  val phaseName: String = WrapFrontend.name
   override def description: String = "Building wrappers for external types"
 
-  val runsAfter = List[String]("typer")
-  override val runsRightAfter: Option[String] = Some("typer")
+  val runsAfter = List("typer")
 
   /** The phase creates wrappers for the type that are out of virtualization scope. */
   def newPhase(prev: Phase) = new StdPhase(prev) {

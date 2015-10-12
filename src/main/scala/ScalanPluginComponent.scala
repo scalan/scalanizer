@@ -5,16 +5,19 @@ import scala.tools.nsc.plugins.PluginComponent
 import scalan.meta.ScalanAst.SEntityModuleDef
 import scalan.meta.{ScalanCodegen, CodegenConfig, ScalanParsers}
 
+object ScalanPluginComponent {
+  val name = "scalan-final"
+}
+
 class ScalanPluginComponent(val global: Global)
   extends PluginComponent with ScalanParsers with Enricher with HotSpots with Backend {
 
   import global._
 
-  val phaseName: String = "scalan"
+  val phaseName: String = ScalanPluginComponent.name
   override def description: String = "Code virtualization and specialization"
 
-  val runsAfter = List[String]("scalan-check")
-  override val runsRightAfter: Option[String] = Some("scalan-check")
+  val runsAfter = List(CheckExtensions.name)
 
   def newPhase(prev: Phase) = new StdPhase(prev) {
     def apply(unit: CompilationUnit): Unit = {
