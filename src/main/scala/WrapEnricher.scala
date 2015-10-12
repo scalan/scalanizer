@@ -3,9 +3,12 @@ package scalan.plugin
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
 import scalan.meta.ScalanAst._
+import scalan.meta.ScalanParsers
 
+// TODO ScalanParsers is used only to get wrapperImpl. Move it somewhere?
 /** Virtualization of type wrappers. */
-class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
+class WrapEnricher(val global: Global) extends PluginComponent with Enricher with ScalanParsers {
+  def config = throw new Exception("WrapEnricher.config shouldn't be accessed")
 
   type Compiler = global.type
   val compiler: Compiler = global
@@ -97,7 +100,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher {
     if (wrapperTypes.isEmpty) module
     else {
       val wrapperType = wrapperTypes.head
-      val wrapperImpl = SEntityModuleDef.wrapperImpl(module.entityOps, wrapperType)
+      val wrapperImpl = this.wrapperImpl(module.entityOps, wrapperType)
       module.copy(concreteSClasses = List(wrapperImpl))
     }
   }

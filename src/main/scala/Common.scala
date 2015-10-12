@@ -3,6 +3,10 @@ package scalan.plugin
 import scalan.meta.ScalanAst._
 
 trait Common {
+  type Compiler <: scala.tools.nsc.Global
+  val compiler: Compiler
+  import compiler._
+
   type WrapperDescr = ScalanPluginState.WrapperDescr
   /** Converts the name of external type to the name of its wrapper. */
   def wrap(name: String) = "W" + name
@@ -44,6 +48,14 @@ trait Common {
       isClass _, isClassCompanion _,
       isModule _
     ).exists(_(name))
+  }
+
+  def getParents(externalType: Type) = {
+    externalType.typeSymbol.typeSignature match {
+      case PolyType(_, ClassInfoType(parents, _, _)) => parents
+      case ClassInfoType(parents, _, _) => parents
+      case _ => Nil
+    }
   }
 
   /** The class implements a default Meta AST transformation strategy: breadth-first search */

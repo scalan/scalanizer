@@ -112,15 +112,10 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
 
   /** Gets the list of ancestors of the external type in term of Meta AST. */
   def getExtTypeAncestors(externalType: Type): List[STraitCall] = {
-    val externalTypeDecl = externalType.typeSymbol.typeSignature
     def convToMetaType(types: List[Type]): List[STraitCall] = {
       types map parseType collect {case t: STraitCall => t}
     }
-    val ancestors = externalTypeDecl match {
-      case PolyType(_, ClassInfoType(parents,_,_)) => convToMetaType(parents)
-      case ClassInfoType(parents,_,_) => convToMetaType(parents)
-      case _ => Nil
-    }
+    val ancestors = convToMetaType(getParents(externalType))
 
     ancestors.filterNot(a => isIgnoredExternalType(a.name))
   }

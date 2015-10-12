@@ -4,9 +4,6 @@ import scala.reflect.internal.util.BatchSourceFile
 import scalan.meta.ScalanAst._
 
 trait Backend extends Common {
-
-  type Compiler <: scala.tools.nsc.Global
-  val compiler: Compiler
   import compiler._
 
   def genBoilerplate(module: SEntityModuleDef): Tree = {
@@ -360,7 +357,7 @@ trait Backend extends Common {
     case ident: SIdent => Ident(TermName(ident.name))
     case assign: SAssign => q"${genExpr(assign.left)} = ${genExpr(assign.right)}"
     case select: SSelect => select.expr match {
-      case _: SEmpty => q"${TermName(select.tname)}"
+      case _: SEmpty | SThis("scala", _) => q"${TermName(select.tname)}"
       case _ => q"${genExpr(select.expr)}.${TermName(select.tname)}"
     }
     case apply: SApply =>
@@ -376,7 +373,8 @@ trait Backend extends Common {
     case ascr: SAscr => q"${genExpr(ascr.expr)}: ${repTypeExpr(ascr.pt)}"
     case constr: SContr => genConstr(constr)
     case func: SFunc => genFunc(func)
-    case sThis: SThis => q"${TypeName(sThis.typeName)}.this"
+    case sThis: SThis =>
+      q"${TypeName(sThis.typeName)}.this"
     case sSuper: SSuper =>
       q"${TypeName(sSuper.name)}.super[${TypeName(sSuper.qual)}].${TermName(sSuper.field)}"
     case annotated: SAnnotated =>
