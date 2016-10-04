@@ -177,7 +177,7 @@ trait Enricher extends Common {
         tpeRes = Some(STraitCall(resPrefix, List(STraitCall(tpeArg.name, Nil)))),
         isImplicit = true, isOverride = false,
         overloadId = None, annotations = Nil,
-        body = None, isElemOrCont = true)
+        body = None, isTypeDesc = true)
 
     def genElem(tpeArg: STpeArg) = genImplicit(tpeArg, "ee", "Elem")
     def genCont(tpeArg: STpeArg) = genImplicit(tpeArg, "ce", "Cont")
@@ -203,7 +203,7 @@ trait Enricher extends Common {
         overFlag = false, valFlag = false,
         name = argPrefix + argSuffix,
         tpe = STraitCall(typePrefix, List(typeSuffix)),
-        default = None, annotations = Nil, isElemOrCont = true)
+        default = None, annotations = Nil, isTypeDesc = true)
     }
     def genElem(valName: String, typeName: STpeExpr) =
       genImplicit("e", valName, "Elem", typeName)
@@ -260,7 +260,7 @@ trait Enricher extends Common {
         tpeRes = Some(classArg.tpe),
         isImplicit = false, isOverride = false, overloadId = None, annotations = Nil,
         body = Some(STypeApply(SIdent("element"), unpackElem(classArg).toList)),
-        isElemOrCont = true)
+        isTypeDesc = true)
     }
     val newClasses = module.concreteSClasses.map{clazz =>
       val (definedElems, elemArgs) = genImplicitClassArgs(module, clazz) partition isElemAlreadyDefined
@@ -278,7 +278,7 @@ trait Enricher extends Common {
       SMethodArg(impFlag = true, overFlag = false,
         name = valPrefix + tpeArg.name,
         tpe = STraitCall(resPrefix, List(STraitCall(tpeArg.name, Nil))),
-        default = None, annotations = Nil, isElemOrCont = true)
+        default = None, annotations = Nil, isTypeDesc = true)
     }
     def genElem(tpeArg: STpeArg) = genImplicit(tpeArg, "em", "Elem")
     def genCont(tpeArg: STpeArg) = genImplicit(tpeArg, "cm", "Cont")
@@ -334,7 +334,7 @@ trait Enricher extends Common {
                     ): List[STraitDef] = {
     val boilerplateSuffix = Map("Dsl" -> "Abs", "DslSeq" -> "Seq", "DslExp" -> "Exp")
     val extensions = ScalanPluginState.extMap(moduleName)
-                     .filterNot(ext => ext.endsWith("Seq") && !ScalanPluginConfig.codegenConfig.isSeqEnabled)
+                     .filterNot(ext => ext.endsWith("Seq") && !ScalanPluginConfig.codegenConfig.isStdEnabled)
 
     (extensions map {extName =>
       val extSuffix = extName.stripPrefix(moduleName)

@@ -4,6 +4,7 @@ import scalan.util.FileUtil
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
 import scalan.meta.ScalanAst._
+import scalan.meta.{ScalanCodegen, CodegenConfig}
 
 object WrapBackend {
   val name = "scalan-wrap-backend"
@@ -11,8 +12,9 @@ object WrapBackend {
 
 /** Generating of Scala AST for wrappers. */
 class WrapBackend(val global: Global) extends PluginComponent with Enricher with Backend {
-
   import global._
+
+  def config: CodegenConfig = ScalanPluginConfig.codegenConfig
 
   val phaseName: String = WrapBackend.name
 
@@ -48,8 +50,8 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
 
   /** Calls Scalan Meta to generate boilerplate code for the wrapper. */
   def genWrapperBoilerplate(module: SEntityModuleDef): String = {
-    val gen = new scalan.meta.ScalanCodegen.EntityFileGenerator(
-      module, ScalanPluginConfig.codegenConfig)
+    val gen = new scalan.meta.EntityFileGenerator(
+      ScalanCodegen, module, ScalanPluginConfig.codegenConfig)
     val implCode = gen.getImplFile
 
     implCode
@@ -96,7 +98,7 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
 
   def updateWrappersCake(cake: WrappersCake, module: SEntityModuleDef): WrappersCake = {
     val absAncestors = cake.abs.ancestors :+ STraitCall(module.name + "Dsl", Nil)
-    val seqAncestors = if (ScalanPluginConfig.codegenConfig.isSeqEnabled)
+    val seqAncestors = if (ScalanPluginConfig.codegenConfig.isStdEnabled)
                          cake.seq.ancestors :+ STraitCall(module.name + "DslSeq", Nil)
                        else
                          cake.seq.ancestors

@@ -3,7 +3,8 @@ package scalan.plugin
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
 import scalan.meta.ScalanAst.SEntityModuleDef
-import scalan.meta.{ScalanCodegen, CodegenConfig, ScalanParsers}
+import scalan.meta.{ScalanParsers, CodegenConfig, ScalanCodegen}
+import scalan.util.Serialization
 
 object ScalanPluginComponent {
   val name = "scalan-final"
@@ -153,7 +154,7 @@ class ScalanPluginComponent(val global: Global)
   def serializeAst(module: SEntityModuleDef): Tree = {
     val str = if (ScalanPluginConfig.saveMetaAst) {
       val erasedModule = eraseModule(module)
-      ScalanCodegen.serialize(erasedModule)
+      Serialization.save(erasedModule)
     } else ""
     val serialized = Literal(Constant(str))
 

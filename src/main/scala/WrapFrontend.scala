@@ -70,7 +70,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
   def formMethodArgs(args: List[Symbol]): List[SMethodArg] = {
     args.map{arg =>
       val tpe = parseType(arg.tpe)
-      val isElemOrCont = tpe match {
+      val isTypeDesc = tpe match {
         case STraitCall("Elem", _) => true
         case STraitCall("Cont", _) => true
         case _ => false
@@ -79,7 +79,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
         impFlag = false, overFlag = false,
         name = arg.nameString,
         tpe = tpe,
-        default = None, annotations = Nil, isElemOrCont = isElemOrCont
+        default = None, annotations = Nil, isTypeDesc = isTypeDesc
       )
     }
   }
@@ -107,7 +107,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
       overloadId = None,
       annotations = List(SMethodAnnotation(annotationClass = "External", args = Nil)),
       body = None,
-      isElemOrCont = false
+      isTypeDesc = false
     )
   }
 
@@ -193,7 +193,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
         name = "self",
         components = List(STraitCall("Wrappers", Nil))
       )),
-      body = Nil, seqDslImpl = None,
+      body = Nil, stdDslImpls = None,
       ancestors = List(STraitCall("TypeWrappers", Nil))
     )
     val ownerChain = externalTypeSym.ownerChain.map(_.nameString)

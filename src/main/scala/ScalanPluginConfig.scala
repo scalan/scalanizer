@@ -43,6 +43,7 @@ object ScalanPluginConfig {
       ,"MatrOps.scala"
       ,"LinearAlgebraOps.scala"
     ),
+    Map.empty,
     baseContextTrait = "ScalanDsl",
     seqContextTrait = "ScalanSeq",
     stagedContextTrait = "ScalanExp",
@@ -51,8 +52,7 @@ object ScalanPluginConfig {
       "scala.reflect._",
       "scalan.common.Default"
     ),
-    entityTypeSynonyms = Map[String, String](),
     isAlreadyRep = false,
-    isSeqEnabled = false
+    isStdEnabled = false
   )
 }

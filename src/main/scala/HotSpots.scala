@@ -1,6 +1,6 @@
 package scalan.plugin
 
-import scalan.compilation.KernelTypes
+import scalan.compilation.KernelType
 import scalan.meta.ScalanAst._
 import scalan.meta.ScalanParsers
 
@@ -8,7 +8,7 @@ trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
 
   import global._
 
-  import KernelTypes._
+  import KernelType._
 
   /** Mapping of a module to its hot spots. */
   val hotSpots = scala.collection.mutable.Map[String, List[HotSpotMethod]]()
@@ -77,7 +77,7 @@ trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
   def getHotSpotKernels(module: SEntityModuleDef) = {
     val kernels = hotSpots.getOrElse(module.name, Nil).map { method =>
       val scalanContextGetter = method.kernel match {
-        case CppKernel => "getScalanContextUni"
+        case Cpp => "getScalanContextUni"
         case _ => "getScalanContext"
       }
       q"""
@@ -106,7 +106,7 @@ trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
     val cakeName = getCakeName(module)
     val wrappers = hotSpots.getOrElse(module.name, Nil).map { method =>
       (method, q"lazy val ${TermName(method.name + "Wrapper")} = ${method.toLambda}")
-    }.partition{w => w._1.kernel == ScalaKernel}
+    }.partition{w => w._1.kernel == Scala}
     val ScalaWrappers = wrappers._1.map(_._2)
     val CppWrappers = wrappers._2.map(_._2)
     implicit val ctx = GenCtx(null, false)
@@ -157,8 +157,8 @@ trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
 
   def getKernel(annotations: List[AnnotationInfo]): KernelType = {
     annotations.head.args match {
-      case Select(_, TermName("CppKernel")) :: _ => CppKernel
-      case _ => ScalaKernel
+      case Select(_, TermName("CppKernel")) :: _ => Cpp
+      case _ => Scala
     }
   }
 }

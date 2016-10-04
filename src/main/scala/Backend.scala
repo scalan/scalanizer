@@ -2,12 +2,13 @@ package scalan.plugin
 
 import scala.reflect.internal.util.BatchSourceFile
 import scalan.meta.ScalanAst._
+import scalan.meta.{ScalanCodegen, EntityFileGenerator}
 
 trait Backend extends Common {
   import global._
 
   def genBoilerplate(module: SEntityModuleDef): Tree = {
-    val entityGen = new scalan.meta.ScalanCodegen.EntityFileGenerator(
+    val entityGen = new EntityFileGenerator(ScalanCodegen,
       module, ScalanPluginConfig.codegenConfig)
     val implCode = entityGen.getImplFile
     val implCodeFile = new BatchSourceFile("<impl>", implCode)
@@ -28,7 +29,7 @@ trait Backend extends Common {
   }
 
   def genModule(module: SEntityModuleDef)(implicit ctx: GenCtx): Tree = {
-    val methods = module.methods.map(m => genMethod(m)(ctx.copy(toRep = !m.isElemOrCont)))
+    val methods = module.methods.map(m => genMethod(m)(ctx.copy(toRep = !m.isTypeDesc)))
     val newstats =  genEntity(module.entityOps) ::
       (genConcreteClasses(module.concreteSClasses) ++ genCompanions(module) ++ methods)
     val newSelf = genModuleSelf(module)
@@ -89,7 +90,7 @@ trait Backend extends Common {
 
   def genBodyItem(item: SBodyItem)(implicit ctx: GenCtx): Tree = item match {
     case m: SMethodDef =>
-      if (m.isElemOrCont) genMethod(m)(ctx = ctx.copy(toRep = false))
+      if (m.isTypeDesc) genMethod(m)(ctx = ctx.copy(toRep = false))
       else genMethod(m)
     case v: SValDef => genVal(v)
     case i: SImportStat => genImport(i)
@@ -125,7 +126,7 @@ trait Backend extends Common {
   def genMethodArg(arg: SMethodArg)
                   (implicit ctx: GenCtx): Tree = {
     val tname = TermName(arg.name)
-    val tpt = if (arg.isElemOrCont) genTypeExpr(arg.tpe) else repTypeExpr(arg.tpe)
+    val tpt = if (arg.isTypeDesc) genTypeExpr(arg.tpe) else repTypeExpr(arg.tpe)
     val overFlag = if (arg.overFlag) Flag.OVERRIDE else NoFlags
     val impFlag = if (arg.impFlag) Flag.IMPLICIT else NoFlags
     val flags = overFlag | impFlag
@@ -270,7 +271,7 @@ trait Backend extends Common {
 
   def genClassArg(arg: SClassArg)(implicit ctx: GenCtx): Tree = {
     val tname = TermName(arg.name)
-    val tpt = if (arg.isElemOrCont) genTypeExpr(arg.tpe) else repTypeExpr(arg.tpe)
+    val tpt = if (arg.isTypeDesc) genTypeExpr(arg.tpe) else repTypeExpr(arg.tpe)
     val valFlag = if (arg.valFlag) Flag.PARAMACCESSOR else NoFlags
     val overFlag = if (arg.overFlag) Flag.OVERRIDE else NoFlags
     val impFlag = if (arg.impFlag) Flag.IMPLICIT else NoFlags

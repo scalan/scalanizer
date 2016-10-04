@@ -2,11 +2,9 @@ package scalan.plugin
 
 import scala.tools.nsc.Global
 import scalan.meta.ScalanAst._
+import scalan.meta.ScalanParsers
 
-trait Common {
-  val global: Global
-  type Compiler = global.type
-  val compiler: Compiler = global
+trait Common extends ScalanParsers {
   import global._
 
   type WrapperDescr = ScalanPluginState.WrapperDescr

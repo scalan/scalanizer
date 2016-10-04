@@ -66,7 +66,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher wit
       tpeArgs = Nil, argSections = Nil,
       tpeRes = resType,
       isImplicit = false, isOverride = false, overloadId = None,
-      annotations = Nil, body = None, isElemOrCont = false
+      annotations = Nil, body = None, isTypeDesc = false
     )
     val updatedEntity = module.entityOps.copy(
       body = wrappedValueOfBaseType :: module.entityOps.body
@@ -86,7 +86,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher wit
       isImplicit = false, isOverride = false, overloadId = None,
       annotations = Nil,
       body = Some(SApply(SSelect(SIdent("Default"),"defaultVal"), Nil, List(List(SConst(null))))),
-      isElemOrCont = true // Workaround: disable virtualization of the method
+      isTypeDesc = true // Workaround: disable virtualization of the method
     )
     module.copy(methods = defaultOfWrapper :: module.methods)
   }
