@@ -16,7 +16,7 @@ trait Enricher extends Common {
 
   /** Gets all packages needed for the module and imports them. */
   def getImportByName(name: String): SImportStat = {
-    val pkgOfModule = ScalanPluginState.pkgOfModule.get(name) match {
+    val pkgOfModule = ScalanPluginState.packageOfModule.get(name) match {
       case Some(pkgName) => pkgName + "."
       case _ => ""
     }
@@ -25,7 +25,7 @@ trait Enricher extends Common {
 
   /** Imports scalan._ and other packages needed by Scalan and further transformations. */
   def addImports(module: SEntityModuleDef) = {
-    val usedModules = ScalanPluginState.usageMap.getOrElse(module.name, List())
+    val usedModules = ScalanPluginState.dependenceOfModule.getOrElse(module.name, List())
     val usedImports = usedModules.map(getImportByName)
     val usersImport = module.imports.collect{
       case imp @ SImportStat("scalan.compilation.KernelTypes._") => imp
@@ -332,9 +332,9 @@ trait Enricher extends Common {
                     selfModuleType: Option[SSelfTypeDef],
                     moduleAncestors: List[STraitCall]
                     ): List[STraitDef] = {
-    val boilerplateSuffix = Map("Dsl" -> "Abs", "DslSeq" -> "Seq", "DslExp" -> "Exp")
-    val extensions = ScalanPluginState.extMap(moduleName)
-                     .filterNot(ext => ext.endsWith("Seq") && !ScalanPluginConfig.codegenConfig.isStdEnabled)
+    val boilerplateSuffix = Map("Dsl" -> "Abs", "DslStd" -> "Std", "DslExp" -> "Exp")
+    val extensions = ScalanPluginState.subcakesOfModule(moduleName)
+                     .filterNot(ext => ext.endsWith("Std") && !ScalanPluginConfig.codegenConfig.isStdEnabled)
 
     (extensions map {extName =>
       val extSuffix = extName.stripPrefix(moduleName)

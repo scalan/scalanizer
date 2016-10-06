@@ -46,7 +46,7 @@ trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
           case (p :: ps, EmptyTree) => loop(ps, Ident(TermName(p)))
           case (p :: ps, _) => loop(ps, Select(res, TermName(p)))
         }
-        val pkgOfModule = ScalanPluginState.pkgOfModule(module.name)
+        val pkgOfModule = ScalanPluginState.packageOfModule(module.name)
 
         loop(pkgOfModule.split('.').toList :+ ("implOf" + module.name), EmptyTree)
       }

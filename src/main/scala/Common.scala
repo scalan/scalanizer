@@ -2,10 +2,12 @@ package scalan.plugin
 
 import scala.tools.nsc.Global
 import scalan.meta.ScalanAst._
-import scalan.meta.ScalanParsers
+import scalan.meta.{ScalanParsers, CodegenConfig}
 
 trait Common extends ScalanParsers {
   import global._
+
+  def config: CodegenConfig = ScalanPluginConfig.codegenConfig
 
   type WrapperDescr = ScalanPluginState.WrapperDescr
   /** Converts the name of external type to the name of its wrapper. */
@@ -27,19 +29,19 @@ trait Common extends ScalanParsers {
     Set("ClassTag").contains(name)
   }
   def isEntity(name: String): Boolean = {
-    ScalanPluginConfig.entities.keySet.contains(name)
+    ScalanPluginConfig.concreteClassesOfEntity.keySet.contains(name)
   }
   def isEntityCompanion(name: String): Boolean = {
-    ScalanPluginConfig.entities.keys.map(comp(_)).toSet.contains(name)
+    ScalanPluginConfig.concreteClassesOfEntity.keys.map(comp(_)).toSet.contains(name)
   }
   def isClass(name: String): Boolean = {
-    ScalanPluginConfig.entities.values.flatten.toSet.contains(name)
+    ScalanPluginConfig.concreteClassesOfEntity.values.flatten.toSet.contains(name)
   }
   def isClassCompanion(name: String): Boolean = {
-    ScalanPluginConfig.entities.values.flatten.map(comp(_)).toSet.contains(name)
+    ScalanPluginConfig.concreteClassesOfEntity.values.flatten.map(comp(_)).toSet.contains(name)
   }
   def isModule(name: String): Boolean = {
-    ScalanPluginConfig.entities.keys.map(mod(_)).toSet.contains(name)
+    ScalanPluginConfig.concreteClassesOfEntity.keys.map(mod(_)).toSet.contains(name)
   }
   def isWrapper(name: String): Boolean = {
     !Set(
@@ -343,21 +345,21 @@ trait Common extends ScalanParsers {
   }
   /** Traverse whole META AST and rename types. Returns new tree. */
   class TypeNameTransformer(oldName: String, newName: String) extends MetaAstTransformer {
-    val typeTransformer = new TypeRenamer(oldName, newName)
+    val typeRenamer = new TypeRenamer(oldName, newName)
     override def entityTpeArgTransform(tpeArg: STpeArg): STpeArg = {
       if (tpeArg.name == oldName) tpeArg.copy(name = newName)
       else tpeArg
     }
     override def methodResTransform(res: Option[STpeExpr]): Option[STpeExpr] = res match {
-      case Some(resType) => Some(typeTransformer.typeTransform(resType))
+      case Some(resType) => Some(typeRenamer.typeTransform(resType))
       case _ => res
     }
     override def methodArgTransform(arg: SMethodArg): SMethodArg = {
-      val newTpe = typeTransformer.typeTransform(arg.tpe)
+      val newTpe = typeRenamer.typeTransform(arg.tpe)
       arg.copy(tpe = newTpe)
     }
     override def entityAncestorTransform(ancestor: STraitCall): STraitCall = {
-      typeTransformer.traitCallTransform(ancestor)
+      typeRenamer.traitCallTransform(ancestor)
     }
   }
 
@@ -375,7 +377,7 @@ trait Common extends ScalanParsers {
   }
 
   def getExtentionNames(moduleName: String): Set[String] = {
-    Set("Dsl", "DslSeq", "DslExp").map(moduleName + _)
+    Set("Dsl", "DslStd", "DslExp").map(moduleName + _)
   }
   /** The external types that should be rejected during virtualization. */
   def isIgnoredExternalType(typeName: String) = Set("Object", "Any", "AnyRef").contains(typeName)

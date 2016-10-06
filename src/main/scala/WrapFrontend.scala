@@ -129,6 +129,9 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     (externalName, className, comp(className))
   }
 
+  def mkCompanionAncestors(wClassName: String, kind: Int) =
+    List(STraitCall("ExCompanion" + kind.toString, List(STraitCall(wClassName, Nil))))
+
   /** Creates Meta Module for an external type symbol. For example:
     * trait WCols extends Base with TypeWrappers { self: WrappersDsl =>
     *   trait WCol[A] extends TypeWrapper[Col[A], WCol[A]] { self =>
@@ -143,7 +146,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
   def createWrapper(externalType: Type, members: List[SBodyItem]): WrapperDescr = {
     val externalTypeSym = externalType.typeSymbol
     val clazz = externalTypeSym.companionClass
-    val (externalName, className, companionName) = wrapperNames(externalType)
+    val (externalName, wClassName, companionName) = wrapperNames(externalType)
     val isCompanion = externalTypeSym.isModuleClass
 
     val tpeArgs = clazz.typeParams.map{ param =>
@@ -158,10 +161,10 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     val baseType = if (isCompanion) STraitCall(externalName + ".type", typeParams)
                    else STraitCall(externalName, typeParams)
     val originalEntityAncestors = getExtTypeAncestors(externalType)
-    val entityAncestors = STraitCall("TypeWrapper", List(baseType, STraitCall(className, typeParams))) :: originalEntityAncestors
+    val entityAncestors = STraitCall("TypeWrapper", List(baseType, STraitCall(wClassName, typeParams))) :: originalEntityAncestors
 
     val entity = STraitDef(
-      name = className,
+      name = wClassName,
       tpeArgs = tpeArgs,
       ancestors = entityAncestors,
       body =  if (isCompanion) Nil else members,
@@ -169,7 +172,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
       companion = Some(STraitDef(
         name = companionName,
         tpeArgs = Nil,
-        ancestors = List(STraitCall("ExCompanion" + typeParams.length.toString, List(STraitCall(className, Nil)))),
+        ancestors = mkCompanionAncestors(wClassName, kind = typeParams.length),
         body = if (isCompanion) members else Nil,
         selfType = None, companion = None
       ))
@@ -177,7 +180,6 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
     )
     val imports = List(
       SImportStat("scalan._"),
-      SImportStat("scalan.common.Default"),
       SImportStat("impl._"),
       SImportStat(externalTypeSym.fullName)
     )
@@ -241,7 +243,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
   /** Create/update Meta AST of the module for the external type. It assembles
     * Meta AST of a method (value) by its Scala's Type. */
   def updateWrapper(objType: Type,
-                    methodName: Name, methodType: Type, methodSym: Symbol): Unit = {
+                    methodName: Name, methodReturnType: Type, methodSym: Symbol): Unit = {
     val externalTypeName = objType.typeSymbol.nameString
     val owner = methodSym.owner
     val pre = objType.typeSymbol.typeSignature
@@ -338,6 +340,4 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
 
     new DependencyTraverser().traverse(memberType)
   }
-
-  def config: CodegenConfig = ScalanPluginConfig.codegenConfig
 }

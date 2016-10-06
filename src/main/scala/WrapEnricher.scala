@@ -12,8 +12,6 @@ object WrapEnricher {
 // TODO ScalanParsers is used only to get wrapperImpl. Move it somewhere?
 /** Virtualization of type wrappers. */
 class WrapEnricher(val global: Global) extends PluginComponent with Enricher with ScalanParsers {
-  def config = throw new Exception("WrapEnricher.config shouldn't be accessed")
-
   import global._
 
   val phaseName: String = WrapEnricher.name
@@ -39,7 +37,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher wit
           preventNameConflict _,
           genEntityImpicits _,
           genMethodsImplicits _,
-          defaultMethod _,
+//          defaultMethod _,
           defaultWrapperImpl _,
           extType2WrapperInWrappers _,
           /** Currently, inheritance of type wrappers is not supported.
@@ -56,20 +54,20 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher wit
   }
 
   /** Adding of a method which return original external type. For example:
-    * def wrappedValueOfBaseType: Rep[Array[T]]; */
+    * def wrappedValue: Rep[Array[T]]; */
   def addWrappedValue(module: SEntityModuleDef): SEntityModuleDef = {
     val resType = module.entityOps.ancestors.collect {
       case STraitCall("TypeWrapper", List(importedType, _)) => importedType
     }.headOption
-    val wrappedValueOfBaseType = SMethodDef(
-      name = "wrappedValueOfBaseType",
+    val wrappedValue = SMethodDef(
+      name = "wrappedValue",
       tpeArgs = Nil, argSections = Nil,
       tpeRes = resType,
       isImplicit = false, isOverride = false, overloadId = None,
       annotations = Nil, body = None, isTypeDesc = false
     )
     val updatedEntity = module.entityOps.copy(
-      body = wrappedValueOfBaseType :: module.entityOps.body
+      body = wrappedValue :: module.entityOps.body
     )
 
     module.copy(entityOps = updatedEntity, entities = List(updatedEntity))
@@ -102,7 +100,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher wit
     if (wrapperTypes.isEmpty) module
     else {
       val wrapperType = wrapperTypes.head
-      val wrapperImpl = this.wrapperImpl(module.entityOps, wrapperType)
+      val wrapperImpl = this.wrapperImpl(module.entityOps, wrapperType, false)
       module.copy(concreteSClasses = List(wrapperImpl))
     }
   }
@@ -147,7 +145,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher wit
   def extType2WrapperInWrappers(module: SEntityModuleDef): SEntityModuleDef = {
     class TypeInWrappersTransformer(name: String) extends ExtType2WrapperTransformer(name) {
       override def methodTransform(method: SMethodDef): SMethodDef = {
-        if (method.name == "wrappedValueOfBaseType")
+        if (method.name == "wrappedValue")
           method
         else super.methodTransform(method)
       }

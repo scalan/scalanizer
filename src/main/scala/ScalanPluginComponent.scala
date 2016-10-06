@@ -48,7 +48,7 @@ class ScalanPluginComponent(val global: Global)
         /** Generates a duplicate of original Scala AST, wraps types by Rep[] and etc. */
         val virtAst = genScalaAst(enrichedMetaAst, unit.body)
 
-        /** Checking of user's extensions like SegmentDsl, SegmentDslSeq and SegmentDslExp */
+        /** Checking of user's extensions like SegmentDsl, SegmentDslStd and SegmentDslExp */
         val extensions = getExtensions(metaAst)
 
         /** Prepare Virtualized AST for passing to run-time. */
@@ -160,6 +160,4 @@ class ScalanPluginComponent(val global: Global)
 
     q"val serializedMetaAst = $serialized"
   }
-
-  def config: CodegenConfig = ScalanPluginConfig.codegenConfig
 }

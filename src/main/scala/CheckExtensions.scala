@@ -41,7 +41,7 @@ class CheckExtensions(val global: Global) extends PluginComponent {
 
   def getCakeSliceName(traitName: String): String = {
     if (traitName.endsWith("Dsl")) traitName.stripSuffix("Dsl")
-    else if (traitName.endsWith("DslSeq")) traitName.stripSuffix("DslSeq")
+    else if (traitName.endsWith("DslStd")) traitName.stripSuffix("DslStd")
     else if (traitName.endsWith("DslExp")) traitName.stripSuffix("DslExp")
     else ""
   }
@@ -50,10 +50,10 @@ class CheckExtensions(val global: Global) extends PluginComponent {
     case q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
       val traitName = getTraitName(tpname)
       val cakeName = getCakeSliceName(traitName)
-      ScalanPluginState.extMap get cakeName match {
+      ScalanPluginState.subcakesOfModule get cakeName match {
         case Some(s) =>
           //print("Extension is found: " + traitName + " for the cake slice: " + cakeName)
-          ScalanPluginState.extMap(cakeName) -= traitName
+          ScalanPluginState.subcakesOfModule(cakeName) -= traitName
           ()
         case None => ()
       }
