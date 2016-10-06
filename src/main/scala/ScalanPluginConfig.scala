@@ -19,12 +19,12 @@ object ScalanPluginConfig {
   /** Mapping of entities and their concrete classes. */
   val concreteClassesOfEntity = Map[String, Set[String]](
     "LinearAlgebra" -> Set(),
-    "Num" -> Set("DoubleNum"),
-    "NumMonoid" -> Set("PlusMonoid"),
-    "Col" -> Set("ColOverArray", "PairCol"),
-    "Vec" -> Set("DenseVec"),
-    "Matr" -> Set("DenseMatr"),
-    "MatrOp" -> Set("BaseMatrOp"),
+//    "Num" -> Set("DoubleNum"),
+//    "NumMonoid" -> Set("PlusMonoid"),
+    "Col" -> Set("ColOverArray"),
+//    "Vec" -> Set("DenseVec"),
+//    "Matr" -> Set("DenseMatr"),
+//    "MatrOp" -> Set("BaseMatrOp"),
     "LinearAlgebraOp" -> Set("LA")
   )
   /** The types that shouldn't be Rep[]. */
@@ -35,12 +35,12 @@ object ScalanPluginConfig {
     name = "Scalan Plugin",
     srcPath = "/",
     entityFiles = List[String](
-      "Nums.scala"
-      ,"NumMonoids.scala"
-      ,"Cols.scala"
-      ,"Vecs.scala"
-      ,"Matrs.scala"
-      ,"MatrOps.scala"
+//      "Nums.scala"
+//      ,"NumMonoids.scala"
+      "Cols.scala"
+//      ,"Vecs.scala"
+//      ,"Matrs.scala"
+//      ,"MatrOps.scala"
       ,"LinearAlgebraOps.scala"
     ),
     Map.empty,

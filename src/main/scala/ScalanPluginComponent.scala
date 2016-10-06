@@ -20,46 +20,61 @@ class ScalanPluginComponent(val global: Global)
 
   val runsAfter = List(CheckExtensions.name)
 
+  /** Transformations of Scalan AST */
+  val pipeline = scala.Function.chain(Seq(
+    fixExistentialType _,
+    externalTypeToWrapper _,
+    composeParentWithExt _,
+    addModuleAncestors _, addEntityAncestors _,
+    updateSelf _,
+    repSynonym _,
+    addImports _,
+    checkEntityCompanion _, checkClassCompanion _,
+    cleanUpClassTags _, replaceClassTagByElem _, eliminateClassTagApply _,
+    genEntityImpicits _, genClassesImplicits _, genMethodsImplicits _,
+    fixEntityCompanionName _,
+    fixEvidences _
+  ))
+
+  def showTree(prefix: String, name: String, tree: Tree) =
+    saveDebugCode(prefix + "_" + name, showCode(tree))
+
   def newPhase(prev: Phase) = new StdPhase(prev) {
     def apply(unit: CompilationUnit): Unit = {
       val unitName = unit.source.file.name
       if (ScalanPluginConfig.codegenConfig.entityFiles.contains(unitName)) try {
         val metaAst = parse(unitName, unit.body)
-        /** Transformations of Scalan AST */
-        val pipeline = scala.Function.chain(Seq(
-          fixExistentialType _,
-          externalTypeToWrapper _,
-          composeParentWithExt _,
-          addModuleAncestors _, addEntityAncestors _,
-          updateSelf _,
-          repSynonym _,
-          addImports _,
-          checkEntityCompanion _, checkClassCompanion _,
-          cleanUpClassTags _, replaceClassTagByElem _, eliminateClassTagApply _,
-          genEntityImpicits _, genClassesImplicits _, genMethodsImplicits _,
-          fixEntityCompanionName _,
-          fixEvidences _
-        ))
+        showTree("body", unitName, unit.body)
+
         val enrichedMetaAst = pipeline(metaAst)
 
         /** Invoking of Scalan META to produce boilerplate code */
         val boilerplate = genBoilerplate(enrichedMetaAst)
+        showTree("boilerplate", unitName, boilerplate)
 
         /** Generates a duplicate of original Scala AST, wraps types by Rep[] and etc. */
         val virtAst = genScalaAst(enrichedMetaAst, unit.body)
+        showTree("virtAst", unitName, virtAst)
 
         /** Checking of user's extensions like SegmentDsl, SegmentDslStd and SegmentDslExp */
         val extensions = getExtensions(metaAst)
+        for ((e,i) <- extensions.zipWithIndex)
+          showTree(s"extensions$i", unitName, e)
 
         /** Prepare Virtualized AST for passing to run-time. */
         val pickledAst = serializeAst(metaAst)
+        showTree("pickledAst", unitName, pickledAst)
 
         /** Accelerated original Scala AST by replacing of hot spots by optimized kernels. */
         val accelAst = transformHotSpots(metaAst, unit)
+        showTree("accelAst", unitName, accelAst)
 
         /** Staged Ast is package which contains virtualized Tree + boilerplate */
-        val stagedAst = getStagedAst(metaAst, virtAst, boilerplate, extensions, pickledAst,
-          getHotSpotKernels(metaAst), getHotSpotManager(metaAst))
+        val stagedAst = getStagedAst(
+              metaAst, virtAst, boilerplate, extensions, pickledAst,
+              getHotSpotKernels(metaAst),
+              getHotSpotManager(metaAst))
+        showTree("stagedAst", unitName, stagedAst)
 
         if (ScalanPluginConfig.save) {
           saveImplCode(unit.source.file.file, showCode(stagedAst))

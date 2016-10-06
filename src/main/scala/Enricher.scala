@@ -53,10 +53,10 @@ trait Enricher extends Common {
     module.copy(ancestors = newAncestors)
   }
 
-  /** Extends the entiry T by Reifiable[T] */
+  /** Extends the entiry T by Def[T] */
   def addEntityAncestors(module: SEntityModuleDef) = {
     val newAncestors = STraitCall(
-      name = "Reifiable",
+      name = "Def",
       tpeSExprs = List(STraitCall(module.entityOps.name,
                                   module.entityOps.tpeArgs.map(arg => STraitCall(arg.name, List()))))
     ) :: module.entityOps.ancestors
