@@ -5,10 +5,10 @@ import AssemblyKeys._
 
 object ScalanBuild extends Build {
   lazy val sharedSettings = Defaults.coreDefaultSettings ++ Seq(
-//    scalaVersion := "2.11.8",
-//    scalaOrganization := "org.scala-lang",
-    scalaOrganization := "org.scala-lang.virtualized",
-    scalaVersion := "2.11.2",
+    scalaVersion := "2.11.8",
+    scalaOrganization := "org.scala-lang",
+//    scalaOrganization := "org.scala-lang.virtualized",
+//    scalaVersion := "2.11.2",
     version := "0.0.4-SNAPSHOT",
     organization := "com.huawei.scalan"
   )
@@ -22,10 +22,10 @@ object ScalanBuild extends Build {
     sharedSettings ++ assemblySettings : _*
   ) settings (
     libraryDependencies ++= Seq(
-      "org.scala-lang.virtualized" % "scala-reflect" % scalaVersion.value % "provided",
-      "org.scala-lang.virtualized" % "scala-compiler" % scalaVersion.value % "provided",
+//      "org.scala-lang.virtualized" % "scala-reflect" % scalaVersion.value % "provided",
+//      "org.scala-lang.virtualized" % "scala-compiler" % scalaVersion.value % "provided",
       scalanDependency("core"),
-      scalanDependency("meta").exclude("org.scala-lang", "scala-compiler")),
+      scalanDependency("meta")),
     publishArtifact in (Compile, packageBin) := false,
     assemblyOption in assembly ~= { _.copy(includeScala = false, includeDependency = true) },
     artifact in (Compile, assembly) := {

@@ -39,7 +39,7 @@ object ScalanPluginState {
   val dependenceOfModule = Map[String, List[String]](
     "Nums" -> List("LinearAlgebra"),
     "NumMonoids" -> List("Nums","LinearAlgebra"),
-    "Cols" -> List("NumMonoids","LinearAlgebra"),
+    "Cols" -> List(/*"NumMonoids",*/"LinearAlgebra"),
     "Vecs" -> List("NumMonoids", "Cols", "LinearAlgebra"),
     "Matrs" -> List("NumMonoids", "Cols", "Vecs", "LinearAlgebra"),
     "MatrOps" -> List("Nums", "NumMonoids", "Vecs", "Matrs", "LinearAlgebra"),

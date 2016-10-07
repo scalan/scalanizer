@@ -15,7 +15,7 @@ object ScalanPluginConfig {
   var debug: Boolean          = true
   /** The flag indicates that Meta AST of entities should be serialized and assigned to some variable
     * inside virtualized code. */
-  var saveMetaAst: Boolean    = false
+  var saveMetaAst: Boolean    = true
   /** Mapping of entities and their concrete classes. */
   val concreteClassesOfEntity = Map[String, Set[String]](
     "LinearAlgebra" -> Set(),

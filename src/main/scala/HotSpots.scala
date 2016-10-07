@@ -56,8 +56,10 @@ trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
           val packageName = getPackageName
           val params = vparamss.map(_.map{v => Ident(v.name)})
           val kernelInvoke = q"$packageName.HotSpotKernels.$kernelName(...$params)"
-          hotSpots(module.name) = HotSpotMethod(name, method.symbol.outerClass.nameString, vparamss, tpt,
-            getKernel(method.symbol.annotations)) :: hotSpots.getOrElse(module.name, Nil)
+          val hotspotMethod = HotSpotMethod(
+                name, method.symbol.outerClass.nameString, vparamss, tpt,
+                getKernel(method.symbol.annotations))
+          hotSpots(module.name) =  hotspotMethod :: hotSpots.getOrElse(module.name, Nil)
           /* Inferring of type for the created method. */
           val methodWithKernelInvoke = method.copy(rhs = kernelInvoke).clearType
           val ctx = analyzer.rootContext(unit)
@@ -74,7 +76,7 @@ trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
     //unit.body
   }
 
-  def getHotSpotKernels(module: SEntityModuleDef) = {
+  def getHotSpotKernels(module: SEntityModuleDef): Tree = {
     val kernels = hotSpots.getOrElse(module.name, Nil).map { method =>
       val scalanContextGetter = method.kernel match {
         case Cpp => "getScalanContextUni"
@@ -113,33 +115,11 @@ trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
     val cakeImport = genImport(getImportByName(cakeName))
     q"""
       object HotSpotManager {
-        import scalan.ScalanCommunityDslExp
-        import scalan.compilation.lms.{CommunityLmsBackend, CoreBridge}
-        import scalan.compilation.lms.scalac.CommunityLmsCompilerScala
-        import scalan.primitives.EffectfulCompiler
+        import scalan.ScalanDslExp;
+        import scalan.compilation.lms.{CoreLmsBackend, CoreLmsBridge};
+        import scalan.compilation.lms.scalac.LmsCompilerScala;
+        import scalan.primitives.EffectfulCompiler;
         $cakeImport
-
-        lazy val scalanContext = new Scalan
-        def getScalanContext = scalanContext
-
-        class Scalan extends ${TypeName(cakeName+"DslExp")} with CommunityLmsCompilerScala with CoreBridge
-          with ScalanCommunityDslExp with EffectfulCompiler {
-
-          ..$ScalaWrappers
-          val lms = new CommunityLmsBackend
-        }
-
-        import scalan.CommunityMethodMappingDSL
-        import scalan.compilation.lms.uni.LmsCompilerUni
-
-        lazy val scalanContextUni = new ScalanUni
-        def getScalanContextUni = scalanContextUni
-
-        class ScalanUni extends ${TypeName(cakeName+"DslExp")} with LmsCompilerUni with CoreBridge
-          with ScalanCommunityDslExp with EffectfulCompiler with CommunityMethodMappingDSL {
-
-          ..$CppWrappers
-        }
       }
     """
   }
