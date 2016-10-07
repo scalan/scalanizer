@@ -37,7 +37,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher wit
           preventNameConflict _,
           genEntityImpicits _,
           genMethodsImplicits _,
-//          defaultMethod _,
+          defaultMethod _,
           defaultWrapperImpl _,
           extType2WrapperInWrappers _,
           /** Currently, inheritance of type wrappers is not supported.
@@ -76,15 +76,19 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher wit
   /** Adding of a method which returns default value of external type.
     * For example: def DefaultOfArray[T]: Default[Array[T]] = ???. */
   def defaultMethod(module: SEntityModuleDef): SEntityModuleDef = {
+    val baseType = module.entityOps.optBaseType.get
+    val tpeArgs = module.entityOps.tpeArgs
+    val typeDescs = tpeArgs.map(a =>
+          SMethodArg(true, false, "e" + a.name, STraitCall("Elem", List(a.toTraitCall)), None, isTypeDesc = true))
     val defaultOfWrapper = SMethodDef(
       name = "DefaultOf" + module.entityOps.baseInstanceName,
-      tpeArgs = module.entityOps.tpeArgs,
-      argSections = Nil,
-      tpeRes = Some(STraitCall("Default", module.entityOps.optBaseType.toList)),
+      tpeArgs = tpeArgs,
+      argSections = List(SMethodArgs(typeDescs)),
+      tpeRes = Some(baseType),
       isImplicit = false, isOverride = false, overloadId = None,
       annotations = Nil,
-      body = Some(SApply(SSelect(SIdent("Default"),"defaultVal"), Nil, List(List(SConst(null))))),
-      isTypeDesc = true // Workaround: disable virtualization of the method
+      body = Some(SConst(null, Some(baseType))),
+      isTypeDesc = false // Workaround: disable virtualization of the method
     )
     module.copy(methods = defaultOfWrapper :: module.methods)
   }

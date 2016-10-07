@@ -83,17 +83,20 @@ trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
         case _ => "getScalanContext"
       }
       q"""
-        lazy val ${TermName(method.name + "Kernel")} = {
-          val ctx = HotSpotManager.${TermName(scalanContextGetter)}
-          val compilerOutput = ctx.buildExecutable(
-            new File("./it-out/" + ${method.name}),
-            ${Literal(Constant(method.name))},
-            ctx.${TermName(method.name + "Wrapper")}, GraphVizConfig.default)(ctx.CompilerConfig(Some("2.11.2"), Seq.empty))
-          val (cls, method) = ctx.loadMethod(compilerOutput)
-          val instance = cls.newInstance().asInstanceOf[${method.typeExpr}]
-          instance
-        }
+        lazy val ${TermName(method.name + "Kernel")} = { ??? }
        """
+//      q"""
+//        lazy val ${TermName(method.name + "Kernel")} = {
+//          val ctx = HotSpotManager.${TermName(scalanContextGetter)}
+//          val compilerOutput = ctx.buildExecutable(
+//            new File("./it-out/" + ${method.name}),
+//            ${Literal(Constant(method.name))},
+//            ctx.${TermName(method.name + "Wrapper")}, GraphVizConfig.default)(ctx.CompilerConfig(Some("2.11.2"), Seq.empty))
+//          val (cls, method) = ctx.loadMethod(compilerOutput)
+//          val instance = cls.newInstance().asInstanceOf[${method.typeExpr}]
+//          instance
+//        }
+//       """
     }
     q"""
       object HotSpotKernels {

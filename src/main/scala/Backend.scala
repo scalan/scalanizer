@@ -354,7 +354,15 @@ trait Backend extends Common {
     case empty: SEmpty => q""
     case const: SConst =>
       val constTree = Literal(Constant(const.c))
-      if (ctx.toRep) q"toRep($constTree)" else constTree
+      if (ctx.toRep)
+        const.exprType match {
+          case Some(t) =>
+            q"toRep($constTree.asInstanceOf[${genTypeExpr(t)}])"
+          case None =>
+            q"toRep($constTree)"
+        }
+      else
+        constTree
     case ident: SIdent => Ident(TermName(ident.name))
     case assign: SAssign => q"${genExpr(assign.left)} = ${genExpr(assign.right)}"
     case select: SSelect => select.expr match {

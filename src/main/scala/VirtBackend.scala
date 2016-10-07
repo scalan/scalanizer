@@ -39,11 +39,11 @@ class VirtBackend(val global: Global) extends PluginComponent with Enricher with
     val absCake = q"trait ${TypeName(name + "Dsl")} extends Scalan with WrappersDsl with ColsDsl"
     val stdCake = q"""
                   trait ${TypeName(name + "DslStd")}
-                    extends ScalanStd with WrappersDslStd with ${TypeName(name + "Dsl")}
+                    extends WrappersDslStd with ${TypeName(name + "Dsl")}
                   """
     val expCake = q"""
                   trait ${TypeName(name + "DslExp")}
-                    extends ScalanExp with WrappersDslExp
+                    extends WrappersDslExp
                     with ${TypeName(name + "Dsl")}
                     with ColsDslExp
                   """
