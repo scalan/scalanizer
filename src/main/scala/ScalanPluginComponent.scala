@@ -62,7 +62,7 @@ class ScalanPluginComponent(val global: Global)
 
         /** Serialize Virtualized AST for passing to run-time. */
         val serializedModuleDef = serializeModuleDef(moduleDef)
-//        showTree("serializedAst", unitName, serializedAst)
+//        showTree("serializedAst", unitName, serializedModuleDef)
 
         /** Replace of hot spots by optimized kernels in the original Scala AST of current compilation unit. */
         val accelAst = transformHotSpots(moduleDef, unit)

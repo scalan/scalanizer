@@ -1,5 +1,6 @@
 package scalan.plugin
 
+import scala.annotation.tailrec
 import scalan.compilation.KernelType
 import scalan.meta.ScalanAst._
 import scalan.meta.ScalanParsers
@@ -22,26 +23,47 @@ trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
       val isLazy = vd.mods.isLazy
       SValDef(vd.name, tpeRes, isLazy, isImplicit, parseExpr(vd.rhs))
     })
-    def toLambda: Tree = {
-      val wrappedParamms = sparamss.flatten map { param =>
-        ScalanPluginState.externalTypes.foldLeft(param) { (acc, externalTypeName) =>
-          new ExtType2WrapperTransformer(externalTypeName).valdefTransform(acc)
-        }
+
+    def transformExternalTypes(expr: SValDef): SValDef = {
+      ScalanPluginState.externalTypes.foldLeft(expr) { (acc, externalTypeName) =>
+        new ExtType2WrapperTransformer(externalTypeName).valdefTransform(acc)
       }
-      val body = q"${TermName(path)}.${TermName(name)}(...${identss})"
-      genFunc(SFunc(wrappedParamms, parseExpr(body)))(GenCtx(null, true))
     }
+
+    def transformExternalTypes(expr: STpeExpr): STpeExpr = {
+      ScalanPluginState.externalTypes.foldLeft(expr) { (acc, externalTypeName) =>
+        new ExtType2WrapperTransformer(externalTypeName).typeTransformer.typeTransform(acc)
+      }
+    }
+
+    def wrappedParams: List[SValDef] = {
+      val wrapped = sparamss.flatten map { param => transformExternalTypes(param) }
+      wrapped
+    }
+
+    def toLambda: Tree = {
+      val body = q"${TermName(path)}.${TermName(name)}(...${identss})"
+      genFunc(SFunc(wrappedParams, parseExpr(body)))(GenCtx(null, true))
+    }
+
     def typeExpr: Tree = {
       val argTpeExprs = sparamss.map(_.map(_.tpe.getOrElse(STpeEmpty()))).flatten
       val domainTpeExpr = if (argTpeExprs.length == 1) argTpeExprs.head else STpeTuple(argTpeExprs)
       genTypeExpr(STpeFunc(domainTpeExpr, tpeExpr(res)))(GenCtx(null, false))
+    }
+    def wrappedTypeExpr: Tree = {
+      val argTpeExprs = wrappedParams.map(_.tpe.getOrElse(STpeEmpty()))
+      val domainTpeExpr = if (argTpeExprs.length == 1) argTpeExprs.head else STpeTuple(argTpeExprs)
+      genTypeExpr(
+        STpeFunc(domainTpeExpr,
+                 transformExternalTypes(tpeExpr(res))))(GenCtx(null, false))
     }
   }
 
   def transformHotSpots(module: SEntityModuleDef, unit: CompilationUnit): Tree = {
     val hotSpotTransformer = new Transformer {
       def getPackageName = {
-        def loop(pkgs: List[String], res: Tree): Tree = (pkgs, res) match {
+        @tailrec def loop(pkgs: List[String], res: Tree): Tree = (pkgs, res) match {
           case (Nil, _) => res
           case (p :: ps, EmptyTree) => loop(ps, Ident(TermName(p)))
           case (p :: ps, _) => loop(ps, Select(res, TermName(p)))
@@ -54,8 +76,8 @@ trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
         case method @ DefDef(_, TermName(name), _, vparamss,tpt,_) if isHotSpotMethod(method) =>
           val kernelName = TermName(name + "Kernel")
           val packageName = getPackageName
-          val params = vparamss.map(_.map{v => Ident(v.name)})
-          val kernelInvoke = q"$packageName.HotSpotKernels.$kernelName(...$params)"
+          val params = vparamss.map(_.map{v => Ident(v.name)}).flatten
+          val kernelInvoke = q"$packageName.HotSpotKernels.$kernelName(..$params)"
           val hotspotMethod = HotSpotMethod(
                 name, method.symbol.outerClass.nameString, vparamss, tpt,
                 getKernel(method.symbol.annotations))
@@ -82,8 +104,17 @@ trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
         case Cpp => "getScalanContextUni"
         case _ => "getScalanContext"
       }
+      val methodName = method.name
+      val kernelName = TermName(methodName + "Kernel")
       q"""
-        lazy val ${TermName(method.name + "Kernel")} = { ??? }
+        lazy val $kernelName: ${method.typeExpr} = {
+          val methodName = ${methodName}
+          val kernelsDir = new File("./test-out/" + $methodName)
+          val ctx = HotSpotManager.scalanContext
+          val store      = KernelStore.open(ctx, kernelsDir)
+          val k = store.createKernel(methodName, KernelType.Scala, ctx.${TermName(method.name + "Wrapper")})
+          k.asInstanceOf[${method.typeExpr}]
+        }
        """
 //      q"""
 //        lazy val ${TermName(method.name + "Kernel")} = {
@@ -101,7 +132,7 @@ trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
     q"""
       object HotSpotKernels {
         import java.io.File
-        import scalan.compilation.GraphVizConfig
+        import scalan.compilation.{KernelStore,KernelType};
         ..$kernels
       }
     """
@@ -110,19 +141,22 @@ trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
   def getHotSpotManager(module: SEntityModuleDef) = {
     val cakeName = getCakeName(module)
     val wrappers = hotSpots.getOrElse(module.name, Nil).map { method =>
-      (method, q"lazy val ${TermName(method.name + "Wrapper")} = ${method.toLambda}")
+      (method, q"lazy val ${TermName(method.name + "Wrapper")}: Rep[${method.wrappedTypeExpr}] = ??? ")
     }.partition{w => w._1.kernel == Scala}
+//    val wrappers = hotSpots.getOrElse(module.name, Nil).map { method =>
+//      (method, q"lazy val ${TermName(method.name + "Wrapper")} = ${method.toLambda}")
+//    }.partition{w => w._1.kernel == Scala}
     val ScalaWrappers = wrappers._1.map(_._2)
     val CppWrappers = wrappers._2.map(_._2)
     implicit val ctx = GenCtx(null, false)
     val cakeImport = genImport(getImportByName(cakeName))
     q"""
       object HotSpotManager {
-        import scalan.ScalanDslExp;
-        import scalan.compilation.lms.{CoreLmsBackend, CoreLmsBridge};
-        import scalan.compilation.lms.scalac.LmsCompilerScala;
-        import scalan.primitives.EffectfulCompiler;
         $cakeImport
+        val scalanContext: Scalan = new Scalan
+        class Scalan extends LinearAlgebraDslExp {
+          ..$ScalaWrappers
+        }
       }
     """
   }
