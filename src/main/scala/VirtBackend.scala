@@ -46,7 +46,7 @@ class VirtBackend(val global: Global)
         val unitName = unit.source.file.name
         if (unitName == "LinearAlgebra.scala") {
           val stats1 = atOwner(tree.symbol.moduleClass)(transformStats(stats, currentOwner))
-          val res = mkCombinedCake(ns, topPackage, "LinearAlgebra", tree, stats1)
+          val res = mkCombinedCake2(ns, topPackage, "LinearAlgebra", tree, stats1)
           saveDebugCode(unitName, showCode(res))
           res
         }
@@ -61,7 +61,10 @@ class VirtBackend(val global: Global)
       implicit val genCtx = GenCtx(module = null, toRep = false)
       //    val ns = genRefs(namespace.split('.').toList).asInstanceOf[RefTree]
       val imports = List(q"import scalan._")
-      val absCake = q"trait ${TypeName(name + "Dsl")} extends Scalan with WrappersDsl with ColsDsl"
+      val absCake = q"""
+                  trait ${TypeName(name + "Dsl")}
+                    extends Scalan with WrappersDsl
+                    """
       val stdCake = q"""
                   trait ${TypeName(name + "DslStd")}
                     extends WrappersDslStd with ${TypeName(name + "Dsl")}
@@ -70,14 +73,12 @@ class VirtBackend(val global: Global)
                   trait ${TypeName(name + "DslExp")}
                     extends WrappersDslExp
                     with ${TypeName(name + "Dsl")}
-                    with ColsDslExp
                   """
       val objectSE = q"object StagedEvaluation {..${imports ++ List(absCake, stdCake, expCake)}}"
       val implPackage = PackageDef(
         Ident(TermName("implOf"+name)),
         List(
           q"import wrappers._",
-          q"import scalanizer.collections.implOfCols.StagedEvaluation._",
           objectSE)
       )
       val pkgTree = PackageDef(Ident(topPackage), List(implPackage)).setSymbol(topPackage)
@@ -85,6 +86,69 @@ class VirtBackend(val global: Global)
                   originalTree, ns,
                   originalStats :+ localTyper.typed(pkgTree))
       cake
+    }
+
+    def mkCombinedCake2(ns: RefTree, topPackage: Symbol, name: String, originalTree: Tree, originalStats: List[Tree]): Tree = {
+      implicit val genCtx = GenCtx(module = null, toRep = false)
+      //    val ns = genRefs(namespace.split('.').toList).asInstanceOf[RefTree]
+      val imports = List(
+        q"import scalan._",
+        q"import wrappers._")
+      val absCake = q"""
+                  import scalan._
+                  import wrappers._
+                  trait ${TypeName(name + "Dsl")}
+                    extends Scalan with WrappersDsl
+                    """
+
+      additionalClasses ::= doTypeing(unit, absCake)
+//      val pkgTree = PackageDef(Ident(topPackage), additionalClasses).setSymbol(topPackage)
+      val cake = treeCopy.PackageDef(
+        originalTree, ns,
+        originalStats :+ absCake)
+      cake
+    }
+
+    def doTypeing(unit: CompilationUnit, t: Tree): Tree = {
+      t.clearType()
+      val ctx = analyzer.rootContext(unit)
+      analyzer.newNamer(ctx).enterSym(t)
+      val typer = analyzer.newTyper(ctx)
+      val tt = typer.typed(t)
+      tt
+    }
+
+    def mkCombinedCake3(ns: RefTree, topPackage: Symbol, name: String, originalTree: Tree, originalStats: List[Tree]): Tree = {
+      implicit val genCtx = GenCtx(module = null, toRep = false)
+      //    val ns = genRefs(namespace.split('.').toList).asInstanceOf[RefTree]
+      val imports = List(
+        q"import scalan._",
+        q"import wrappers._")
+      val absCake = q"""
+                  trait ${TypeName(name + "Dsl")}
+                    extends Scalan with WrappersDsl
+                    """
+      val stdCake = q"""
+                  trait ${TypeName(name + "DslStd")}
+                    extends WrappersDslStd with ${TypeName(name + "Dsl")}
+                  """
+      val expCake = q"""
+                  trait ${TypeName(name + "DslExp")}
+                    extends WrappersDslExp
+                    with ${TypeName(name + "Dsl")}
+                  """
+      val objectSE = q"object StagedEvaluation {..${imports ++ List(absCake, stdCake, expCake)}}"
+
+      val cake = treeCopy.PackageDef(
+        originalTree, ns,
+        originalStats :+ objectSE)
+
+      cake.clearType()
+      val ctx = analyzer.rootContext(unit)
+      analyzer.newNamer(ctx).enterSym(cake)
+      val typer = analyzer.newTyper(ctx)
+      val typedSE = typer.typed(cake)
+      typedSE
     }
   }
 

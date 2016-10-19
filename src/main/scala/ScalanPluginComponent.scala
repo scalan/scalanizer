@@ -48,7 +48,7 @@ class ScalanPluginComponent(val global: Global)
     override def transform(tree: Tree): Tree = tree match {
       case PackageDef(n, stats) =>
         val unitName = unit.source.file.name
-        if (ScalanPluginConfig.codegenConfig.entityFiles.contains(unitName)) try {
+        if (false && ScalanPluginConfig.codegenConfig.entityFiles.contains(unitName)) try {
           //        showTree("body", unitName, tree)
           val moduleDef = parse(unitName, tree)
           val enrichedModuleDef = pipeline(moduleDef)

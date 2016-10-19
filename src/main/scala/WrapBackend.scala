@@ -25,20 +25,20 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
 
   def newPhase(prev: Phase) = new StdPhase(prev) {
     override def run(): Unit = {
-      var wrapperSlices = initWrapperSlices
-      ScalanPluginState.wrappers foreach { case (_, WrapperDescr(module, _)) =>
-        /** Invoking of Scalan META to produce boilerplate code for the wrapper. */
-        val boilerplate = genWrapperBoilerplate(module)
-        saveWrapperBoilerplate(module.name, boilerplate)
-
-        /** Form source code of the wrapper and store it. */
-        val wrapperModuleWithoutImpl = module.copy(concreteSClasses = Nil)
-        val wrapperPackage = genWrapperPackage(wrapperModuleWithoutImpl)
-        saveWrapperCode(wrapperModuleWithoutImpl.name, showCode(wrapperPackage))
-
-        wrapperSlices = updateWrapperSlices(wrapperSlices, wrapperModuleWithoutImpl)
-      }
-      saveWrapperSlices(wrapperSlices)
+//      var wrapperSlices = initWrapperSlices
+//      ScalanPluginState.wrappers foreach { case (_, WrapperDescr(module, _)) =>
+//        /** Invoking of Scalan META to produce boilerplate code for the wrapper. */
+//        val boilerplate = genWrapperBoilerplate(module)
+//        saveWrapperBoilerplate(module.name, boilerplate)
+//
+//        /** Form source code of the wrapper and store it. */
+//        val wrapperModuleWithoutImpl = module.copy(concreteSClasses = Nil)
+//        val wrapperPackage = genWrapperPackage(wrapperModuleWithoutImpl)
+//        saveWrapperCode(wrapperModuleWithoutImpl.name, showCode(wrapperPackage))
+//
+//        wrapperSlices = updateWrapperSlices(wrapperSlices, wrapperModuleWithoutImpl)
+//      }
+//      saveWrapperSlices(wrapperSlices)
     }
 
     def apply(unit: CompilationUnit): Unit = ()
