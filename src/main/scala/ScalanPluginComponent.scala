@@ -2,6 +2,7 @@ package scalan.plugin
 
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
+import scala.tools.nsc.transform.{TypingTransformers, Transform}
 import scalan.meta.ScalanAst.SEntityModuleDef
 import scalan.meta.{ScalanParsers, CodegenConfig, ScalanCodegen}
 import scalan.util.Serialization
@@ -11,7 +12,8 @@ object ScalanPluginComponent {
 }
 
 class ScalanPluginComponent(val global: Global)
-  extends PluginComponent with ScalanParsers with Enricher with HotSpots with Backend {
+  extends PluginComponent with TypingTransformers with Transform
+  with ScalanParsers with Enricher with HotSpots with Backend {
 
   import global._
 
@@ -19,6 +21,8 @@ class ScalanPluginComponent(val global: Global)
   override def description: String = "Code virtualization and specialization"
 
   val runsAfter = List(CheckExtensions.name)
+
+  def newTransformer(unit: CompilationUnit) = new ScalanModuleTransformer(unit)
 
   /** Transformations of Scalan AST */
   val pipeline = scala.Function.chain(Seq(
@@ -39,62 +43,75 @@ class ScalanPluginComponent(val global: Global)
   def showTree(prefix: String, name: String, tree: Tree) =
     saveDebugCode(prefix + "_" + name, showCode(tree))
 
-  def newPhase(prev: Phase) = new StdPhase(prev) {
-    def apply(unit: CompilationUnit): Unit = {
-      val unitName = unit.source.file.name
-      if (ScalanPluginConfig.codegenConfig.entityFiles.contains(unitName)) try {
-//        showTree("body", unitName, unit.body)
-        val moduleDef = parse(unitName, unit.body)
-        val enrichedModuleDef = pipeline(moduleDef)
+  class ScalanModuleTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
 
-        /** Generates a virtualized version of original Scala AST, wraps types by Rep[] and etc. */
-        val virtAst = genScalaAst(enrichedModuleDef, unit.body)
-//        showTree("virtAst", unitName, virtAst)
+    override def transform(tree: Tree): Tree = tree match {
+      case PackageDef(n, stats) =>
+        val unitName = unit.source.file.name
+        if (ScalanPluginConfig.codegenConfig.entityFiles.contains(unitName)) try {
+          //        showTree("body", unitName, tree)
+          val moduleDef = parse(unitName, tree)
+          val enrichedModuleDef = pipeline(moduleDef)
 
-        /** Invoking of Scalan META to produce boilerplate code */
-        val boilerplate = genBoilerplate(enrichedModuleDef)
-//        showTree("boilerplate", unitName, boilerplate)
+          /** Generates a virtualized version of original Scala AST, wraps types by Rep[] and etc. */
+          val virtAst = genScalaAst(enrichedModuleDef, tree)
+          //        showTree("virtAst", unitName, virtAst)
 
-        /** Checking of user's extensions like SegmentDsl, SegmentDslStd and SegmentDslExp */
-        val extensions: List[Tree] = getExtensions(moduleDef)
-//        for ((e,i) <- extensions.zipWithIndex)
-//          showTree(s"extensions$i", unitName, e)
+          /** Invoking of Scalan META to produce boilerplate code */
+          val boilerplate = genBoilerplate(enrichedModuleDef)
+          //        showTree("boilerplate", unitName, boilerplate)
 
-        /** Serialize Virtualized AST for passing to run-time. */
-        val serializedModuleDef = serializeModuleDef(moduleDef)
-//        showTree("serializedAst", unitName, serializedModuleDef)
+          /** Checking of user's extensions like SegmentDsl, SegmentDslStd and SegmentDslExp */
+          val extensions: List[Tree] = getExtensions(moduleDef)
+          //        for ((e,i) <- extensions.zipWithIndex)
+          //          showTree(s"extensions$i", unitName, e)
 
-        /** Replace of hot spots by optimized kernels in the original Scala AST of current compilation unit. */
-        val accelAst = transformHotSpots(moduleDef, unit)
-//        showTree("accelAst", unitName, accelAst)
+          /** Serialize Virtualized AST for passing to run-time. */
+          val serializedModuleDef = serializeModuleDef(moduleDef)
+          //        showTree("serializedAst", unitName, serializedModuleDef)
 
-        /** Staged Ast is package which contains virtualized Tree + boilerplate */
-        val objectHotSpotKernels = getHotSpotKernels(moduleDef)
-        val objectHotSpotManager = getHotSpotManager(moduleDef)
-        val stagedAst = getStagedAst(
-              moduleDef, virtAst, boilerplate, extensions, serializedModuleDef,
-              objectHotSpotKernels,
-              objectHotSpotManager)
-//        showTree("stagedAst", unitName, stagedAst)
+          /** Replace of hot spots by optimized kernels in the original Scala AST of current compilation unit. */
+          val accelAst = transformHotSpots(moduleDef, unit)
+          //        showTree("accelAst", unitName, accelAst)
 
-        if (ScalanPluginConfig.save) {
-          saveImplCode(unit.source.file.file, showCode(stagedAst))
-        }
+          /** Staged Ast is package which contains virtualized Tree + boilerplate */
+          val objectHotSpotKernels = getHotSpotKernels(moduleDef)
+          val objectHotSpotManager = getHotSpotManager(moduleDef)
+          val stagedAst = getStagedAst(
+            moduleDef, virtAst, boilerplate, extensions, serializedModuleDef,
+            objectHotSpotKernels,
+            objectHotSpotManager)
+          //        showTree("stagedAst", unitName, stagedAst)
 
-        if (ScalanPluginConfig.read) {
-          /** Discards the generated code and load it from FS. */
-          unit.body = accelAst
+          if (ScalanPluginConfig.save) {
+            //          saveImplCode(unit.source.file.file, showCode(stagedAst))
+          }
+
+
+          val res = if (ScalanPluginConfig.read) {
+            /** Discards the generated code and load it from FS. */
+            accelAst
+          }
+          else
+          {
+            combineAst(accelAst, stagedAst)
+          }
+
+          if (ScalanPluginConfig.debug)
+            saveDebugCode(unitName, showCode(tree))
+
+          val typed = localTyper.typed(res)
+          typed
+        } catch {
+          case e: Exception =>
+            print(s"Error: failed to scalanize ${unitName} due to " + e.printStackTrace())
+            throw e
         }
         else
-        {
-          unit.body = combineAst(accelAst, stagedAst)
-        }
-
-//        if (ScalanPluginConfig.debug)
-//          saveDebugCode(unitName, showCode(unit.body))
-      } catch {
-        case e: Exception => print(s"Error: failed to parse ${unitName} due to " + e.printStackTrace())
-      }
+          tree
+//      case PackageDef(n, stats) =>
+//        print(s"PackageDef($n, $stats")
+//        tree
     }
   }
 

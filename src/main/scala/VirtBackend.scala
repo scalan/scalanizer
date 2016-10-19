@@ -3,6 +3,7 @@ package scalan.plugin
 import scalan.util.FileUtil
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
+import scala.tools.nsc.transform.{TypingTransformers, Transform}
 import scalan.meta.ScalanAst._
 import scalan.meta.ScalanCodegen
 
@@ -10,8 +11,12 @@ object VirtBackend {
   val name = "scalan-virt-backend"
 }
 
-/** Generating of Scala AST for wrappers. */
-class VirtBackend(val global: Global) extends PluginComponent with Enricher with Backend {
+/** Generating of Scala AST for wrappers.
+  * (The trick is described here http://stackoverflow.com/questions/7797769)
+  * */
+class VirtBackend(val global: Global)
+    extends PluginComponent with TypingTransformers with Transform
+    with Enricher with Backend {
   import global._
 
   import ScalanPluginState._
@@ -19,43 +24,80 @@ class VirtBackend(val global: Global) extends PluginComponent with Enricher with
   val phaseName: String = VirtBackend.name
   override def description: String = "Generating of Scala AST for virtualized cake."
   override val runsAfter = List(WrapBackend.name)
-  def getCombinedCakeHome(namespace: String) = {
-    val namespacePath = namespace.split('.').mkString("/")
-    s"${ScalanPluginConfig.home}/src/main/scala/$namespacePath/impl"
-  }
-  def newPhase(prev: Phase) = new StdPhase(prev) {
-    override def run(): Unit = {
-      saveCombinedCake("scalanizer.linalgebra", "LinearAlgebra")
-    }
-    def apply(unit: CompilationUnit): Unit = ()
+
+  def newTransformer(unit: CompilationUnit) = new VirtBackendTransformer(unit)
+
+  var additionalClasses: List[Tree] = Nil
+
+  lazy val topPackage = mkTopLevelPackage("scalanizer.linalgebra")
+
+  /** Create a new package symbol inside the empty (default) package. Takes
+    *  care of wiring the module, module class and their types. */
+  def mkTopLevelPackage(name: String): Symbol = {
+    val pkg = definitions.ScalaPackageClass.newPackage(TermName(name), NoPosition)
+    pkg.moduleClass setInfo ClassInfoType(Nil, newScope, pkg.moduleClass)
+    pkg.setInfo(pkg.moduleClass.tpe)
+    pkg
   }
 
-  /** Puts all modules to the cakes <name>Dsl, <name>DslStd and <name>DslExp.
-    * Stores them into the file: <home>/impl/<name>Impl.scala */
-  def saveCombinedCake(namespace: String, name: String): Unit = {
-    implicit val genCtx = GenCtx(module = null, toRep = false)
-    val ns = genRefs(namespace.split('.').toList).asInstanceOf[RefTree]
-    val imports = List(q"import scalan._")
-    val absCake = q"trait ${TypeName(name + "Dsl")} extends Scalan with WrappersDsl with ColsDsl"
-    val stdCake = q"""
+  class VirtBackendTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
+    override def transform(tree: Tree): Tree = tree match {
+      case PackageDef(ns, stats) =>
+        val unitName = unit.source.file.name
+        if (unitName == "LinearAlgebra.scala") {
+          val stats1 = atOwner(tree.symbol.moduleClass)(transformStats(stats, currentOwner))
+          val res = mkCombinedCake(ns, topPackage, "LinearAlgebra", tree, stats1)
+          saveDebugCode(unitName, showCode(res))
+          res
+        }
+        else
+          tree
+      // so that tree is actually traversed
+      case _ =>
+        super.transform(tree)
+    }
+
+    def mkCombinedCake(ns: RefTree, topPackage: Symbol, name: String, originalTree: Tree, originalStats: List[Tree]): Tree = {
+      implicit val genCtx = GenCtx(module = null, toRep = false)
+      //    val ns = genRefs(namespace.split('.').toList).asInstanceOf[RefTree]
+      val imports = List(q"import scalan._")
+      val absCake = q"trait ${TypeName(name + "Dsl")} extends Scalan with WrappersDsl with ColsDsl"
+      val stdCake = q"""
                   trait ${TypeName(name + "DslStd")}
                     extends WrappersDslStd with ${TypeName(name + "Dsl")}
                   """
-    val expCake = q"""
+      val expCake = q"""
                   trait ${TypeName(name + "DslExp")}
                     extends WrappersDslExp
                     with ${TypeName(name + "Dsl")}
                     with ColsDslExp
                   """
-    val objectSE = q"object StagedEvaluation {..${imports ++ List(absCake, stdCake, expCake)}}"
-    val cake = PackageDef(ns,
-                List(PackageDef(
-                  Ident(TermName("implOf"+name)),
-                  List(
-                    q"import wrappers._",
-                    q"import scalanizer.collections.implOfCols.StagedEvaluation._",
-                    objectSE)
-                )))
+      val objectSE = q"object StagedEvaluation {..${imports ++ List(absCake, stdCake, expCake)}}"
+      val implPackage = PackageDef(
+        Ident(TermName("implOf"+name)),
+        List(
+          q"import wrappers._",
+          q"import scalanizer.collections.implOfCols.StagedEvaluation._",
+          objectSE)
+      )
+      val pkgTree = PackageDef(Ident(topPackage), List(implPackage)).setSymbol(topPackage)
+      val cake = treeCopy.PackageDef(
+                  originalTree, ns,
+                  originalStats :+ localTyper.typed(pkgTree))
+      cake
+    }
+  }
+
+
+
+  def getCombinedCakeHome(namespace: String) = {
+    val namespacePath = namespace.split('.').mkString("/")
+    s"${ScalanPluginConfig.home}/src/main/scala/$namespacePath/impl"
+  }
+
+  /** Puts all modules to the cakes <name>Dsl, <name>DslStd and <name>DslExp.
+    * Stores them into the file: <home>/impl/<name>Impl.scala */
+  def saveCombinedCake(namespace: String, name: String, cake: Tree): Unit = {
     saveCombinedCake(namespace, name, showCode(cake))
   }
   def saveCombinedCake(namespace: String, name: String, cake: String): Unit = {
