@@ -2,7 +2,8 @@ package scalan.plugin
 
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
-import scalan.meta.ScalanAst.SEntityModuleDef
+import scalan.meta.ScalanAst.SModuleDef
+import scalan.meta.scalanizer.{Enricher, ScalanizerConfig, ScalanizerState}
 import scalan.meta.{ScalanParsers, CodegenConfig, ScalanCodegen}
 import scalan.util.Serialization
 
@@ -10,10 +11,13 @@ object ScalanPluginComponent {
   val name = "scalan-final"
 }
 
-class ScalanPluginComponent(val global: Global)
+class ScalanPluginComponent(plugin: ScalanPlugin)
   extends PluginComponent with ScalanParsers with Enricher with HotSpots with Backend {
-
+  val global: Global = plugin.global
   import global._
+
+  override def snState: ScalanizerState = ScalanPluginState
+  override def snConfig: ScalanizerConfig = ScalanPluginConfig
 
   val phaseName: String = ScalanPluginComponent.name
   override def description: String = "Code virtualization and specialization"
@@ -118,7 +122,7 @@ class ScalanPluginComponent(val global: Global)
     *    object HotSpotManager {...}
     *  }}
     * */
-  def getStagedAst(origModuleDef: SEntityModuleDef,
+  def getStagedAst(origModuleDef: SModuleDef,
                    virtAst: Tree,
                    boilerplate: Tree,
                    extensions: List[Tree],
@@ -175,13 +179,13 @@ class ScalanPluginComponent(val global: Global)
     *   trait MatrsDslExp extends MatrsExp { self: LinearAlgebraDslExp => };
     * for the module (Matrs).
     */
-  def getExtensions(module: SEntityModuleDef): List[Tree] = {
+  def getExtensions(module: SModuleDef): List[Tree] = {
     genModuleExtensions(module).map(extTrait => genTrait(extTrait)(GenCtx(module, false)))
   }
 
   /** Converts Meta AST of a module to base64 string, assings the string to a variable and
     * returns Scala Tree of the variable. */
-  def serializeModuleDef(module: SEntityModuleDef): Tree = {
+  def serializeModuleDef(module: SModuleDef): Tree = {
     val str = if (ScalanPluginConfig.saveMetaAst) {
       val erasedModule = eraseModule(module)
       Serialization.save(erasedModule)

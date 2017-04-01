@@ -2,18 +2,17 @@ package scalan.plugin
 
 import scalan.util.FileUtil
 import scala.tools.nsc._
-import scala.tools.nsc.plugins.PluginComponent
 import scalan.meta.ScalanAst._
-import scalan.meta.{ScalanCodegen, CodegenConfig}
+import scalan.meta.scalanizer.Enricher
+import scalan.meta.{ScalanCodegen}
 
 object WrapBackend {
   val name = "scalan-wrap-backend"
 }
 
 /** Generating of Scala AST for wrappers. */
-class WrapBackend(val global: Global) extends PluginComponent with Enricher with Backend {
+class WrapBackend(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) with Enricher with Backend {
   import global._
-  import ScalanPluginState._
 
   val phaseName: String = WrapBackend.name
 
@@ -45,7 +44,7 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
   }
 
   /** Calls Scalan Meta to generate boilerplate code for the wrapper. */
-  def genWrapperBoilerplate(module: SEntityModuleDef): String = {
+  def genWrapperBoilerplate(module: SModuleDef): String = {
     val gen = new scalan.meta.EntityFileGenerator(
       ScalanCodegen, module, ScalanPluginConfig.codegenConfig)
     val implCode = gen.getImplFile
@@ -53,7 +52,7 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
   }
 
   /** Generates Scala AST for the given wrapper (without implementation). */
-  def genWrapperPackage(module: SEntityModuleDef): Tree = {
+  def genWrapperPackage(module: SModuleDef): Tree = {
     implicit val genCtx = GenCtx(module = module, toRep = true)
     val scalaAst = genModule(module)
     val imports = module.imports.map(genImport(_))
@@ -93,7 +92,7 @@ class WrapBackend(val global: Global) extends PluginComponent with Enricher with
     WrapperSlices(abs, seq, exp)
   }
 
-  def updateWrapperSlices(slices: WrapperSlices, module: SEntityModuleDef): WrapperSlices = {
+  def updateWrapperSlices(slices: WrapperSlices, module: SModuleDef): WrapperSlices = {
     val absAncestors = slices.abs.ancestors :+ STraitCall(module.name + "Dsl", Nil)
     val seqAncestors = if (ScalanPluginConfig.codegenConfig.isStdEnabled)
                          slices.seq.ancestors :+ STraitCall(module.name + "DslStd", Nil)

@@ -4,8 +4,9 @@ import scala.annotation.tailrec
 import scalan.compilation.KernelType
 import scalan.meta.ScalanAst._
 import scalan.meta.ScalanParsers
+import scalan.meta.scalanizer.{Enricher, ScalanizerBase}
 
-trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
+trait HotSpots extends ScalanizerBase with Enricher with Backend with ScalanParsers {
 
   import global._
 
@@ -60,7 +61,7 @@ trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
     }
   }
 
-  def transformHotSpots(module: SEntityModuleDef, unit: CompilationUnit): Tree = {
+  def transformHotSpots(module: SModuleDef, unit: CompilationUnit): Tree = {
     val hotSpotTransformer = new Transformer {
       def getPackageName = {
         @tailrec def loop(pkgs: List[String], res: Tree): Tree = (pkgs, res) match {
@@ -98,7 +99,7 @@ trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
     //unit.body
   }
 
-  def getHotSpotKernels(module: SEntityModuleDef): Tree = {
+  def getHotSpotKernels(module: SModuleDef): Tree = {
     val kernels = hotSpots.getOrElse(module.name, Nil).map { method =>
       val scalanContextGetter = method.kernel match {
         case Cpp => "getScalanContextUni"
@@ -138,7 +139,7 @@ trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
     """
   }
 
-  def getHotSpotManager(module: SEntityModuleDef) = {
+  def getHotSpotManager(module: SModuleDef) = {
     val cakeName = getCakeName(module)
     val wrappers = hotSpots.getOrElse(module.name, Nil).map { method =>
       (method, q"lazy val ${TermName(method.name + "Wrapper")}: Rep[${method.wrappedTypeExpr}] = ??? ")
@@ -161,7 +162,7 @@ trait HotSpots extends Common with Enricher with Backend with ScalanParsers {
     """
   }
 
-  def getCakeName(module: SEntityModuleDef) = module.selfType match {
+  def getCakeName(module: SModuleDef) = module.selfType match {
     case Some(SSelfTypeDef(_, List(STraitCall(name, _)))) => name
     case _ => module.name
   }

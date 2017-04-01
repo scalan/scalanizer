@@ -2,12 +2,13 @@ package scalan.plugin
 
 import scala.reflect.internal.util.BatchSourceFile
 import scalan.meta.ScalanAst._
-import scalan.meta.{ScalanCodegen, EntityFileGenerator}
+import scalan.meta.scalanizer.ScalanizerBase
+import scalan.meta.{EntityFileGenerator, ScalanCodegen}
 
-trait Backend extends Common {
+trait Backend extends ScalanizerBase {
   import global._
 
-  def genBoilerplate(module: SEntityModuleDef): Tree = {
+  def genBoilerplate(module: SModuleDef): Tree = {
     val entityGen = new EntityFileGenerator(ScalanCodegen,
       module, ScalanPluginConfig.codegenConfig)
     val implCode = entityGen.getImplFile
@@ -17,9 +18,9 @@ trait Backend extends Common {
     boilerplate
   }
 
-  case class GenCtx(module: SEntityModuleDef, toRep: Boolean = true)
+  case class GenCtx(module: SModuleDef, toRep: Boolean = true)
 
-  def genScalaAst(module: SEntityModuleDef, orig: Tree): Tree = orig match {
+  def genScalaAst(module: SModuleDef, orig: Tree): Tree = orig match {
     case q"package $ref { ..$body }" =>
       implicit val ctx = GenCtx(module, true)
       val virtBody = List[Tree](genModule(module))
@@ -28,7 +29,7 @@ trait Backend extends Common {
     case tree => throw new IllegalArgumentException("Module must be in a package")
   }
 
-  def genModule(module: SEntityModuleDef)(implicit ctx: GenCtx): Tree = {
+  def genModule(module: SModuleDef)(implicit ctx: GenCtx): Tree = {
     val methods = module.methods.map(m => genMethod(m)(ctx.copy(toRep = !m.isTypeDesc)))
     val newstats =  genEntity(module.entityOps) ::
       (genConcreteClasses(module.concreteSClasses) ++ genCompanions(module) ++ methods)
@@ -75,7 +76,7 @@ trait Backend extends Common {
     classes.map{clazz => genClass(clazz.copy(isAbstract = true))}
   }
 
-  def genCompanions(module: SEntityModuleDef)(implicit ctx: GenCtx): List[Tree] = {
+  def genCompanions(module: SModuleDef)(implicit ctx: GenCtx): List[Tree] = {
     genCompanion(module.entityOps.companion) :: module.concreteSClasses.map(clazz => genCompanion(clazz.companion))
   }
 
@@ -223,7 +224,7 @@ trait Backend extends Common {
     case None => noSelfType
   }
 
-  def genModuleSelf(module: SEntityModuleDef)(implicit ctx: GenCtx): Tree = {
+  def genModuleSelf(module: SModuleDef)(implicit ctx: GenCtx): Tree = {
     val tpeName = module.selfType match {
       case Some(st) if !st.components.isEmpty => st.components.head.name
       case _ => module.name + "Dsl"
@@ -292,7 +293,7 @@ trait Backend extends Common {
 
   def genTypeByName(name: String)(implicit ctx: GenCtx) = tq"${TypeName(name)}"
 
-  def genDefaultElem(module: SEntityModuleDef)
+  def genDefaultElem(module: SModuleDef)
                     (implicit ctx: GenCtx): Tree = {
     val entityName = module.entityOps.name
     val entityNameType = genTypeByName(entityName)

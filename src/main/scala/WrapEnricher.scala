@@ -1,9 +1,9 @@
 package scalan.plugin
 
 import scala.tools.nsc._
-import scala.tools.nsc.plugins.PluginComponent
 import scalan.meta.ScalanAst._
 import scalan.meta.ScalanParsers
+import scalan.meta.scalanizer.Enricher
 
 object WrapEnricher {
   val name = "scalan-wrap-enricher"
@@ -11,7 +11,7 @@ object WrapEnricher {
 
 // TODO ScalanParsers is used only to get wrapperImpl. Move it somewhere?
 /** Virtualization of type wrappers. */
-class WrapEnricher(val global: Global) extends PluginComponent with Enricher with ScalanParsers {
+class WrapEnricher(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) with Enricher with ScalanParsers {
   import global._
 
   val phaseName: String = WrapEnricher.name
@@ -55,7 +55,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher wit
 
   /** Adding of a method which return original external type. For example:
     * def wrappedValue: Rep[Array[T]]; */
-  def addWrappedValue(module: SEntityModuleDef): SEntityModuleDef = {
+  def addWrappedValue(module: SModuleDef): SModuleDef = {
     val resType = module.entityOps.ancestors.collect {
       case STraitCall("TypeWrapper", List(importedType, _)) => importedType
     }.headOption
@@ -75,7 +75,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher wit
 
   /** Adding of a method which returns default value of external type.
     * For example: def DefaultOfArray[T]: Default[Array[T]] = ???. */
-  def defaultMethod(module: SEntityModuleDef): SEntityModuleDef = {
+  def defaultMethod(module: SModuleDef): SModuleDef = {
     val baseType = module.entityOps.optBaseType.get
     val tpeArgs = module.entityOps.tpeArgs
     val typeDescs = tpeArgs.map(a =>
@@ -96,7 +96,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher wit
   /** Adding of default implementation of the type wrapper. It is required by
     * Scalan Codegen. When the module is stored, the default implementation
     * is filtered. */
-  def defaultWrapperImpl(module: SEntityModuleDef): SEntityModuleDef = {
+  def defaultWrapperImpl(module: SModuleDef): SModuleDef = {
     val wrapperTypes = module.entityOps.ancestors.collect {
       case STraitCall("TypeWrapper", h :: _) => h
     }
@@ -110,7 +110,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher wit
   }
 
   /** Converts constructors (methods with name "<init>") to the apply method of companions. */
-  def filterConstructor(module: SEntityModuleDef): SEntityModuleDef = {
+  def filterConstructor(module: SModuleDef): SModuleDef = {
     new MetaAstTransformer {
       override def bodyTransform(body: List[SBodyItem]): List[SBodyItem] = body.filter {
         case m: SMethodDef if m.name == "<init>" => false
@@ -119,7 +119,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher wit
     }.moduleTransform(module)
   }
 
-  def constr2apply(module: SEntityModuleDef): SEntityModuleDef = {
+  def constr2apply(module: SModuleDef): SModuleDef = {
     val (constrs, entityBody) = module.entityOps.body partition {
       case m: SMethodDef if m.name == "<init>" => true
       case _ => false
@@ -146,7 +146,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher wit
     * The external type Array is replaced by its wrapper WArray
     * trait Col[A] { def arr: WArray[A]; }
     * */
-  def extType2WrapperInWrappers(module: SEntityModuleDef): SEntityModuleDef = {
+  def extType2WrapperInWrappers(module: SModuleDef): SModuleDef = {
     class TypeInWrappersTransformer(name: String) extends ExtType2WrapperTransformer(name) {
       override def methodTransform(method: SMethodDef): SMethodDef = {
         if (method.name == "wrappedValue")
@@ -170,7 +170,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher wit
 
   /** Discards all ancestors of the entity except TypeWrapper. It could be used as temporary solution
     * if inheritance of type wrappers is not supported. */
-  def filterAncestors(module: SEntityModuleDef): SEntityModuleDef = {
+  def filterAncestors(module: SModuleDef): SModuleDef = {
     class filterAncestorTransformer extends MetaAstTransformer {
       override def entityAncestorsTransform(ancestors: List[STraitCall]): List[STraitCall] = {
         ancestors.filter(_.name == "TypeWrapper")
@@ -181,7 +181,7 @@ class WrapEnricher(val global: Global) extends PluginComponent with Enricher wit
   }
 
   /** Adds a prefix for type parameters To, Elem and Cont, to eliminate name conflicts. */
-  def preventNameConflict(module: SEntityModuleDef): SEntityModuleDef = {
+  def preventNameConflict(module: SModuleDef): SModuleDef = {
     val pipeline = scala.Function.chain(Seq(
       new TypeNameTransformer("Elem", module.name + "Elem").moduleTransform _,
       new TypeNameTransformer("Cont", module.name + "Cont").moduleTransform _,

@@ -2,19 +2,15 @@ package scalan.plugin
 
 import scalan.util.FileUtil
 import scala.tools.nsc._
-import scala.tools.nsc.plugins.PluginComponent
-import scalan.meta.ScalanAst._
-import scalan.meta.ScalanCodegen
+import scalan.meta.scalanizer.Enricher
 
 object VirtBackend {
   val name = "scalan-virt-backend"
 }
 
 /** Generating of Scala AST for wrappers. */
-class VirtBackend(val global: Global) extends PluginComponent with Enricher with Backend {
+class VirtBackend(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) with Enricher with Backend {
   import global._
-
-  import ScalanPluginState._
 
   val phaseName: String = VirtBackend.name
   override def description: String = "Generating of Scala AST for virtualized cake."

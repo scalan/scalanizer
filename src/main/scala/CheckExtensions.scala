@@ -9,7 +9,8 @@ object CheckExtensions {
 }
 
 /** The component searches user's extensions traits */
-class CheckExtensions(val global: Global) extends PluginComponent {
+class CheckExtensions(plugin: ScalanPlugin) extends PluginComponent {
+  val global: Global = plugin.global
   import global._
 
   val phaseName: String = CheckExtensions.name

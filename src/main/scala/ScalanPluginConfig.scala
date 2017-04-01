@@ -1,8 +1,9 @@
 package scalan.plugin
 
 import scalan.meta.CodegenConfig
+import scalan.meta.scalanizer.ScalanizerConfig
 
-object ScalanPluginConfig {
+object ScalanPluginConfig extends ScalanizerConfig {
   /** The folder where the app is located and where the generated code will be stored. */
   val home = "/Users/slesarenko/Projects/scalan/scalanizer-demo"
   /** The flag indicates that generated code (virtualized code, boilerplate and type wrappers)

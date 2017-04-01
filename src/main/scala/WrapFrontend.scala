@@ -4,16 +4,15 @@ import scala.annotation.tailrec
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
 import scalan.meta.ScalanAst._
-import scalan.meta.{CodegenConfig, ScalanParsers}
-import ScalanPluginState.WrapperDescr
+import scalan.meta.scalanizer.ScalanizerBase
+import scalan.meta.{ScalanParsers, CodegenConfig}
 
 object WrapFrontend {
   val name = "scalan-wrap-frontend"
 }
 
 /** The component builds wrappers. */
-class WrapFrontend(val global: Global) extends PluginComponent with Common with ScalanParsers {
-
+class WrapFrontend(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) with ScalanizerBase with ScalanParsers {
   import global._
 
   val phaseName: String = WrapFrontend.name
@@ -184,7 +183,7 @@ class WrapFrontend(val global: Global) extends PluginComponent with Common with 
       SImportStat(externalTypeSym.fullName)
     )
 
-    val module = SEntityModuleDef(
+    val module = SModuleDef(
       packageName = "wrappers",
       imports = imports,
       name = wmod(externalTypeSym.nameString),

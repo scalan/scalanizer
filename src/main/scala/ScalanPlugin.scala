@@ -2,19 +2,30 @@ package scalan.plugin
 
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
+import scalan.meta.scalanizer.{ScalanizerBase, ScalanizerConfig, ScalanizerState}
+
+abstract class ScalanizerComponent(val plugin: ScalanPlugin)
+       extends PluginComponent with ScalanizerBase {
+  val global: Global = plugin.global
+  def snState : ScalanizerState = plugin.snState
+  def snConfig: ScalanizerConfig = plugin.snConfig
+}
 
 class ScalanPlugin(val global: Global) extends Plugin {
+  val snState: ScalanizerState = ScalanPluginState
+  val snConfig: ScalanizerConfig = ScalanPluginConfig
+
   /** Visible name of the plugin */
   val name: String = "scalan"
 
   /** The compiler components that will be applied when running this plugin */
   val components: List[PluginComponent] = List(
-    new WrapFrontend(global)
-    , new WrapEnricher(global)
-    , new WrapBackend(global)
-    , new VirtBackend(global)
-    , new CheckExtensions(global)
-    , new ScalanPluginComponent(global)
+    new WrapFrontend(this)
+    , new WrapEnricher(this)
+    , new WrapBackend(this)
+    , new VirtBackend(this)
+    , new CheckExtensions(this)
+    , new ScalanPluginComponent(this)
     //      ,new Debug(global)
   )
 
@@ -42,16 +53,7 @@ class ScalanPlugin(val global: Global) extends Plugin {
 object ScalanPlugin {
   /** Yields the list of Components to be executed in this plugin */
   def components(global: Global) = {
-    val result = scala.collection.mutable.ListBuffer[PluginComponent](
-      new WrapFrontend(global)
-      ,new WrapEnricher(global)
-      ,new WrapBackend(global)
-      ,new VirtBackend(global)
-      ,new CheckExtensions(global)
-      ,new ScalanPluginComponent(global)
-//      ,new Debug(global)
-    )
-
-    result.toList
+    val plugin = new ScalanPlugin(global)
+    plugin.components
   }
 }
