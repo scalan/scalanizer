@@ -3,15 +3,15 @@ package scalan.plugin
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
 import scalan.meta.ScalanAst.SModuleDef
-import scalan.meta.scalanizer.{Enricher, ScalanizerConfig, ScalanizerState}
+import scalan.meta.scalanizer.{ScalanizerConfig, ScalanizerState, Enricher, Backend}
 import scalan.meta.{ScalanParsers, CodegenConfig, ScalanCodegen}
 import scalan.util.Serialization
 
-object ScalanPluginComponent {
-  val name = "scalan-final"
+object FinalComponent {
+  val name = "scalanizer-final"
 }
 
-class ScalanPluginComponent(plugin: ScalanPlugin)
+class FinalComponent(plugin: ScalanPlugin)
   extends PluginComponent with ScalanParsers with Enricher with HotSpots with Backend {
   val global: Global = plugin.global
   import global._
@@ -19,7 +19,7 @@ class ScalanPluginComponent(plugin: ScalanPlugin)
   override def snState: ScalanizerState = ScalanPluginState
   override def snConfig: ScalanizerConfig = ScalanPluginConfig
 
-  val phaseName: String = ScalanPluginComponent.name
+  val phaseName: String = FinalComponent.name
   override def description: String = "Code virtualization and specialization"
 
   val runsAfter = List(CheckExtensions.name)

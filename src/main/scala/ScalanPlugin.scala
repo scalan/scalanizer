@@ -4,13 +4,6 @@ import scala.tools.nsc._
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
 import scalan.meta.scalanizer.{ScalanizerBase, ScalanizerConfig, ScalanizerState}
 
-abstract class ScalanizerComponent(val plugin: ScalanPlugin)
-       extends PluginComponent with ScalanizerBase {
-  val global: Global = plugin.global
-  def snState : ScalanizerState = plugin.snState
-  def snConfig: ScalanizerConfig = plugin.snConfig
-}
-
 class ScalanPlugin(val global: Global) extends Plugin {
   val snState: ScalanizerState = ScalanPluginState
   val snConfig: ScalanizerConfig = ScalanPluginConfig
@@ -25,8 +18,8 @@ class ScalanPlugin(val global: Global) extends Plugin {
     , new WrapBackend(this)
     , new VirtBackend(this)
     , new CheckExtensions(this)
-    , new ScalanPluginComponent(this)
-    //      ,new Debug(global)
+    , new FinalComponent(this)
+    //      ,new Debug(this)
   )
 
   /** The description is printed with the option: -Xplugin-list */

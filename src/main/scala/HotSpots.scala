@@ -4,12 +4,10 @@ import scala.annotation.tailrec
 import scalan.compilation.KernelType
 import scalan.meta.ScalanAst._
 import scalan.meta.ScalanParsers
-import scalan.meta.scalanizer.{Enricher, ScalanizerBase}
+import scalan.meta.scalanizer.{ScalanizerBase, Enricher, Backend}
 
 trait HotSpots extends ScalanizerBase with Enricher with Backend with ScalanParsers {
-
   import global._
-
   import KernelType._
 
   /** Mapping of a module to its hot spots. */

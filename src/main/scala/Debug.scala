@@ -8,13 +8,13 @@ object Debug {
 }
 
 /** The component outputs the tree of compilation unit. */
-class Debug(val global: Global) extends PluginComponent {
+class Debug(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) {
   import global._
 
   val phaseName: String = Debug.name
   override def description: String = "Print AST of compilation units"
 
-  val runsAfter = List(ScalanPluginComponent.name)
+  val runsAfter = List(FinalComponent.name)
 
   def newPhase(prev: Phase) = new StdPhase(prev) {
     def apply(unit: CompilationUnit) {

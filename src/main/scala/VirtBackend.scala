@@ -2,7 +2,7 @@ package scalan.plugin
 
 import scalan.util.FileUtil
 import scala.tools.nsc._
-import scalan.meta.scalanizer.Enricher
+import scalan.meta.scalanizer.{Enricher, Backend}
 
 object VirtBackend {
   val name = "scalan-virt-backend"
