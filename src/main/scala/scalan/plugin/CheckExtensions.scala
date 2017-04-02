@@ -1,8 +1,6 @@
 package scalan.plugin
 
 import scala.tools.nsc._
-import scala.tools.nsc.plugins.PluginComponent
-import scala.collection.mutable.Map
 
 object CheckExtensions {
   val name = "scalan-check"

@@ -1,10 +1,7 @@
 package scalan.plugin
 
 import scala.tools.nsc._
-import scala.tools.nsc.plugins.PluginComponent
 import scalan.meta.ScalanAst.SModuleDef
-import scalan.meta.scalanizer._
-import scalan.meta.{ScalanParsers, CodegenConfig, ScalanCodegen}
 import scalan.util.Serialization
 
 object FinalComponent {

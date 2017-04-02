@@ -2,8 +2,6 @@ package scalan.plugin
 
 import scala.tools.nsc._
 import scalan.meta.ScalanAst._
-import scalan.meta.ScalanParsers
-import scalan.meta.scalanizer.Enricher
 
 object WrapEnricher {
   val name = "scalan-wrap-enricher"

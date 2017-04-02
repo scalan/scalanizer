@@ -1,7 +1,6 @@
 package scalan.plugin
 
 import scala.tools.nsc._
-import scala.tools.nsc.plugins.PluginComponent
 
 object Debug {
   val name = "scalan-debug"

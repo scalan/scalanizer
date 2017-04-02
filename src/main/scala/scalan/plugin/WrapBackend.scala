@@ -3,7 +3,6 @@ package scalan.plugin
 import scalan.util.FileUtil
 import scala.tools.nsc._
 import scalan.meta.ScalanAst._
-import scalan.meta.scalanizer.{Enricher, Backend}
 import scalan.meta.ScalanCodegen
 
 object WrapBackend {

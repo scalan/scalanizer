@@ -2,10 +2,7 @@ package scalan.plugin
 
 import scala.annotation.tailrec
 import scala.tools.nsc._
-import scala.tools.nsc.plugins.PluginComponent
 import scalan.meta.ScalanAst._
-import scalan.meta.scalanizer.ScalanizerBase
-import scalan.meta.{ScalanParsers, CodegenConfig}
 
 object WrapFrontend {
   val name = "scalan-wrap-frontend"

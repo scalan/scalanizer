@@ -2,7 +2,7 @@ package scalan.plugin
 
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
-import scalan.meta.scalanizer.{ScalanizerConfig, ScalanizerBase, ScalanizerState, Scalanizer}
+import scalan.meta.scalanizer.{ScalanizerConfig, Scalanizer, ScalanizerState}
 
 class ScalanizerPlugin(val global: Global) extends Plugin { plugin =>
   val scalanizer: Scalanizer[plugin.global.type] = new Scalanizer[plugin.global.type] {
