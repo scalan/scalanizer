@@ -9,7 +9,7 @@ object VirtBackend {
 }
 
 /** Generating of Scala AST for wrappers. */
-class VirtBackend(override val plugin: ScalanPlugin) extends ScalanizerComponent(plugin) {
+class VirtBackend(override val plugin: ScalanizerPlugin) extends ScalanizerComponent(plugin) {
   import scalanizer._
   import scalanizer.global._
 

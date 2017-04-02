@@ -9,7 +9,7 @@ object CheckExtensions {
 }
 
 /** The component searches user's extensions traits */
-class CheckExtensions(override val plugin: ScalanPlugin) extends ScalanizerComponent(plugin) {
+class CheckExtensions(override val plugin: ScalanizerPlugin) extends ScalanizerComponent(plugin) {
   import scalanizer._
   import scalanizer.global._
 

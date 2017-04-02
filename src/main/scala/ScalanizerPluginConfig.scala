@@ -3,7 +3,7 @@ package scalan.plugin
 import scalan.meta.CodegenConfig
 import scalan.meta.scalanizer.ScalanizerConfig
 
-class ScalanPluginConfig extends ScalanizerConfig {
+class ScalanizerPluginConfig extends ScalanizerConfig {
   /** The folder where the app is located and where the generated code will be stored. */
   val home = "/Users/slesarenko/Projects/scalan/scalanizer-demo"
 

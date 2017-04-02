@@ -11,7 +11,7 @@ object FinalComponent {
   val name = "scalanizer-final"
 }
 
-class FinalComponent(override val plugin: ScalanPlugin) extends ScalanizerComponent(plugin) {
+class FinalComponent(override val plugin: ScalanizerPlugin) extends ScalanizerComponent(plugin) {
   import scalanizer._
   import scalanizer.global._
 

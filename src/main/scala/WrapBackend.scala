@@ -11,7 +11,7 @@ object WrapBackend {
 }
 
 /** Generating of Scala AST for wrappers. */
-class WrapBackend(override val plugin: ScalanPlugin) extends ScalanizerComponent(plugin) {
+class WrapBackend(override val plugin: ScalanizerPlugin) extends ScalanizerComponent(plugin) {
   import plugin.scalanizer._
   import plugin.scalanizer.global._
 

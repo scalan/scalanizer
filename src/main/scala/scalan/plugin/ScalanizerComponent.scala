@@ -7,7 +7,7 @@ import scala.tools.nsc.Global
 /**
   * Created by slesarenko on 01/04/17.
   */
-abstract class ScalanizerComponent(val plugin: ScalanPlugin) extends PluginComponent {
+abstract class ScalanizerComponent(val plugin: ScalanizerPlugin) extends PluginComponent {
   val global: plugin.global.type = plugin.global
   val scalanizer: plugin.scalanizer.type = plugin.scalanizer
 }

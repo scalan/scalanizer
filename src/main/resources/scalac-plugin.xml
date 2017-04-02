@@ -1,4 +1,4 @@
 <plugin>
-    <name>scalan</name>
-    <classname>scalan.plugin.ScalanPlugin</classname>
+    <name>scalanizer</name>
+    <classname>scalan.plugin.ScalanizerPlugin</classname>
 </plugin>

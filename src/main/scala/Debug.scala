@@ -8,7 +8,7 @@ object Debug {
 }
 
 /** The component outputs the tree of compilation unit. */
-class Debug(override val plugin: ScalanPlugin) extends ScalanizerComponent(plugin) {
+class Debug(override val plugin: ScalanizerPlugin) extends ScalanizerComponent(plugin) {
   import global._
   import plugin.scalanizer._
 

@@ -11,7 +11,7 @@ object WrapEnricher {
 
 // TODO ScalanParsers is used only to get wrapperImpl. Move it somewhere?
 /** Virtualization of type wrappers. */
-class WrapEnricher(override val plugin: ScalanPlugin) extends ScalanizerComponent(plugin) {
+class WrapEnricher(override val plugin: ScalanizerPlugin) extends ScalanizerComponent(plugin) {
   import scalanizer._
   import scalanizer.global._
 

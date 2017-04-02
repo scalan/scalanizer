@@ -12,7 +12,7 @@ object WrapFrontend {
 }
 
 /** The component builds wrappers. */
-class WrapFrontend(override val plugin: ScalanPlugin) extends ScalanizerComponent(plugin) {
+class WrapFrontend(override val plugin: ScalanizerPlugin) extends ScalanizerComponent(plugin) {
   import scalanizer._
   import scalanizer.global._
 
