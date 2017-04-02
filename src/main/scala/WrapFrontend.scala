@@ -12,8 +12,9 @@ object WrapFrontend {
 }
 
 /** The component builds wrappers. */
-class WrapFrontend(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) with ScalanizerBase with ScalanParsers {
-  import global._
+class WrapFrontend(override val plugin: ScalanPlugin) extends ScalanizerComponent(plugin) {
+  import scalanizer._
+  import scalanizer.global._
 
   val phaseName: String = WrapFrontend.name
   override def description: String = "Building wrappers for external types"
@@ -25,7 +26,7 @@ class WrapFrontend(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) wit
     def apply(unit: CompilationUnit) {
       val unitName = unit.source.file.name
 
-      if (ScalanPluginConfig.codegenConfig.entityFiles.contains(unitName)) {
+      if (snConfig.codegenConfig.entityFiles.contains(unitName)) {
 //        /* Collect all methods with the HotSpot annotation. */
 //        val hotSpotFilter = new FilterTreeTraverser(isHotSpotTree)
 //        hotSpotFilter.traverse(unit.body)
@@ -278,12 +279,12 @@ class WrapFrontend(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) wit
         formMethodDef(methodName.toString, Nil, Nil, formMethodRes(sym.tpe))
       case _ => throw new NotImplementedError(s"memberType = ${showRaw(memberType)}")
     }
-    val updatedWrapper = ScalanPluginState.wrappers.get(externalTypeName) match {
+    val updatedWrapper = snState.wrappers.get(externalTypeName) match {
       case None =>  createWrapper(objType, List(member))
       case Some(wrapperDescr) => addMember(objType, member, wrapperDescr)
     }
 
-    ScalanPluginState.wrappers(externalTypeName) = updatedWrapper
+    snState.wrappers(externalTypeName) = updatedWrapper
     createMemberDependencies(memberType)
   }
 
@@ -318,8 +319,8 @@ class WrapFrontend(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) wit
 
     parentDecls foreach {parent =>
       val name = parent.typeSymbol.nameString
-      if (!isIgnoredExternalType(name) && !ScalanPluginState.wrappers.keySet.contains(name)) {
-        ScalanPluginState.wrappers(name) = createWrapper(parent, Nil)
+      if (!isIgnoredExternalType(name) && !snState.wrappers.keySet.contains(name)) {
+        snState.wrappers(name) = createWrapper(parent, Nil)
       }
     }
   }
@@ -329,9 +330,9 @@ class WrapFrontend(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) wit
     class DependencyTraverser extends TypeTraverser {
       def traverse(tp: Type): Unit = tp match {
         case TypeRef(pre, sym, args) if isWrapperSym(sym) =>
-          if (!ScalanPluginState.wrappers.contains(sym.nameString)) {
+          if (!snState.wrappers.contains(sym.nameString)) {
             val module = createWrapper(sym.tpe, Nil)
-            ScalanPluginState.wrappers(sym.nameString) = module
+            snState.wrappers(sym.nameString) = module
           }
         case _ => mapOver(tp)
       }

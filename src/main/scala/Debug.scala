@@ -8,8 +8,9 @@ object Debug {
 }
 
 /** The component outputs the tree of compilation unit. */
-class Debug(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) {
+class Debug(override val plugin: ScalanPlugin) extends ScalanizerComponent(plugin) {
   import global._
+  import plugin.scalanizer._
 
   val phaseName: String = Debug.name
   override def description: String = "Print AST of compilation units"
@@ -19,7 +20,7 @@ class Debug(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) {
   def newPhase(prev: Phase) = new StdPhase(prev) {
     def apply(unit: CompilationUnit) {
 
-      if (ScalanPluginConfig.codegenConfig.entityFiles.contains(unit.source.file.name)) {
+      if (snConfig.codegenConfig.entityFiles.contains(unit.source.file.name)) {
         print(showCode(unit.body))
       }
     }

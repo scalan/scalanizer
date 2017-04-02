@@ -2,11 +2,14 @@ package scalan.plugin
 
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
-import scalan.meta.scalanizer.{ScalanizerBase, ScalanizerConfig, ScalanizerState}
+import scalan.meta.scalanizer.{ScalanizerConfig, ScalanizerBase, ScalanizerState, Scalanizer}
 
-class ScalanPlugin(val global: Global) extends Plugin {
-  val snState: ScalanizerState = ScalanPluginState
-  val snConfig: ScalanizerConfig = ScalanPluginConfig
+class ScalanPlugin(val global: Global) extends Plugin { plugin =>
+  val scalanizer: Scalanizer[plugin.global.type] = new Scalanizer[plugin.global.type] {
+    def getGlobal: plugin.global.type = plugin.global
+    val snState: ScalanizerState[plugin.global.type] = new ScalanPluginState(this)
+    val snConfig: ScalanizerConfig = new ScalanPluginConfig
+  }
 
   /** Visible name of the plugin */
   val name: String = "scalan"
@@ -28,9 +31,9 @@ class ScalanPlugin(val global: Global) extends Plugin {
   /** Plugin-specific options without -P:scalan:  */
   override def processOptions(options: List[String], error: String => Unit) {
     options foreach {
-      case "save" => ScalanPluginConfig.save = true
-      case "read" => ScalanPluginConfig.read = true
-      case "debug" => ScalanPluginConfig.debug = true
+      case "save" => scalanizer.snConfig.withSave(true)
+      case "read" => scalanizer.snConfig.withRead(true)
+      case "debug" => scalanizer.snConfig.withDebug(true)
       case option => error("Option not understood: " + option)
     }
   }

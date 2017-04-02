@@ -11,8 +11,9 @@ object WrapBackend {
 }
 
 /** Generating of Scala AST for wrappers. */
-class WrapBackend(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) with Enricher with Backend {
-  import global._
+class WrapBackend(override val plugin: ScalanPlugin) extends ScalanizerComponent(plugin) {
+  import plugin.scalanizer._
+  import plugin.scalanizer.global._
 
   val phaseName: String = WrapBackend.name
 
@@ -25,7 +26,7 @@ class WrapBackend(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) with
   def newPhase(prev: Phase) = new StdPhase(prev) {
     override def run(): Unit = {
       var wrapperSlices = initWrapperSlices
-      ScalanPluginState.wrappers foreach { case (_, WrapperDescr(module, _)) =>
+      snState.wrappers foreach { case (_, WrapperDescr(module, _)) =>
         /** Invoking of Scalan META to produce boilerplate code for the wrapper. */
         val boilerplate = genWrapperBoilerplate(module)
         saveWrapperBoilerplate(module.name, boilerplate)
@@ -46,7 +47,7 @@ class WrapBackend(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) with
   /** Calls Scalan Meta to generate boilerplate code for the wrapper. */
   def genWrapperBoilerplate(module: SModuleDef): String = {
     val gen = new scalan.meta.EntityFileGenerator(
-      ScalanCodegen, module, ScalanPluginConfig.codegenConfig)
+      ScalanCodegen, module, snConfig.codegenConfig)
     val implCode = gen.getImplFile
     implCode
   }
@@ -65,7 +66,7 @@ class WrapBackend(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) with
 
     wrappersPackage
   }
-  def getWrappersHome = ScalanPluginConfig.home + "/src/main/scala/wrappers"
+  def getWrappersHome = snConfig.home + "/src/main/scala/wrappers"
   def saveWrapperCode(fileName: String, wrapperCode: String) = {
     val wrapperFile = FileUtil.file(getWrappersHome, fileName + ".scala")
     wrapperFile.mkdirs()
@@ -94,7 +95,7 @@ class WrapBackend(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) with
 
   def updateWrapperSlices(slices: WrapperSlices, module: SModuleDef): WrapperSlices = {
     val absAncestors = slices.abs.ancestors :+ STraitCall(module.name + "Dsl", Nil)
-    val seqAncestors = if (ScalanPluginConfig.codegenConfig.isStdEnabled)
+    val seqAncestors = if (snConfig.codegenConfig.isStdEnabled)
                          slices.seq.ancestors :+ STraitCall(module.name + "DslStd", Nil)
                        else
                          slices.seq.ancestors

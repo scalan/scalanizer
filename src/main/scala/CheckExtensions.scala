@@ -9,9 +9,9 @@ object CheckExtensions {
 }
 
 /** The component searches user's extensions traits */
-class CheckExtensions(plugin: ScalanPlugin) extends PluginComponent {
-  val global: Global = plugin.global
-  import global._
+class CheckExtensions(override val plugin: ScalanPlugin) extends ScalanizerComponent(plugin) {
+  import scalanizer._
+  import scalanizer.global._
 
   val phaseName: String = CheckExtensions.name
   override def description: String = "Find user's extensions"
@@ -51,10 +51,10 @@ class CheckExtensions(plugin: ScalanPlugin) extends PluginComponent {
     case q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
       val traitName = getTraitName(tpname)
       val cakeName = getCakeSliceName(traitName)
-      ScalanPluginState.subcakesOfModule get cakeName match {
+      snState.subcakesOfModule get cakeName match {
         case Some(s) =>
           //print("Extension is found: " + traitName + " for the cake slice: " + cakeName)
-          ScalanPluginState.subcakesOfModule(cakeName) -= traitName
+          snState.subcakesOfModule(cakeName) -= traitName
           ()
         case None => ()
       }

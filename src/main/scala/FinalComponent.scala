@@ -3,7 +3,7 @@ package scalan.plugin
 import scala.tools.nsc._
 import scala.tools.nsc.plugins.PluginComponent
 import scalan.meta.ScalanAst.SModuleDef
-import scalan.meta.scalanizer.{ScalanizerConfig, ScalanizerState, Enricher, Backend}
+import scalan.meta.scalanizer._
 import scalan.meta.{ScalanParsers, CodegenConfig, ScalanCodegen}
 import scalan.util.Serialization
 
@@ -11,13 +11,9 @@ object FinalComponent {
   val name = "scalanizer-final"
 }
 
-class FinalComponent(plugin: ScalanPlugin)
-  extends PluginComponent with ScalanParsers with Enricher with HotSpots with Backend {
-  val global: Global = plugin.global
-  import global._
-
-  override def snState: ScalanizerState = ScalanPluginState
-  override def snConfig: ScalanizerConfig = ScalanPluginConfig
+class FinalComponent(override val plugin: ScalanPlugin) extends ScalanizerComponent(plugin) {
+  import scalanizer._
+  import scalanizer.global._
 
   val phaseName: String = FinalComponent.name
   override def description: String = "Code virtualization and specialization"
@@ -46,7 +42,7 @@ class FinalComponent(plugin: ScalanPlugin)
   def newPhase(prev: Phase) = new StdPhase(prev) {
     def apply(unit: CompilationUnit): Unit = {
       val unitName = unit.source.file.name
-      if (ScalanPluginConfig.codegenConfig.entityFiles.contains(unitName)) try {
+      if (snConfig.codegenConfig.entityFiles.contains(unitName)) try {
 //        showTree("body", unitName, unit.body)
         val moduleDef = parse(unitName, unit.body)
         val enrichedModuleDef = pipeline(moduleDef)
@@ -81,11 +77,11 @@ class FinalComponent(plugin: ScalanPlugin)
               objectHotSpotManager)
 //        showTree("stagedAst", unitName, stagedAst)
 
-        if (ScalanPluginConfig.save) {
+        if (snConfig.save) {
           saveImplCode(unit.source.file.file, showCode(stagedAst))
         }
 
-        if (ScalanPluginConfig.read) {
+        if (snConfig.read) {
           /** Discards the generated code and load it from FS. */
           unit.body = accelAst
         }
@@ -94,7 +90,7 @@ class FinalComponent(plugin: ScalanPlugin)
           unit.body = combineAst(accelAst, stagedAst)
         }
 
-//        if (ScalanPluginConfig.debug)
+//        if (snConfig.debug)
 //          saveDebugCode(unitName, showCode(unit.body))
       } catch {
         case e: Exception => print(s"Error: failed to parse ${unitName} due to " + e.printStackTrace())
@@ -186,7 +182,7 @@ class FinalComponent(plugin: ScalanPlugin)
   /** Converts Meta AST of a module to base64 string, assings the string to a variable and
     * returns Scala Tree of the variable. */
   def serializeModuleDef(module: SModuleDef): Tree = {
-    val str = if (ScalanPluginConfig.saveMetaAst) {
+    val str = if (snConfig.saveMetaAst) {
       val erasedModule = eraseModule(module)
       Serialization.save(erasedModule)
     } else ""

@@ -11,8 +11,9 @@ object WrapEnricher {
 
 // TODO ScalanParsers is used only to get wrapperImpl. Move it somewhere?
 /** Virtualization of type wrappers. */
-class WrapEnricher(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) with Enricher with ScalanParsers {
-  import global._
+class WrapEnricher(override val plugin: ScalanPlugin) extends ScalanizerComponent(plugin) {
+  import scalanizer._
+  import scalanizer.global._
 
   val phaseName: String = WrapEnricher.name
 
@@ -23,7 +24,7 @@ class WrapEnricher(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) wit
   /** The phase prepares a wrapper for virtualization. */
   def newPhase(prev: Phase) = new StdPhase(prev) {
     override def run(): Unit = {
-      ScalanPluginState.wrappers transform { (name, wrapperDescr) =>
+      snState.wrappers transform { (name, wrapperDescr) =>
         /** Transformations of Wrappers by adding of Elem, Cont and other things. */
         val pipeline = scala.Function.chain(Seq(
           preventNameConflict _,
@@ -104,7 +105,7 @@ class WrapEnricher(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) wit
     if (wrapperTypes.isEmpty) module
     else {
       val wrapperType = wrapperTypes.head
-      val wrapperImpl = this.wrapperImpl(module.entityOps, wrapperType, false)
+      val wrapperImpl = this.scalanizer.wrapperImpl(module.entityOps, wrapperType, false)
       module.copy(concreteSClasses = List(wrapperImpl))
     }
   }
@@ -161,7 +162,7 @@ class WrapEnricher(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) wit
           typeTransformer.traitCallTransform(ancestor)
       }
     }
-    val wrappedModule = ScalanPluginState.externalTypes.foldLeft(module){(acc, externalTypeName) =>
+    val wrappedModule = snState.externalTypes.foldLeft(module){(acc, externalTypeName) =>
       new TypeInWrappersTransformer(externalTypeName).moduleTransform(acc)
     }
 

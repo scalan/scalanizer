@@ -9,15 +9,16 @@ object VirtBackend {
 }
 
 /** Generating of Scala AST for wrappers. */
-class VirtBackend(plugin: ScalanPlugin) extends ScalanizerComponent(plugin) with Enricher with Backend {
-  import global._
+class VirtBackend(override val plugin: ScalanPlugin) extends ScalanizerComponent(plugin) {
+  import scalanizer._
+  import scalanizer.global._
 
   val phaseName: String = VirtBackend.name
   override def description: String = "Generating of Scala AST for virtualized cake."
   override val runsAfter = List(WrapBackend.name)
   def getCombinedCakeHome(namespace: String) = {
     val namespacePath = namespace.split('.').mkString("/")
-    s"${ScalanPluginConfig.home}/src/main/scala/$namespacePath/impl"
+    s"${snConfig.home}/src/main/scala/$namespacePath/impl"
   }
   def newPhase(prev: Phase) = new StdPhase(prev) {
     override def run(): Unit = {
