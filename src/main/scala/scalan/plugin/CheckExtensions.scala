@@ -3,7 +3,7 @@ package scalan.plugin
 import scala.tools.nsc._
 
 object CheckExtensions {
-  val name = "scalan-check"
+  val name = "scalanizer-check"
 }
 
 /** The component searches user's extensions traits */

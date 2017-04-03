@@ -4,7 +4,7 @@ import scala.tools.nsc._
 import scalan.meta.ScalanAst._
 
 object WrapEnricher {
-  val name = "scalan-wrap-enricher"
+  val name = "scalanizer-enricher"
 }
 
 // TODO ScalanParsers is used only to get wrapperImpl. Move it somewhere?

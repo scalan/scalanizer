@@ -5,7 +5,7 @@ import scala.tools.nsc._
 import scalan.meta.ScalanAst._
 
 object WrapFrontend {
-  val name = "scalan-wrap-frontend"
+  val name = "scalanizer-frontend"
 }
 
 /** The component builds wrappers. */

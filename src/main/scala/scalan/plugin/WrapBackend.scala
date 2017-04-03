@@ -6,7 +6,7 @@ import scalan.meta.ScalanAst._
 import scalan.meta.ScalanCodegen
 
 object WrapBackend {
-  val name = "scalan-wrap-backend"
+  val name = "scalanizer-backend"
 }
 
 /** Generating of Scala AST for wrappers. */

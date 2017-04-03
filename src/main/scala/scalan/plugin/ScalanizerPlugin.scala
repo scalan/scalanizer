@@ -7,8 +7,8 @@ import scalan.meta.scalanizer.{ScalanizerConfig, Scalanizer, ScalanizerState}
 class ScalanizerPlugin(val global: Global) extends Plugin { plugin =>
   val scalanizer: Scalanizer[plugin.global.type] = new Scalanizer[plugin.global.type] {
     def getGlobal: plugin.global.type = plugin.global
-    val snState: ScalanizerState[plugin.global.type] = new ScalanizerPluginState(this)
     val snConfig: ScalanizerConfig = new ScalanizerPluginConfig
+    val snState: ScalanizerState[plugin.global.type] = new ScalanizerPluginState(this)
   }
 
   /** Visible name of the plugin */

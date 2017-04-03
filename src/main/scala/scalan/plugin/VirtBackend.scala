@@ -4,7 +4,7 @@ import scalan.util.FileUtil
 import scala.tools.nsc._
 
 object VirtBackend {
-  val name = "scalan-virt-backend"
+  val name = "scalanizer-virt-backend"
 }
 
 /** Generating of Scala AST for wrappers. */
